@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-05 22:29+0200\n"
+"POT-Creation-Date: 2026-10-12 22:55+0200\n"
 "PO-Revision-Date: 2025-12-09 20:34+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -75,6 +75,12 @@ msgstr "Profielinstelling voltooid!"
 msgid "Error reading users.json: %(error)s"
 msgstr "Fout bij het lezen van users.json: %(error)s"
 
+#: app/app.py:486
+msgid "No account? Contact a family member to create an account."
+msgstr ""
+"Geen account? Neem contact op met een familielid om een account aan te "
+"maken."
+
 #: app/app.py:503 app/app.py:521
 msgid "User does not exist"
 msgstr "Gebruiker bestaat niet"
@@ -117,202 +123,204 @@ msgstr ""
 msgid "Registration successful! You can now log in."
 msgstr "Registratie succesvol! U kunt nu inloggen."
 
-#: app/app.py:620 app/app.py:705
+#: app/app.py:620 app/app.py:706
 msgid "Current user not found."
 msgstr "Huidige gebruiker niet gevonden."
 
-#: app/app.py:763
+#: app/app.py:765
 #, python-format
 msgid "Idea \"%(name)s\" added for user %(user)s by %(added_by)s!"
 msgstr "Idee \"%(name)s\" toegevoegd voor %(user)s door %(added_by)s!"
 
-#: app/app.py:792
+#: app/app.py:794
 msgid "IDEAS DELETED"
 msgstr "VERWIJDERDE IDEEËN"
 
-#: app/app.py:802
+#: app/app.py:804
 msgid "You are not authorized to delete this idea."
 msgstr "U bent niet geautoriseerd om dit idee te verwijderen."
 
-#: app/app.py:804 app/app.py:1038 app/app.py:1067 app/app.py:1281
+#: app/app.py:806 app/app.py:1040 app/app.py:1069 app/app.py:1283
 msgid "Idea not found"
 msgstr "Idee niet gevonden"
 
-#: app/app.py:827
+#: app/app.py:829
 #, python-format
 msgid "This idea, '%(name)s', has been deleted but you already BOUGHT IT."
 msgstr "Het idee '%(name)s' is verwijderd, maar u hebt het al GEKOCHT."
 
-#: app/app.py:835
+#: app/app.py:837
 msgid "GiftManager"
 msgstr "CadeauManager"
 
-#: app/app.py:840
+#: app/app.py:842
 msgid "Buyer Name"
 msgstr "Naam koper"
 
-#: app/app.py:880
+#: app/app.py:882
 msgid "User data not found"
 msgstr "Gebruikersgegevens niet gevonden"
 
-#: app/app.py:983 app/app.py:2269
+#: app/app.py:985 app/app.py:2281
 msgid "User not found"
 msgstr "Gebruiker niet gevonden"
 
-#: app/app.py:988
+#: app/app.py:990
 msgid "Current password is incorrect"
 msgstr "Huidig wachtwoord is onjuist"
 
-#: app/app.py:993
+#: app/app.py:995
 msgid "New password and confirmation do not match"
 msgstr "Nieuw wachtwoord en bevestiging komen niet overeen"
 
-#: app/app.py:1002
+#: app/app.py:1004
 msgid "Password successfully changed"
 msgstr "Wachtwoord succesvol gewijzigd"
 
-#: app/app.py:1030
+#: app/app.py:1032
 #, python-format
 msgid "Marked \"%(name)s\" as bought!"
 msgstr "\"%(name)s\" gemarkeerd als gekocht!"
 
-#: app/app.py:1036
+#: app/app.py:1038
 #, python-format
 msgid "\"%(name)s\" has already been bought by %(buyer)s."
 msgstr "\"%(name)s\" is al gekocht door %(buyer)s."
 
-#: app/app.py:1060
+#: app/app.py:1062
 #, python-format
 msgid "Marked \"%(name)s\" as not bought."
 msgstr "\"%(name)s\" gemarkeerd als niet gekocht."
 
-#: app/app.py:1065
+#: app/app.py:1067
 #, python-format
 msgid "You did not buy \"%(name)s\", so you cannot mark it as not bought."
 msgstr ""
 "U hebt \"%(name)s\" niet gekocht, dus u kunt het niet als niet gekocht "
 "markeren."
 
-#: app/app.py:1117
+#: app/app.py:1119
 msgid "No gift ideas for this user."
 msgstr "Geen cadeau-ideeën voor deze gebruiker."
 
-#: app/app.py:1148
+#: app/app.py:1150
 msgid "You haven't added any gift ideas."
 msgstr "U hebt nog geen cadeau-ideeën toegevoegd."
 
-#: app/app.py:1206
+#: app/app.py:1208
 msgid "Username already exists!"
 msgstr "Gebruikersnaam bestaat al!"
 
-#: app/app.py:1227
+#: app/app.py:1229
 msgid "User added successfully!"
 msgstr "Gebruiker succesvol toegevoegd!"
 
-#: app/app.py:1272
+#: app/app.py:1274
 msgid "Idea updated successfully!"
 msgstr "Idee succesvol bijgewerkt!"
 
-#: app/app.py:1279
+#: app/app.py:1281
 msgid "You are not authorized to edit this idea."
 msgstr "U bent niet geautoriseerd om dit idee te bewerken."
 
-#: app/app.py:1323
+#: app/app.py:1325
 #, python-format
 msgid "Pool \"%(name)s\" does not exist."
 msgstr "Pool \"%(name)s\" bestaat niet."
 
-#: app/app.py:1333
+#: app/app.py:1335
 #, python-format
 msgid "Pool \"%(name)s\" has been deleted!"
 msgstr "Pool \"%(name)s\" is verwijderd!"
 
-#: app/app.py:1344
+#: app/app.py:1346
 msgid "Pool name is required!"
 msgstr "Poolnaam is vereist!"
 
-#: app/app.py:1348
+#: app/app.py:1350
 msgid "You need at least 2 participants for Secret Santa!"
 msgstr "U hebt minimaal 2 deelnemers nodig voor Secret Santa!"
 
-#: app/app.py:1374
+#: app/app.py:1376
 msgid "Secret Santa assignments have been made!"
 msgstr "Secret Santa toewijzingen zijn gemaakt!"
 
-#: app/app.py:1395
+#: app/app.py:1397
 msgid "You don't have any Secret Santa assignments yet."
 msgstr "U hebt nog geen Secret Santa toewijzingen."
 
-#: app/app.py:1405
+#: app/app.py:1407
 msgid "No specific instructions provided."
 msgstr "Geen specifieke instructies verstrekt."
 
-#: app/app.py:1439
+#: app/app.py:1441
 msgid "User deleted successfully!"
 msgstr "Gebruiker succesvol verwijderd!"
 
-#: app/app.py:1450
+#: app/app.py:1452
 msgid "Admin status updated successfully!"
 msgstr "Adminstatus succesvol bijgewerkt!"
 
-#: app/app.py:1471
+#: app/app.py:1473
 msgid "User updated successfully!"
 msgstr "Gebruiker succesvol bijgewerkt!"
 
-#: app/app.py:1530
+#: app/app.py:1532
 msgid "Email settings updated successfully!"
 msgstr "E-mailinstellingen succesvol bijgewerkt!"
 
-#: app/app.py:1532
+#: app/app.py:1534
 #, python-format
 msgid "An error occurred: %(error)s"
 msgstr "Er is een fout opgetreden: %(error)s"
 
-#: app/app.py:1562
+#: app/app.py:1564
 msgid "Login message updated successfully!"
 msgstr "Inlogbericht succesvol bijgewerkt!"
 
-#: app/app.py:1564
+#: app/app.py:1566
 #, python-format
 msgid "Error updating login message: %(error)s"
 msgstr "Fout bij het bijwerken van het inlogbericht: %(error)s"
 
-#: app/app.py:1566
+#: app/app.py:1568
 msgid "Message cannot be empty."
 msgstr "Bericht mag niet leeg zijn."
 
-#: app/app.py:1628
-#, python-format
-msgid ""
-"%(count)s gift ideas older than the threshold have been successfully "
-"deleted."
-msgstr "%(count)s cadeau-ideeën ouder dan de drempel zijn verwijderd."
+#: app/app.py:1637 app/app.py:1671
+msgid "Invalid number of days entered. Please enter a valid number."
+msgstr "Ongeldig aantal dagen ingevoerd. Voer een geldig nummer in."
 
-#: app/app.py:1634
+#: app/app.py:1641
+msgid "Select at least one filter."
+msgstr "Selecteer ten minste één filter."
+
+#: app/app.py:1646
+#, python-format
+msgid "%(count)s gift ideas have been deleted."
+msgstr "%(count)s cadeau-ideeën zijn verwijderd."
+
+#: app/app.py:1648
 #, python-format
 msgid "Error deleting old gift ideas: %(error)s"
 msgstr "Fout bij het verwijderen van oude cadeau-ideeën: %(error)s"
 
-#: app/app.py:1655
+#: app/app.py:1667
 #, python-format
 msgid "The number of days to delete old gift ideas has been updated to %(days)s."
 msgstr ""
 "Het aantal dagen voor het verwijderen van oude cadeau-ideeën is "
 "bijgewerkt naar %(days)s."
 
-#: app/app.py:1659
-msgid "Invalid number of days entered. Please enter a valid number."
-msgstr "Ongeldig aantal dagen ingevoerd. Voer een geldig nummer in."
-
-#: app/app.py:1661
+#: app/app.py:1673
 msgid "Please provide a value for the number of days."
 msgstr "Geef een waarde op voor het aantal dagen."
 
-#: app/app.py:1674
+#: app/app.py:1686
 msgid "Users are already configured. Setup page is unavailable."
 msgstr "Gebruikers zijn al geconfigureerd. Setup pagina is niet beschikbaar."
 
-#: app/app.py:1706
+#: app/app.py:1718
 msgid ""
 "Admin account created successfully. Please configure the environment "
 "variables."
@@ -320,63 +328,63 @@ msgstr ""
 "Admin-account succesvol aangemaakt. Gelieve de omgevingsvariabelen te "
 "configurer."
 
-#: app/app.py:1716
+#: app/app.py:1728
 msgid "You must access this page from the setupadmin route."
 msgstr "U moet deze pagina openen via de setupadmin route."
 
-#: app/app.py:1742
+#: app/app.py:1754
 msgid "Environment variables saved successfully!"
 msgstr "Omgevingsvariabelen succesvol opgeslagen!"
 
-#: app/app.py:1769
+#: app/app.py:1781
 #, python-format
 msgid "Missing required fields: %(fields)s"
 msgstr "Ontbrekende verplichte velden: %(fields)s"
 
-#: app/app.py:1777
+#: app/app.py:1789
 msgid "OIDC settings saved successfully!"
 msgstr "OIDC-instellingen succesvol opgeslagen!"
 
-#: app/app.py:1780
+#: app/app.py:1792
 #, python-format
 msgid "Error saving OIDC settings: %(error)s"
 msgstr "Fout bij het opslaan van de OIDC-instellingen: %(error)s"
 
-#: app/app.py:1788
+#: app/app.py:1800
 msgid "Environment file not found. Creating a new one."
 msgstr "Omgevingsbestand niet gevonden. Er wordt een nieuw bestand aangemaakt."
 
-#: app/app.py:1833
+#: app/app.py:1845
 msgid "New group added successfully!"
 msgstr "Nieuwe groep succesvol toegevoegd!"
 
-#: app/app.py:1860
+#: app/app.py:1872
 msgid "Group assignments updated successfully!"
 msgstr "Groepstoewijzingen succesvol bijgewerkt!"
 
-#: app/app.py:1909
+#: app/app.py:1921
 #, python-format
 msgid "Successfully removed %(count)s gift ideas."
 msgstr "%(count)s cadeau-ideeën succesvol verwijderd."
 
-#: app/app.py:1915
+#: app/app.py:1927
 #, python-format
 msgid "Error occurred while running delete_old_gift_ideas: %(error)s"
 msgstr "Fout bij het uitvoeren van delete_old_gift_ideas: %(error)s"
 
-#: app/app.py:1960
+#: app/app.py:1972
 msgid "URL parameter is required"
 msgstr "URL-parameter is vereist"
 
-#: app/app.py:1966
+#: app/app.py:1978
 msgid "No OG image found"
 msgstr "Geen OG-afbeelding gevonden"
 
-#: app/app.py:2008
+#: app/app.py:2020
 msgid "Guest user created successfully!"
 msgstr "Gastgebruiker succesvol aangemaakt!"
 
-#: app/app.py:2057
+#: app/app.py:2069
 #, python-format
 msgid ""
 "Guest user %(username)s deleted successfully! %(count)s purchased gift "
@@ -385,119 +393,119 @@ msgstr ""
 "Gastgebruiker %(username)s succesvol verwijderd! %(count)s gekochte "
 "cadeau-ideeën verwijderd."
 
-#: app/app.py:2059
+#: app/app.py:2071
 msgid "Guest user not found."
 msgstr "Gastgebruiker niet gevonden."
 
-#: app/app.py:2074
+#: app/app.py:2086
 msgid "Guest login successful!"
 msgstr "Gast login succesvol!"
 
-#: app/app.py:2077
+#: app/app.py:2089
 msgid "Invalid guest password"
 msgstr "Ongeldig gast wachtwoord"
 
-#: app/app.py:2099
+#: app/app.py:2111
 msgid "Currency settings updated! Please restart to see changes"
 msgstr "Valuta-instellingen bijgewerkt! Herstart om de wijzigingen te zien"
 
-#: app/app.py:2112
+#: app/app.py:2124
 msgid "Self-registration settings updated successfully!"
 msgstr "Instellingen voor zelfregistratie succesvol bijgewerkt!"
 
-#: app/app.py:2155
+#: app/app.py:2167
 #, python-format
 msgid "Shared list \"%(name)s\" created successfully!"
 msgstr "Gedeelde lijst \"%(name)s\" succesvol aangemaakt!"
 
-#: app/app.py:2192 app/app.py:2220
+#: app/app.py:2204 app/app.py:2232
 msgid "Shared list not found."
 msgstr "Gedeelde lijst niet gevonden."
 
-#: app/app.py:2197
+#: app/app.py:2209
 msgid "Only the list owner can delete this shared list."
 msgstr "Alleen de eigenaar van de lijst kan deze gedeelde lijst verwijderen."
 
-#: app/app.py:2208
+#: app/app.py:2220
 #, python-format
 msgid "Shared list \"%(name)s\" deleted successfully!"
 msgstr "Gedeelde lijst \"%(name)s\" succesvol verwijderd!"
 
-#: app/app.py:2225
+#: app/app.py:2237
 msgid "Only the list owner can edit members."
 msgstr "Alleen de eigenaar van de lijst kan leden bewerken."
 
-#: app/app.py:2237
+#: app/app.py:2249
 #, python-format
 msgid "Members updated for \"%(name)s\"!"
 msgstr "Leden bijgewerkt voor \"%(name)s\"!"
 
-#: app/app.py:2249
+#: app/app.py:2261
 msgid "Link sharing settings updated!"
 msgstr "Instellingen voor delen via link bijgewerkt!"
 
-#: app/app.py:2261
+#: app/app.py:2273
 msgid "Link sharing feature is currently disabled by administrator."
 msgstr "Delen via link is momenteel uitgeschakeld door de beheerder."
 
-#: app/app.py:2277
+#: app/app.py:2289
 msgid "Target not found"
 msgstr "Doel niet gevonden"
 
-#: app/app.py:2284
+#: app/app.py:2296
 msgid "You are not a member of this shared list"
 msgstr "U bent geen lid van deze gedeelde lijst"
 
-#: app/app.py:2289
+#: app/app.py:2301
 msgid "You can only manage your own sharing settings"
 msgstr "U kunt alleen uw eigen deelinstellingen beheren"
 
-#: app/app.py:2316
+#: app/app.py:2328
 msgid "New share link created!"
 msgstr "Nieuwe deellink aangemaakt!"
 
-#: app/app.py:2325
+#: app/app.py:2337
 msgid "Share link activated!"
 msgstr "Deellink geactiveerd!"
 
-#: app/app.py:2325
+#: app/app.py:2337
 msgid "Share link deactivated!"
 msgstr "Deellink gedeactiveerd!"
 
-#: app/app.py:2339
+#: app/app.py:2351
 #, python-format
 msgid "Share link extended by %(days)s days! New expiry: %(expiry)s"
 msgstr "Deellink verlengd met %(days)s dagen! Nieuwe vervaldatum: %(expiry)s"
 
-#: app/app.py:2350
+#: app/app.py:2362
 msgid "Share link deleted!"
 msgstr "Deellink verwijderd!"
 
-#: app/app.py:2444 app/app.py:2510
+#: app/app.py:2456 app/app.py:2522
 msgid "Share link not found or expired"
 msgstr "Deellink niet gevonden of verlopen"
 
-#: app/app.py:2447
+#: app/app.py:2459
 msgid "Purchases not allowed for this share link"
 msgstr "Aankopen zijn niet toegestaan voor deze deellink"
 
-#: app/app.py:2452 app/app.py:2515
+#: app/app.py:2464 app/app.py:2527
 msgid "Gift idea not found"
 msgstr "Cadeau-idee niet gevonden"
 
-#: app/app.py:2457
+#: app/app.py:2469
 msgid "Visitor name is required"
 msgstr "Naam van de bezoeker is vereist"
 
-#: app/app.py:2487
+#: app/app.py:2499
 msgid "Item already purchased"
 msgstr "Artikel al gekocht"
 
-#: app/app.py:2520
+#: app/app.py:2532
 msgid "Visitor ID required"
 msgstr "Bezoekers-ID vereist"
 
-#: app/app.py:2540
+#: app/app.py:2552
 msgid "You can only cancel your own purchases"
 msgstr "U kunt alleen uw eigen aankopen annuleren"
 
@@ -1061,26 +1069,56 @@ msgstr "Ideeën toevoegen"
 msgid "Manage Gift Ideas"
 msgstr "Cadeau-ideeën beheren"
 
-#: app/templates/delete_old_gift_ideas.html:263
-msgid "Delete Old Gift Ideas"
-msgstr "Oude cadeau-ideeën verwijderen"
+#: app/templates/delete_old_gift_ideas.html:264
+msgid "Delete Gift Ideas"
+msgstr "Cadeau-ideeën verwijderen"
 
-#: app/templates/delete_old_gift_ideas.html:266
-#, python-format
-msgid "Delete Gift Ideas Older Than %(days)s Days"
-msgstr "Cadeau-ideeën ouder dan %(days)s dagen verwijderen"
+#: app/templates/delete_old_gift_ideas.html:268
+msgid "Only bought gift ideas"
+msgstr "Alleen gekochte cadeau-ideeën"
 
-#: app/templates/delete_old_gift_ideas.html:273
+#: app/templates/delete_old_gift_ideas.html:272
+msgid "Older than"
+msgstr "Ouder dan"
+
+#: app/templates/delete_old_gift_ideas.html:275
+msgid "days"
+msgstr "dagen"
+
+#: app/templates/delete_old_gift_ideas.html:277
+msgid ""
+"Age is counted from the purchase date for bought ideas, and from the date"
+" the idea was added otherwise. Ideas without a known date are never "
+"considered old."
+msgstr ""
+"De leeftijd wordt berekend vanaf de aankoopdatum voor gekochte ideeën, en"
+" anders vanaf de datum waarop het idee is toegevoegd. Ideeën zonder "
+"bekende datum worden nooit als oud beschouwd."
+
+#: app/templates/delete_old_gift_ideas.html:279
+#: app/templates/manage_guest_users.html:444
+#: app/templates/manage_shared_lists.html:243
+#: app/templates/manage_sharing.html:247 app/templates/manage_users.html:294
+msgid "Delete"
+msgstr "Verwijderen"
+
+#: app/templates/delete_old_gift_ideas.html:286
 msgid "Change Days for Deleting Old Gift Ideas"
 msgstr "Aantal dagen voor het verwijderen van oude ideeën wijzigen"
 
-#: app/templates/delete_old_gift_ideas.html:275
+#: app/templates/delete_old_gift_ideas.html:288
 msgid "New Number of Days:"
 msgstr "Nieuw aantal dagen:"
 
-#: app/templates/delete_old_gift_ideas.html:279
+#: app/templates/delete_old_gift_ideas.html:292
 msgid "Update Days"
 msgstr "Dagen bijwerken"
+
+#: app/templates/delete_old_gift_ideas.html:304
+msgid "Delete all gift ideas matching these filters? This cannot be undone."
+msgstr ""
+"Alle cadeau-ideeën die aan deze filters voldoen verwijderen? Dit kan niet"
+" ongedaan worden gemaakt."
 
 #: app/templates/edit_email_settings.html:6
 #: app/templates/edit_email_settings.html:243
@@ -1348,12 +1386,6 @@ msgstr "Personen:"
 #, python-format
 msgid "Are you sure you want to delete guest user %(name)s?"
 msgstr "Weet u zeker dat u gastgebruiker %(name)s wilt verwijderen?"
-
-#: app/templates/manage_guest_users.html:444
-#: app/templates/manage_shared_lists.html:243
-#: app/templates/manage_sharing.html:247 app/templates/manage_users.html:294
-msgid "Delete"
-msgstr "Verwijderen"
 
 #: app/templates/manage_guest_users.html:456
 msgid "No guest users configured yet."
@@ -2065,4 +2097,7 @@ msgstr "Aankoop annuleren"
 #: app/templates/user_gift_ideas.html:232
 msgid "Purchase completed"
 msgstr "Aankoop voltooid"
+
+#~ msgid "Delete Gift Ideas Older Than %(days)s Days"
+#~ msgstr "Cadeau-ideeën ouder dan %(days)s dagen verwijderen"
 
