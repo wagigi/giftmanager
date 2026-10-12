@@ -2063,3 +2063,29 @@ msgstr ""
 msgid "Purchase completed"
 msgstr ""
 
+msgid "Profile picture removed."
+msgstr ""
+
+msgid "Please choose an image."
+msgstr ""
+
+msgid "Invalid image file."
+msgstr ""
+
+msgid "Profile picture updated."
+msgstr ""
+
+msgid "File is too large (max 10 MB)."
+msgstr ""
+
+msgid "Profile picture"
+msgstr ""
+
+msgid "Choose an image"
+msgstr ""
+
+msgid "Upload"
+msgstr ""
+
+msgid "Remove picture"
+msgstr ""

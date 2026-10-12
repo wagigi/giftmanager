@@ -2111,6 +2111,33 @@ msgstr "Annuler l'achat"
 msgid "Purchase completed"
 msgstr "Achat effectué"
 
+msgid "Profile picture removed."
+msgstr "Photo de profil supprimée."
+
+msgid "Please choose an image."
+msgstr "Veuillez choisir une image."
+
+msgid "Invalid image file."
+msgstr "Fichier image invalide."
+
+msgid "Profile picture updated."
+msgstr "Photo de profil mise à jour."
+
+msgid "File is too large (max 10 MB)."
+msgstr "Le fichier est trop volumineux (10 Mo max)."
+
+msgid "Profile picture"
+msgstr "Photo de profil"
+
+msgid "Choose an image"
+msgstr "Choisir une image"
+
+msgid "Upload"
+msgstr "Envoyer"
+
+msgid "Remove picture"
+msgstr "Supprimer la photo"
+
 #~ msgid "Delete Gift Ideas Older Than %(days)s Days"
 #~ msgstr "Supprimer les idées de plus de %(days)s jours"
 

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, get_flashed_messages, request, jsonify, send_from_directory
+from flask import Flask, abort, render_template, request, redirect, url_for, session, flash, make_response, get_flashed_messages, request, jsonify, send_from_directory
 import requests
 from functools import wraps
 from mailjet_rest import Client
@@ -8,12 +8,14 @@ from argon2.exceptions import VerifyMismatchError
 from authlib.integrations.flask_client import OAuth
 import json, secrets
 import os
+import uuid
 import random
 from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from dotenv import load_dotenv, set_key, dotenv_values
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from PIL import Image, ImageOps, UnidentifiedImageError
 from flask_babel import Babel, _, lazy_gettext as _l, get_locale as current_babel_locale
 
 # Directory holding .env, users.json, ideas.json and Secret Santa files (set to /app/data in Docker)
@@ -36,6 +38,8 @@ app.config['BABEL_DEFAULT_LOCALE'] = 'fr' # Set default locale to French
 app.config['DATA'] = DATA_DIR
 app.config['IDEAS_FILE'] = Path(DATA_DIR, 'ideas.json')
 app.config['USERS_FILE'] = Path(DATA_DIR, 'users.json')
+app.config['AVATARS_DIR'] = Path(DATA_DIR, 'avatars')  # Uploaded profile pictures
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # Reject request bodies (uploads) over 10 MB
 babel = Babel(app, locale_selector=get_locale) # Initialize Flask-Babel
 
 @app.context_processor
@@ -260,6 +264,98 @@ def change_email():
     return redirect(url_for('dashboard'))
 
 
+UPLOADED_AVATAR_PREFIX = 'avatars/'
+AVATAR_SIZE = 256  # Uploaded pictures are cropped to a square of this size
+
+def avatar_url(avatar):
+    """Return the URL of a user's avatar, whether built-in (static) or uploaded."""
+    if avatar and avatar.startswith(UPLOADED_AVATAR_PREFIX):
+        return url_for('uploaded_avatar', filename=avatar[len(UPLOADED_AVATAR_PREFIX):])
+    return url_for('static', filename=avatar or 'icons/avatar1.png')
+
+def delete_uploaded_avatar(avatar):
+    """Remove an uploaded avatar file from disk (built-in avatars are left alone)."""
+    if avatar and avatar.startswith(UPLOADED_AVATAR_PREFIX):
+        filename = os.path.basename(avatar)
+        try:
+            Path(app.config['AVATARS_DIR'], filename).unlink(missing_ok=True)
+        except OSError:
+            pass
+
+@app.route('/avatars/<filename>')
+@login_required
+@guest_allowed
+def uploaded_avatar(filename):
+    # Profile pictures are personal data: only serve them to existing accounts
+    # (a session may outlive a deleted user)
+    users = load_users()
+    current_user = next((user for user in users if user['username'] == session['username']), None)
+    if not current_user:
+        session.clear()
+        return redirect(url_for('login'))
+
+    # ...and only to people who can see their owner on the dashboard (same group).
+    # 404 rather than 403 so the existence of the file is not disclosed.
+    owner = next((user for user in users if user.get('avatar') == UPLOADED_AVATAR_PREFIX + filename), None)
+    if not owner or (owner is not current_user and owner not in get_visible_users(current_user, users)):
+        abort(404)
+
+    response = send_from_directory(app.config['AVATARS_DIR'], filename, max_age=86400)
+    # Browser cache only: never let a shared cache (reverse proxy, CDN) store them
+    response.cache_control.public = False
+    response.cache_control.private = True
+    return response
+
+@app.route('/change_avatar', methods=['POST'])
+@login_required
+def change_avatar():
+    users = load_users()
+    current_user = next((user for user in users if user['username'] == session['username']), None)
+    if not current_user:
+        flash(_('User not found.'), 'profile')
+        return redirect(url_for('dashboard'))
+
+    old_avatar = current_user.get('avatar')
+
+    if 'remove_avatar' in request.form:
+        current_user['avatar'] = 'icons/avatar1.png'
+        save_users(users)
+        delete_uploaded_avatar(old_avatar)
+        flash(_('Profile picture removed.'), 'profile')
+        return redirect(url_for('dashboard'))
+
+    file = request.files.get('avatar_file')
+    if not file or not file.filename:
+        flash(_('Please choose an image.'), 'profile')
+        return redirect(url_for('dashboard'))
+
+    # Re-encode the image with Pillow: validates it is a real image, strips metadata
+    # and prevents serving arbitrary uploaded content.
+    try:
+        image = Image.open(file.stream)
+        image = ImageOps.exif_transpose(image)
+        image = ImageOps.fit(image.convert('RGB'), (AVATAR_SIZE, AVATAR_SIZE), Image.LANCZOS)
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+        flash(_('Invalid image file.'), 'profile')
+        return redirect(url_for('dashboard'))
+
+    app.config['AVATARS_DIR'].mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}.jpg"
+    image.save(Path(app.config['AVATARS_DIR'], filename), 'JPEG', quality=90)
+
+    current_user['avatar'] = UPLOADED_AVATAR_PREFIX + filename
+    save_users(users)
+    delete_uploaded_avatar(old_avatar)
+
+    flash(_('Profile picture updated.'), 'profile')
+    return redirect(url_for('dashboard'))
+
+@app.errorhandler(413)
+def request_too_large(error):
+    flash(_('File is too large (max 10 MB).'), 'profile')
+    return redirect(request.referrer or url_for('dashboard'))
+
+
 def get_currency_symbol():
     return read_env_variable("CURRENCY_SYMBOL", "$")
 
@@ -283,7 +379,8 @@ def utility_processor():
         format_currency=format_currency,
         get_currency_symbol=get_currency_symbol,
         get_currency_position=get_currency_position,
-        generate_share_url=generate_share_url
+        generate_share_url=generate_share_url,
+        avatar_url=avatar_url
     )
 
 
@@ -867,25 +964,9 @@ def logout():
     return response
 
 
-@app.route('/dashboard')
-@login_required
-@guest_allowed
-def dashboard():
-    
-    # Read user data from the JSON file
-    users = load_users()
-
-    # Get the current user's data from the session
-    current_user = next((user for user in users if user['username'] == session['username']), None)
-    
-    if not current_user:
-        flash(_('User data not found'), 'danger')
-        return redirect(url_for('login'))
-
-    # Check if current user is a guest
+def get_visible_users(current_user, users):
+    """Return the users whose lists (and profile pictures) current_user is allowed to see, based on groups."""
     is_guest = current_user.get('guest', False)
-    
-    # Initialize visible_users
     visible_users = []
     
     if is_guest:
@@ -921,7 +1002,31 @@ def dashboard():
                 if (not user.get('groups') or any(group in current_user_groups for group in user.get('groups', [])))
                 and not user.get('guest')
             ]
-        
+
+    return visible_users
+
+
+@app.route('/dashboard')
+@login_required
+@guest_allowed
+def dashboard():
+    
+    # Read user data from the JSON file
+    users = load_users()
+
+    # Get the current user's data from the session
+    current_user = next((user for user in users if user['username'] == session['username']), None)
+    
+    if not current_user:
+        flash(_('User data not found'), 'danger')
+        return redirect(url_for('login'))
+
+    # Check if current user is a guest
+    is_guest = current_user.get('guest', False)
+    
+    visible_users = get_visible_users(current_user, users)
+
+    if not is_guest:
         # Move current user to top
         if current_user in visible_users:
             visible_users.insert(0, visible_users.pop(visible_users.index(current_user)))
@@ -938,7 +1043,8 @@ def dashboard():
         'full_name': current_user.get('full_name'),
         'birthday': current_user.get('birthday'),
         'admin': current_user.get('admin'),
-        'guest': is_guest
+        'guest': is_guest,
+        'avatar': current_user.get('avatar')
     }
 
     app_version = "v2.6.2"
@@ -946,8 +1052,11 @@ def dashboard():
     # Get assigned users if available in the current user's data
     assigned_users = current_user.get('assigned_users', None)
 
-    # Get flash messages related to passwords
-    password_messages = [msg for msg in get_flashed_messages() if 'password' in msg.lower() or 'email' in msg.lower()]
+    # Get flash messages related to passwords, email and profile picture
+    password_messages = [
+        msg for category, msg in get_flashed_messages(with_categories=True)
+        if category == 'profile' or 'password' in msg.lower() or 'email' in msg.lower()
+    ]
 
     enable_link_sharing_value = read_env_variable("ENABLE_LINK_SHARING", "true")
     enable_link_sharing = str(enable_link_sharing_value).lower() == 'true' if enable_link_sharing_value is not None else True
@@ -1429,6 +1538,10 @@ def manage_users():
 
         # Handle delete
         if 'delete_user' in request.form:
+            deleted_user = next((user for user in all_users if user['username'] == username), None)
+            if deleted_user:
+                delete_uploaded_avatar(deleted_user.get('avatar'))
+
             # Remove only the regular user from both arrays
             all_users = [user for user in all_users if user['username'] != username]
             
@@ -1463,6 +1576,8 @@ def manage_users():
                 if user['username'] == username:
                     user['full_name'] = updated_name
                     user['email'] = updated_email if updated_email else user.get('email', 'N/A')
+                    if updated_avatar and updated_avatar != user.get('avatar'):
+                        delete_uploaded_avatar(user.get('avatar'))
                     user['avatar'] = updated_avatar if updated_avatar else user.get('avatar', 'avatar1.png')
                     if updated_password:
                         user['password'] = ph.hash(updated_password)

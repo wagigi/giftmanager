@@ -2089,6 +2089,33 @@ msgstr "Avbryt köpet"
 msgid "Purchase completed"
 msgstr "Köp genomfört"
 
+msgid "Profile picture removed."
+msgstr "Profilbilden har tagits bort."
+
+msgid "Please choose an image."
+msgstr "Välj en bild."
+
+msgid "Invalid image file."
+msgstr "Ogiltig bildfil."
+
+msgid "Profile picture updated."
+msgstr "Profilbilden har uppdaterats."
+
+msgid "File is too large (max 10 MB)."
+msgstr "Filen är för stor (max 10 MB)."
+
+msgid "Profile picture"
+msgstr "Profilbild"
+
+msgid "Choose an image"
+msgstr "Välj en bild"
+
+msgid "Upload"
+msgstr "Ladda upp"
+
+msgid "Remove picture"
+msgstr "Ta bort bilden"
+
 #~ msgid "Delete Gift Ideas Older Than %(days)s Days"
 #~ msgstr "Radera presentidéer äldre än %(days)s dagar"
 
