@@ -1,7 +1,7 @@
 services:
   giftmanager:
     build: .
-    image: icbest/giftmanager:latest
+    image: wagigi/giftmanager:latest
     container_name: giftmanager
     ports:
       - "5000:5000"
