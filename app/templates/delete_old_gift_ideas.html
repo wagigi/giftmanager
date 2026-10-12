@@ -251,19 +251,32 @@
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
-                            <div class="alert alert-{{ 'success' if 'success' in category else 'danger' }} p-4 mb-4 rounded text-white bg-green-500">
+                            <div class="alert alert-{{ 'success' if 'success' in category else 'danger' }} p-4 mb-4 rounded text-white {{ 'bg-green-500' if 'success' in category else 'bg-red-500' }}">
                                 {{ message }}
                             </div>
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
 
-                <!-- Form to delete old gift ideas -->
+                <!-- Form to delete gift ideas matching the selected filters -->
+                {% set f = filters or {'bought_only': True, 'age_filter': True, 'days': current_days} %}
                 <div class="section p-6 rounded shadow mb-6">
-                    <h3 class="text-lg font-semibold mb-4">{{ _('Delete Old Gift Ideas') }}</h3>
-                    <form method="POST" action="{{ url_for('delete_old_gift_ideas_page') }}">
+                    <h3 class="text-lg font-semibold mb-4">{{ _('Delete Gift Ideas') }}</h3>
+                    <form method="POST" action="{{ url_for('delete_old_gift_ideas_page') }}" id="deleteIdeasForm">
+                        <label class="flex items-center mb-3">
+                            <input type="checkbox" name="bought_only" class="mr-2" {% if f.bought_only %}checked{% endif %}>
+                            {{ _('Only bought gift ideas') }}
+                        </label>
+                        <label class="flex items-center flex-wrap mb-2">
+                            <input type="checkbox" name="age_filter" class="mr-2" {% if f.age_filter %}checked{% endif %}>
+                            {{ _('Older than') }}
+                            <input type="number" name="days" value="{{ f.days }}" min="1"
+                                   class="mx-2 px-2 py-1 border border-gray-300 rounded-lg inputer" style="width: 6rem;">
+                            {{ _('days') }}
+                        </label>
+                        <p class="text-sm sec-text mb-4">{{ _('Age is counted from the purchase date for bought ideas, and from the date the idea was added otherwise. Ideas without a known date are never considered old.') }}</p>
                         <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition">
-                            {{ _('Delete Gift Ideas Older Than %(days)s Days', days=current_days | default(30)) }}
+                            {{ _('Delete') }}
                         </button>
                     </form>
                 </div>
@@ -287,6 +300,12 @@
     <!-- Font Awesome for Icons -->
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <script>
+        document.getElementById('deleteIdeasForm').addEventListener('submit', function(event) {
+            if (!confirm({{ _('Delete all gift ideas matching these filters? This cannot be undone.') | tojson }})) {
+                event.preventDefault();
+            }
+        });
+
         // Sidebar toggle functionality
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
@@ -326,4 +345,4 @@
         }
     </script>
 </body>
-</html>
+</html>

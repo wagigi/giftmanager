@@ -665,7 +665,8 @@ def add2():
             'value': value,
             'added_by': added_by,  # Track who added the idea
             'bought_by': None,  # Initialize as not bought
-            'image_path': image_path  # Store the image URL here
+            'image_path': image_path,  # Store the image URL here
+            'date_added': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
 
         # Append the new idea to the list
@@ -750,7 +751,8 @@ def add_idea(selected_user_id):
             'value': value,
             'added_by': added_by,  # Track who added the idea
             'bought_by': None,  # Initialize as not bought
-            'image_path': image_path  # Store the image URL here
+            'image_path': image_path,  # Store the image URL here
+            'date_added': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
 
         # Append the new idea to the list
@@ -1571,46 +1573,43 @@ def edit_login_message():
     current_message = read_env_variable("LOGIN_PAGE_MESSAGE") or "No account? Contact a family member to create an account."
     return render_template('edit_login_message.html', current_message=current_message)
 
-def delete_old_gift_ideas():
+def find_gift_ideas_to_delete(gift_ideas_data, bought_only, older_than_days):
+    threshold_time = datetime.now() - timedelta(days=older_than_days) if older_than_days else None
 
+    matches = []
+    for idea in gift_ideas_data:
+        if bought_only and not idea.get('bought_by'):
+            continue
+
+        if threshold_time:
+            # Age counts from the purchase date for bought ideas, otherwise from when the idea was added.
+            # Ideas without a known date are never considered old.
+            date_str = idea.get('date_bought') if idea.get('bought_by') else idea.get('date_added')
+            if not date_str or datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S') >= threshold_time:
+                continue
+
+        matches.append(idea)
+    return matches
+
+def delete_gift_ideas(bought_only, older_than_days):
+    gift_ideas_data = load_gift_ideas()
+
+    ids_to_delete = {idea['gift_idea_id'] for idea in find_gift_ideas_to_delete(gift_ideas_data, bought_only, older_than_days)}
+    save_gift_ideas([idea for idea in gift_ideas_data if idea['gift_idea_id'] not in ids_to_delete])
+
+    # Record the last execution time
+    last_execution_time = datetime.now().isoformat()
+    with open(Path(app.config['DATA'], 'last_execution_time.txt'), 'w') as time_file:
+        time_file.write(last_execution_time)
+
+    return len(ids_to_delete)
+
+def delete_old_gift_ideas():
     # Read the number of days from the environment variable
     threshold_days = int(read_env_variable("DELETE_DAYS", dotenv_path) or 30)
 
-    # Calculate the threshold time
-    threshold_time = datetime.now() - timedelta(days=threshold_days)
-
     try:
-        # Load gift ideas using the helper function
-        gift_ideas_data = load_gift_ideas()
-
-        # Prepare a list to hold the updated gift ideas
-        updated_gift_ideas = []
-        removed_count = 0
-
-        # Loop through each gift idea and check if it should be removed
-        for idea in gift_ideas_data:
-            if 'date_bought' in idea:
-                date_bought = datetime.strptime(idea['date_bought'], '%Y-%m-%d %H:%M:%S')
-
-                # If the gift idea's date_bought is older than the threshold, remove it
-                if date_bought < threshold_time:
-                    removed_count += 1
-                    continue  # Skip this gift idea
-
-            # Otherwise, keep this gift idea
-            updated_gift_ideas.append(idea)
-
-        # Save the updated list of gift ideas using the helper function
-        save_gift_ideas(updated_gift_ideas)
-
-        # Record the last execution time
-        last_execution_time = datetime.now().isoformat()
-        with open(Path(app.config['DATA'], 'last_execution_time.txt'), 'w') as time_file:
-            time_file.write(last_execution_time)
-
-        # Return the number of removed ideas
-        return removed_count
-
+        return delete_gift_ideas(bought_only=True, older_than_days=threshold_days)
     except Exception as e:
         print(f"Error: {e}")
         return 0  # Return 0 if an error occurs
@@ -1619,23 +1618,36 @@ def delete_old_gift_ideas():
 @admin_required
 def delete_old_gift_ideas_page():
     current_days = read_env_variable("DELETE_DAYS", dotenv_path) or 30
+    filters = {'bought_only': True, 'age_filter': True, 'days': current_days}
+
     if request.method == 'POST':
+        filters = {
+            'bought_only': request.form.get('bought_only') == 'on',
+            'age_filter': request.form.get('age_filter') == 'on',
+            'days': request.form.get('days', ''),
+        }
+
+        older_than_days = None
+        if filters['age_filter']:
+            try:
+                older_than_days = int(filters['days'])
+                if older_than_days < 1:
+                    raise ValueError
+            except ValueError:
+                flash(_("Invalid number of days entered. Please enter a valid number."), "danger")
+                return render_template('delete_old_gift_ideas.html', current_days=current_days, filters=filters)
+
+        if not filters['bought_only'] and not older_than_days:
+            flash(_("Select at least one filter."), "danger")
+            return render_template('delete_old_gift_ideas.html', current_days=current_days, filters=filters)
+
         try:
-            # Delete old gift ideas and get the count of deleted rows
-            deleted_count = delete_old_gift_ideas()
-
-            # Flash success message with the number of deleted rows
-            flash(_("%(count)s gift ideas older than the threshold have been successfully deleted.", count=deleted_count), "success")
-
-            # Render the result to the template
-            return render_template('delete_old_gift_ideas.html', deleted_count=deleted_count)
-
+            deleted_count = delete_gift_ideas(filters['bought_only'], older_than_days)
+            flash(_("%(count)s gift ideas have been deleted.", count=deleted_count), "success")
         except Exception as e:
             flash(_("Error deleting old gift ideas: %(error)s", error=e), "danger")
-            return render_template('delete_old_gift_ideas.html', deleted_count=0, error_message=str(e))
 
-    # GET request: Just display the page
-    return render_template('delete_old_gift_ideas.html', deleted_count=0, current_days=current_days)
+    return render_template('delete_old_gift_ideas.html', current_days=current_days, filters=filters)
 
 
 @app.route('/change_delete_days', methods=['GET', 'POST'])
