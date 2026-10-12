@@ -2098,6 +2098,33 @@ msgstr "Aankoop annuleren"
 msgid "Purchase completed"
 msgstr "Aankoop voltooid"
 
+msgid "Profile picture removed."
+msgstr "Profielfoto verwijderd."
+
+msgid "Please choose an image."
+msgstr "Kies een afbeelding."
+
+msgid "Invalid image file."
+msgstr "Ongeldig afbeeldingsbestand."
+
+msgid "Profile picture updated."
+msgstr "Profielfoto bijgewerkt."
+
+msgid "File is too large (max 10 MB)."
+msgstr "Het bestand is te groot (max. 10 MB)."
+
+msgid "Profile picture"
+msgstr "Profielfoto"
+
+msgid "Choose an image"
+msgstr "Kies een afbeelding"
+
+msgid "Upload"
+msgstr "Uploaden"
+
+msgid "Remove picture"
+msgstr "Foto verwijderen"
+
 #~ msgid "Delete Gift Ideas Older Than %(days)s Days"
 #~ msgstr "Cadeau-ideeën ouder dan %(days)s dagen verwijderen"
 

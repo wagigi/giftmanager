@@ -211,7 +211,7 @@
                         <div class="flex-1">
                             <div class="flex items-center mb-2">
                                 <!-- Display actual avatar image instead of placeholder -->
-                                <img src="{{ url_for('static', filename=list.avatar if list.avatar else 'icons/avatar1.png') }}" 
+                                <img src="{{ avatar_url(list.avatar) }}" 
                                      alt="{{ _('List Avatar') }}" 
                                      class="w-8 h-8 rounded-full object-cover mr-3"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -343,4 +343,4 @@
         });
     </script>
 </body>
-</html>
+</html>

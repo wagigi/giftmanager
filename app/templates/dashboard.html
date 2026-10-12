@@ -94,6 +94,16 @@
             width: 35px;
             height: 35px;
             margin-right: 10px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 8px;
         }
 
         .sidebar {
@@ -337,6 +347,7 @@
                 <!-- User Info -->
                 <div class="dropdown-container">
                     <h3 class="text-lg font-semibold text-primary mb-2">{{ _('Info') }}</h3>
+                    <img class="profile-avatar" src="{{ avatar_url(profile_info['avatar']) }}" alt="{{ _('Profile picture') }}">
                     <p class="text-secondary">{{ _('Name') }}: {{ profile_info['full_name'] }}</p>
                     <p class="text-secondary">{{ _('Birthday') }}: {{ profile_info['birthday'] }}</p>
                 </div>
@@ -361,6 +372,27 @@
                             
                             <button type="submit" class="rounded-blue-button mt-2">{{ _('Change Password') }}</button>
                         </form>
+                    </div>
+                </div>
+
+                <!-- Profile Picture Dropdown -->
+                <div class="dropdown-container">
+                    <div class="dropdown-header" onclick="toggleDropdown('avatarDropdown', 'avatarChevron')">
+                        <span>{{ _('Profile picture') }}</span>
+                        <i class="fa-solid fa-chevron-down dropdown-chevron" id="avatarChevron"></i>
+                    </div>
+                    <div class="dropdown-content" id="avatarDropdown">
+                        <form method="POST" action="/change_avatar" enctype="multipart/form-data">
+                            <label for="avatar_file">{{ _('Choose an image') }}</label>
+                            <input type="file" name="avatar_file" id="avatar_file" class="inputer" accept="image/*" required>
+                            
+                            <button type="submit" class="rounded-blue-button mt-2">{{ _('Upload') }}</button>
+                        </form>
+                        {% if profile_info['avatar'] and profile_info['avatar'].startswith('avatars/') %}
+                        <form method="POST" action="/change_avatar">
+                            <button type="submit" name="remove_avatar" value="1" class="rounded-blue-button mt-2">{{ _('Remove picture') }}</button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -448,7 +480,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {% for user in users %}
                         <div class="user-card-button" onclick="location.href='{{ url_for('user_gift_ideas', selected_user_id=user.username) }}'">
-                            <img class="user-avatar" src="{{ url_for('static', filename=user.avatar) }}">
+                            <img class="user-avatar" src="{{ avatar_url(user.avatar) }}" alt="">
                             <p class="text-center text-secondary">{{ user.full_name }}</p>
                         </div>
                         {% endfor %}
@@ -539,4 +571,4 @@
         }
     </script>
 </body>
-</html>
+</html>
