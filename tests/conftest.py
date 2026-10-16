@@ -190,7 +190,9 @@ def no_network(monkeypatch):
     def refuse(*args, **kwargs):
         raise RuntimeError("network access is disabled in tests")
     monkeypatch.setattr(socket.socket, "connect", refuse)
+    monkeypatch.setattr(socket.socket, "connect_ex", refuse)
     monkeypatch.setattr(socket, "create_connection", refuse)
+    monkeypatch.setattr(socket, "getaddrinfo", refuse)  # no DNS lookups either
 
 
 @pytest.fixture

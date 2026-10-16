@@ -1,4 +1,5 @@
 """Test data constants and helpers shared by the smoke tests (imported by conftest.py too)."""
+from urllib.parse import urlparse
 
 # Plain-text passwords of the users built in conftest.py.
 PASSWORDS = {
@@ -30,3 +31,9 @@ def flashes(client):
 def session_username(client):
     with client.session_transaction() as sess:
         return sess.get("username")
+
+
+def is_redirect_to(response, path):
+    """True if the response redirects to exactly this path (query string ignored)."""
+    return (response.status_code in (301, 302, 303, 307, 308)
+            and urlparse(response.headers["Location"]).path == path)

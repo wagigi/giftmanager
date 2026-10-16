@@ -5,16 +5,10 @@ test documents questionable behavior, the docstring says so.
 """
 from datetime import datetime, timedelta
 from unittest import mock
-from urllib.parse import urlparse
 
 import pytest
 
-from smoke_helpers import EXPIRED_TOKEN, SHARE_TOKEN, flashes, login, session_username
-
-
-def is_redirect_to(response, path):
-    return (response.status_code in (301, 302, 303, 307, 308)
-            and urlparse(response.headers["Location"]).path == path)
+from smoke_helpers import EXPIRED_TOKEN, SHARE_TOKEN, flashes, is_redirect_to, login, session_username
 
 
 # 1. Login ---------------------------------------------------------------------
@@ -581,16 +575,17 @@ def test_fetch_og_image_does_not_require_login(client, app_module):
 def test_secret_santa_draw_is_a_derangement(client, env):
     participants = ["alice", "bob", "carol"]
     login(client, "admin")
-    response = client.post(
-        "/secret_santa",
-        data={"participants": participants, "pool_name": "Xmas", "instructions": "Max 20"},
-    )
-    assert is_redirect_to(response, "/secret_santa_assignments")
+    for _ in range(20):  # the draw is random: repeat it so an occasional self-draw would show up
+        response = client.post(
+            "/secret_santa",
+            data={"participants": participants, "pool_name": "Xmas", "instructions": "Max 20"},
+        )
+        assert is_redirect_to(response, "/secret_santa_assignments")
 
-    assignments = {u["username"]: u["assigned_users"]["Xmas"] for u in env.users() if "assigned_users" in u}
-    assert set(assignments) == set(participants)
-    assert sorted(assignments.values()) == sorted(participants)  # a permutation
-    assert all(giver != target for giver, target in assignments.items())  # nobody draws themselves
+        assignments = {u["username"]: u["assigned_users"]["Xmas"] for u in env.users() if "assigned_users" in u}
+        assert set(assignments) == set(participants)
+        assert sorted(assignments.values()) == sorted(participants)  # a permutation
+        assert all(giver != target for giver, target in assignments.items())  # nobody draws themselves
     assert (env.data_dir / "santa_inst_Xmas.txt").read_text() == "Max 20"
 
 
