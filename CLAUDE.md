@@ -103,3 +103,7 @@ Commit both `.po` and compiled `.mo` files. `BABEL_DEFAULT_LOCALE` is `fr`; the 
 - Follow the existing style: plain functions in `app.py`, `flash(_('...'), category)` + `redirect(url_for(...))` after POSTs, load-modify-save of the whole JSON file.
 - When adding a new runtime setting, give it a default in `prepopulate_file(dotenv_path, ...)` if appropriate and read it with `read_env_variable`.
 - If you add static assets that should work offline, add them to `urlsToCache` in `app/static/sw.js` and bump `CACHE_NAME`.
+
+## Development process
+
+- Before opening any pull request, have the changes reviewed by an agent by running `/code-review` on the branch. Fix the findings that hold up (or note why one is dismissed) before creating the PR.
