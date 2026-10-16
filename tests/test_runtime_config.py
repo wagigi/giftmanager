@@ -346,3 +346,25 @@ def test_edit_email_settings_round_trips_and_keeps_blank_fields(client, env, con
     assert config_module.read_env_variable("MAILJET_API_KEY") == "old-key"  # blank: unchanged
     assert config_module.read_env_variable("MAILJET_API_SECRET") == TRICKY
     assert config_module.read_env_variable("SYSTEM_EMAIL") == "o'brien@example.com"
+
+
+def test_read_env_variable_reads_legacy_unescaped_quotes(env, config_module, client, make_client):
+    """Older versions wrote LOGIN_PAGE_MESSAGE='...' without escaping, which
+    python-dotenv cannot parse. Such lines keep their former value until saved again."""
+    env.env_file.write_text(env.env_file.read_text() + "LOGIN_PAGE_MESSAGE='Contactez l'administrateur'\n")
+    assert config_module.read_env_variable("LOGIN_PAGE_MESSAGE") == "Contactez l'administrateur"
+    assert config_module.read_env_variable("REORDERING") == "true"  # the other lines still parse
+    assert "Contactez l&#39;administrateur" in make_client().get("/login").get_data(as_text=True)
+
+    login(client, "admin")
+    client.post("/edit_login_message", data={"login_message": "C'est réparé"})
+    assert config_module.read_env_variable("LOGIN_PAGE_MESSAGE") == "C'est réparé"
+
+
+def test_login_oidc_button_follows_the_registered_client(client, app_module, monkeypatch):
+    """The OIDC button only shows when the OAuth client was registered with a
+    client ID at startup, even if os.environ was reloaded since."""
+    monkeypatch.setenv("OIDC_CLIENT_ID", "reloaded-but-not-registered")
+    assert "/login_oidc" not in client.get("/login").get_data(as_text=True)
+    monkeypatch.setitem(app_module.OIDC_STARTUP_SETTINGS, "OIDC_CLIENT_ID", "registered")
+    assert "/login_oidc" in client.get("/login").get_data(as_text=True)

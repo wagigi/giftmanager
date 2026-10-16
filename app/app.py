@@ -388,8 +388,9 @@ def login():
 
 
     # For GET requests, render the login page
-    oidc_client_id = os.getenv("OIDC_CLIENT_ID")  # Get OIDC Client ID
-    oidc_enabled = bool(oidc_client_id)  # Check if OIDC is enabled
+    # OIDC is enabled when the OAuth client was registered with a client ID at startup
+    # (not os.getenv: some admin pages reload .env into os.environ before a restart)
+    oidc_enabled = bool(OIDC_STARTUP_SETTINGS["OIDC_CLIENT_ID"])
     login_message = read_env_variable("LOGIN_PAGE_MESSAGE") or _l("No account? Contact a family member to create an account.")
     # If default login is disabled, render an OIDC-only login page
     if not enable_default_login:

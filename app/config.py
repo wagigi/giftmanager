@@ -75,5 +75,30 @@ def read_env_variable(key, default=None):
     if key in values:
         return values[key] or default
 
+    # Older versions of the email settings and login message pages wrote values with unescaped
+    # quotes, which python-dotenv cannot parse (it skips the line): read those lines as before
+    legacy_value = _read_unparsed_line(key)
+    if legacy_value is not None:
+        return legacy_value or default
+
     # Fallback to system environment
     return os.getenv(key, default)
+
+
+def _read_unparsed_line(key):
+    """Value of the first `key=...` line, read with the rules of the former hand-written parser
+    (outer quotes stripped, no escapes). Only used for lines python-dotenv could not parse."""
+    try:
+        with open(dotenv_path, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    current_key, value = line.split('=', 1)
+                    if current_key.strip() == key:
+                        value = value.strip()
+                        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                            value = value[1:-1]
+                        return value
+    except OSError:
+        pass
+    return None
