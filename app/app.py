@@ -1710,6 +1710,7 @@ def run_script():
 
 
 @app.route('/fetch_og_image', methods=['GET'])
+@login_required  # not guest_allowed: guests cannot add or edit ideas
 def get_og_image():
     url = request.args.get('url')
     if not url:

@@ -638,16 +638,21 @@ def test_fetch_og_image_requires_url(client):
     assert client.get("/fetch_og_image").status_code == 400
 
 
-def test_fetch_og_image_does_not_require_login(client, og_image_module):
-    """CURRENT BEHAVIOR (likely a security hole): /fetch_og_image has no
-    @login_required, so an anonymous visitor can make the server fetch any URL
-    (with TLS verification disabled), e.g. internal addresses (SSRF)."""
-    html = '<meta property="og:image" content="https://internal.example/x.png">'
-    with mock.patch.object(og_image_module.requests, "get", return_value=_fake_response(html)) as fake_get:
+def test_fetch_og_image_requires_login(client, og_image_module):
+    """Anonymous visitors could make the server fetch any URL (SSRF). TLS
+    verification is still disabled for logged-in users (known issue)."""
+    with mock.patch.object(og_image_module.requests, "get") as fake_get:
         response = client.get("/fetch_og_image", query_string={"url": "http://10.0.0.1/"})
-    assert response.status_code == 200
-    assert fake_get.call_args.args[0] == "http://10.0.0.1/"
-    assert fake_get.call_args.kwargs.get("verify") is False
+    assert is_redirect_to(response, "/login")
+    fake_get.assert_not_called()
+
+
+def test_fetch_og_image_refused_to_guests(client, og_image_module):
+    client.post("/guest_login", data={"password": "guestpass"})
+    with mock.patch.object(og_image_module.requests, "get") as fake_get:
+        response = client.get("/fetch_og_image", query_string={"url": "http://10.0.0.1/"})
+    assert is_redirect_to(response, "/dashboard")
+    fake_get.assert_not_called()
 
 
 # 11. Secret Santa --------------------------------------------------------------
