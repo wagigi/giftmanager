@@ -241,7 +241,8 @@ def test_recipient_mark_as_bought_does_not_reveal_buyer(client, env):
     login(client, "alice")
     client.get("/dashboard")  # consume the login flash message
     client.post("/mark_as_bought/2")
-    assert env.idea(2)["bought_by"] == "bob"
+    if env.idea(2)["bought_by"] != "bob":  # not an assert: raises=AssertionError must only match the leak
+        pytest.fail("precondition broken: /mark_as_bought overwrote the existing buyer")
     assert not any("bob" in message.lower() for _, message in flashes(client))
 
 
