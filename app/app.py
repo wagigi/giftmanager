@@ -668,6 +668,10 @@ def delete_idea(idea_id):
 
     # Find the idea by its ID
     idea = find_idea_by_id(gift_ideas_data, idea_id)
+    if not idea:
+        flash(_('Idea not found'), 'danger')
+        return '', 404
+
     shared_list = next((user for user in users if user['username'] == idea['user_id'] and user.get('shared_list')), None)
 
     if idea:
@@ -1032,6 +1036,9 @@ def edit_idea(idea_id):
     
     # Find the idea by its ID
     idea = find_idea_by_id(gift_ideas_data, idea_id)
+    if not idea:
+        flash(_('Idea not found'), 'danger')
+        return redirect(url_for('dashboard'))
 
     shared_list = next((user for user in users if user['username'] == idea['user_id'] and user.get('shared_list')), None)
 

@@ -193,15 +193,19 @@ def test_delete_idea_of_someone_else_is_refused(client, env):
     assert 1 in [i["gift_idea_id"] for i in env.ideas()]
 
 
-@pytest.mark.xfail(
-    reason="Bug: /delete_idea reads idea['user_id'] before checking that the idea exists, "
-           "so an unknown id raises TypeError (HTTP 500) instead of answering 403",
-    raises=TypeError,
-    strict=True,
-)
-def test_delete_unknown_idea(client):
+def test_delete_unknown_idea(client, env):
+    """Used to crash with a 500 (idea['user_id'] read before the existence check)."""
     login(client, "alice")
-    assert client.delete("/delete_idea/999").status_code == 403
+    assert client.delete("/delete_idea/999").status_code == 404
+    assert len(env.ideas()) == 5
+
+
+def test_edit_unknown_idea(client):
+    """Same missing existence check as /delete_idea (used to crash with a 500)."""
+    login(client, "alice")
+    client.get("/dashboard")  # consume the login flash message
+    assert is_redirect_to(client.get("/edit_idea/999"), "/dashboard")
+    assert [category for category, _ in flashes(client)] == ["danger"]
 
 
 # 6. Surprise rule ----------------------------------------------------------------
