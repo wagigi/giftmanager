@@ -29,13 +29,17 @@ case "$mode" in
       exit 0
     fi
     branch="$(git branch --show-current)"
+    [[ -n "$branch" ]] || exit 0
     # Only a review of the current branch counts: no target, or a target
     # naming this branch (e.g. "main...<branch>").
+    set -f
     set -- $args
+    set +f
     while (($#)); do
       case "$1" in
         low|medium|high|xhigh|max|ultra|--fix|--comment|--post|--no-post) ;;
-        --max-findings) shift ;;
+        --max-findings=*) ;;
+        --max-findings) (($# > 1)) && shift ;;
         "$branch"|*..."$branch"|*.."$branch") ;;
         *) exit 0 ;;
       esac
@@ -47,10 +51,11 @@ case "$mode" in
     ;;
   check)
     # Fail open fast for the vast majority of commands, before any jq/git.
-    [[ "$input" == *gh* && "$input" == *pr* ]] || exit 0
+    [[ "$input" == *gh* ]] || exit 0
     cmd="$(jq -r '.tool_input.command // empty' <<<"$input")"
-    # Ignore quoted text (commit messages, grep patterns, echo).
-    unquoted="$(tr '\n' ' ' <<<"$cmd" | sed -E "s/'[^']*'//g; s/\"[^\"]*\"//g")"
+    # Ignore quoted text (commit messages, grep patterns, echo) in a single
+    # left-to-right pass, and join backslash-continued lines.
+    unquoted="$(tr '\n' ' ' <<<"$cmd" | sed -E "s/\\\\ / /g; s/'[^']*'|\"[^\"]*\"//g")"
     grep -Eq '(^|[^[:alnum:]_-])gh([[:space:]]+-{1,2}[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+pr[[:space:]]+(create|new)([[:space:]]|$)' <<<"$unquoted" || exit 0
     cd "$(jq -r '.cwd // empty' <<<"$input" | grep . || echo "${CLAUDE_PROJECT_DIR:-.}")"
     head="$(git rev-parse HEAD)"
