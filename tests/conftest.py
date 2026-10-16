@@ -20,7 +20,7 @@ APP_DIR = Path(__file__).resolve().parent.parent / "app"
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
-from helpers import EXPIRED_TOKEN, PASSWORDS, SHARE_TOKEN
+from smoke_helpers import EXPIRED_TOKEN, PASSWORDS, SHARE_TOKEN
 
 ENV_TEMPLATE = """SECRET_KEY='test-secret-key'
 MAILJET_API_KEY=''
@@ -197,7 +197,11 @@ def env(tmp_path):
             os.environ.pop(key, None)
         os.environ["DATA_DIR"] = str(data_dir)
 
-        sys.modules.pop("app", None)  # fresh module, no globals left over from a previous test
+        # Fresh import of app and of any module it loaded from app/, so no
+        # import-time state (e.g. DATA_DIR) is left over from a previous test.
+        for name, mod in list(sys.modules.items()):
+            if Path(getattr(mod, "__file__", None) or "/").resolve().parent == APP_DIR:
+                del sys.modules[name]
         module = importlib.import_module("app")
         assert module.DATA_DIR == str(data_dir), "app was not imported against the temporary DATA_DIR"
 

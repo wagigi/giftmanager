@@ -4,14 +4,16 @@ These tests describe what the app does today, not what it should do. When a
 test documents questionable behavior, the docstring says so.
 """
 from unittest import mock
+from urllib.parse import urlparse
 
 import pytest
 
-from helpers import EXPIRED_TOKEN, SHARE_TOKEN, flashes, login, session_username
+from smoke_helpers import EXPIRED_TOKEN, SHARE_TOKEN, flashes, login, session_username
 
 
 def is_redirect_to(response, path):
-    return response.status_code in (301, 302, 303, 307, 308) and response.headers["Location"].endswith(path)
+    return (response.status_code in (301, 302, 303, 307, 308)
+            and urlparse(response.headers["Location"]).path == path)
 
 
 # 1. Login ---------------------------------------------------------------------
@@ -293,6 +295,20 @@ def test_guest_login_and_allowed_route(client):
     assert client.get("/user_gift_ideas/bob").status_code == 200
 
 
+def test_guest_can_open_other_family_list_by_url(client, env):
+    """CURRENT BEHAVIOR (likely a visibility hole): same missing family check
+    as for regular users, so the Smith family guest can read the Jones
+    family's list, buyers included, by URL."""
+    env.update_idea(4, bought_by="admin")
+    client.post("/guest_login", data={"password": "guestpass"})
+    client.get("/set_language/en")
+    response = client.get("/user_gift_ideas/carol")
+    assert response.status_code == 200
+    page = response.get_data(as_text=True)
+    assert "Carol own idea" in page
+    assert "Purchased by: Admin User" in page
+
+
 def test_guest_login_with_wrong_password(client):
     response = client.post("/guest_login", data={"password": "nope"})
     assert is_redirect_to(response, "/login")
@@ -382,6 +398,7 @@ def test_shared_link_mark_bought_and_not_bought(client, env):
     response = client.post(f"/shared/{SHARE_TOKEN}/mark_not_bought/1", json={"visitor_id": body["visitor_id"]})
     assert response.status_code == 200
     assert not env.idea(1)["bought_by"]
+    assert env.user("alice")["sharing"]["public_links"][0]["visitor_purchases"] == []
 
 
 def test_shared_link_mark_bought_refused_when_purchases_not_allowed(client, env):
