@@ -48,12 +48,16 @@ def send_email_to_buyer_via_mailjet(buyer_username, idea_name, message_subject):
                     ]
                 }
 
-                response = mailjet.send.create(data=data)
-
-                if response.status_code == 200:
-                    print('Email sent to buyer successfully')
+                # Best effort: a Mailjet failure must not prevent the deletion that triggered the email
+                try:
+                    response = mailjet.send.create(data=data)
+                except Exception as e:
+                    print(f'Failed to send email to buyer: {e}')
                 else:
-                    print('Failed to send email to buyer')
+                    if response.status_code == 200:
+                        print('Email sent to buyer successfully')
+                    else:
+                        print('Failed to send email to buyer')
             else:
                 print(f'Buyer email not found for username: {buyer_username}')
             break

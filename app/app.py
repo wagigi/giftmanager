@@ -17,7 +17,7 @@ from visibility import get_visible_users, get_visible_groups, can_view_list
 from mailer import send_email_to_buyer_via_mailjet
 from avatars import UPLOADED_AVATAR_PREFIX, AVATAR_SIZE, avatar_url, delete_uploaded_avatar
 from og_image import fetch_og_image
-from cleanup import delete_gift_ideas, delete_old_gift_ideas
+from cleanup import delete_gift_ideas, delete_old_gift_ideas, get_delete_days
 from currency import get_currency_symbol, get_currency_position, format_currency
 from sharing import generate_share_token, generate_share_url, link_sharing_enabled, find_share_link
 
@@ -1412,7 +1412,7 @@ def edit_login_message():
 @app.route('/delete_old_gift_ideas', methods=['GET', 'POST'])
 @admin_required
 def delete_old_gift_ideas_page():
-    current_days = read_env_variable("DELETE_DAYS", dotenv_path) or 30
+    current_days = get_delete_days()
     filters = {'bought_only': True, 'age_filter': True, 'days': current_days}
 
     if request.method == 'POST':
@@ -1455,6 +1455,8 @@ def change_delete_days():
         if new_days:
             try:
                 new_days = int(new_days)
+                if new_days < 1:
+                    raise ValueError
 
                 # Update the .env file with the new value
                 set_key(dotenv_path, "DELETE_DAYS", str(new_days))  # Update the DELETE_DAYS value
@@ -1468,7 +1470,7 @@ def change_delete_days():
             flash(_("Please provide a value for the number of days."), "danger")
 
     # Get the current value of the DELETE_OLD_GIFTS_DAYS from the .env file
-    current_days = read_env_variable("DELETE_DAYS", dotenv_path) or 30
+    current_days = get_delete_days()
     return render_template('delete_old_gift_ideas.html', current_days=current_days)
 
 @app.route('/setupadmin', methods=['GET', 'POST'])
