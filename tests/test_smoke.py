@@ -542,6 +542,14 @@ def test_fetch_og_image_returns_absolute_image_url(client, app_module):
     assert fake_get.call_args.args[0] == "https://shop.example/item/42"
 
 
+def test_fetch_og_image_falls_back_to_image_src(client, app_module):
+    login(client, "alice")
+    html = '<html><head><link rel="image_src" href="/a.jpg"></head></html>'
+    with mock.patch.object(app_module.requests, "get", return_value=_fake_response(html)):
+        response = client.get("/fetch_og_image", query_string={"url": "https://shop.example/item/42"})
+    assert response.get_json() == {"og_image_url": "https://shop.example/a.jpg"}
+
+
 def test_fetch_og_image_without_image(client, app_module):
     login(client, "alice")
     with mock.patch.object(app_module.requests, "get", return_value=_fake_response("<html></html>")):
@@ -563,6 +571,7 @@ def test_fetch_og_image_does_not_require_login(client, app_module):
         response = client.get("/fetch_og_image", query_string={"url": "http://10.0.0.1/"})
     assert response.status_code == 200
     assert fake_get.call_args.args[0] == "http://10.0.0.1/"
+    assert fake_get.call_args.kwargs.get("verify") is False
 
 
 # 11. Secret Santa --------------------------------------------------------------
