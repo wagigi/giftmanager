@@ -841,6 +841,12 @@ def mark_as_bought(idea_id):
     if idea and not can_view_list(current_user, idea['user_id'], users):
         idea = None
 
+    if idea and idea['user_id'] == session['username']:
+        # Surprise rule: the recipient must not learn whether (or by whom) their own idea was bought,
+        # so the answer is the same in both cases. (The UI offers no button for this.)
+        flash(_('You cannot mark your own gift ideas as bought.'), 'warning')
+        return redirect(url_for('my_ideas'))
+
     if idea:
         if not idea['bought_by']:
             # Mark the idea as bought by the current user
@@ -2123,6 +2129,13 @@ def shared_list(token):
         if idea['user_id'] == share_owner['username']
     ]
     
+    # Surprise rule: when the list owner opens their own link while logged in, show it like /my_ideas:
+    # only the ideas they added themselves, nothing bought, and no purchase buttons.
+    if session.get('username') == share_owner['username']:
+        user_gift_ideas = [dict(idea, bought_by=None) for idea in user_gift_ideas
+                           if idea.get('added_by') == share_owner['username']]
+        active_link = dict(active_link, allow_purchases=False)
+
     # Sort by priority
     user_gift_ideas.sort(key=lambda x: (x.get('priority', float('inf')), x['gift_idea_id']))
     
@@ -2151,7 +2164,8 @@ def mark_shared_bought(token, idea_id):
     if not usable:
         return jsonify({'error': _('Share link not found or expired')}), 404
     
-    if not active_link.get('allow_purchases', False):
+    # The logged-in list owner cannot buy from their own link (the answer would reveal what is bought)
+    if not active_link.get('allow_purchases', False) or session.get('username') == share_owner['username']:
         return jsonify({'error': _('Purchases not allowed for this share link')}), 403
     
     # Find the gift idea

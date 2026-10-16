@@ -281,20 +281,19 @@ def test_recipient_my_ideas_hides_buyer_and_bought_idea(client):
     assert "2026-01-02" not in page  # date_bought
 
 
-@pytest.mark.xfail(
-    reason="Bug (surprise rule): when the recipient POSTs /mark_as_bought on her own idea "
-           "that is already bought, the warning flash names the buyer (the UI offers no button "
-           "for this, it takes a hand-crafted POST)",
-    raises=AssertionError,
-    strict=True,
-)
 def test_recipient_mark_as_bought_does_not_reveal_buyer(client, env):
     login(client, "alice")
     client.get("/dashboard")  # consume the login flash message
-    client.post("/mark_as_bought/2")
-    if env.idea(2)["bought_by"] != "bob":  # not an assert: raises=AssertionError must only match the leak
-        pytest.fail("precondition broken: /mark_as_bought overwrote the existing buyer")
-    assert not any("bob" in message.lower() for _, message in flashes(client))
+    response = client.post("/mark_as_bought/2")
+    assert env.idea(2)["bought_by"] == "bob"
+    bought_answer = (response.headers["Location"], flashes(client))
+    assert not any("bob" in message.lower() for _, message in bought_answer[1])
+
+    # Same answer for an idea of hers that is not bought: nothing tells them apart
+    client.get("/dashboard")  # consume the flash message
+    response = client.post("/mark_as_bought/1")
+    assert env.idea(1)["bought_by"] is None
+    assert (response.headers["Location"], flashes(client)) == bought_answer
 
 
 def test_recipient_self_list_redirects_to_my_ideas(client):
@@ -468,15 +467,30 @@ def test_shared_link_renders(client):
     assert "Alice own idea" in response.get_data(as_text=True)
 
 
-def test_owner_can_open_own_share_link_and_see_buyers(client, env):
-    """CURRENT BEHAVIOR (likely breaks the surprise rule): /shared/<token> is
-    public, so the list owner can open her own link, and the page prints
-    'Purchased by <full name>' for every bought idea."""
+def test_owner_opening_own_share_link_sees_no_surprise(client, env):
+    """When the logged-in owner opens her own link, the page is shown like
+    /my_ideas: only her own ideas, nothing marked bought, no purchase buttons."""
+    env.update_idea(1, bought_by="visitor:Uncle Joe", visitor_id="v1")
     login(client, "alice")
+    client.get("/set_language/en")
+    page = client.get(f"/shared/{SHARE_TOKEN}").get_data(as_text=True)
+    assert "Alice own idea" in page and "Alice second idea" in page
+    assert "Secret telescope" not in page  # added by bob
+    assert "Purchased by" not in page and "Uncle Joe" not in page and "Bob Smith" not in page
+    assert "I Purchased This" not in page and "Cancel Purchase" not in page
+
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/5", json={"visitor_name": "Alice"})
+    assert response.status_code == 403
+    assert env.idea(5)["bought_by"] is None
+
+
+def test_share_link_still_shows_purchases_to_visitors(client):
+    login(client, "bob")  # logged in, but not the owner
     client.get("/set_language/en")
     page = client.get(f"/shared/{SHARE_TOKEN}").get_data(as_text=True)
     assert "Secret telescope" in page
     assert "Purchased by: Bob Smith" in page
+    assert "I Purchased This" in page
 
 
 def test_shared_link_unknown_token(client):
