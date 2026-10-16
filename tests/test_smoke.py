@@ -48,7 +48,7 @@ def test_login_with_unknown_user_does_not_open_session(client):
 
 
 def test_shared_list_account_cannot_log_in(client):
-    response = login(client, "shared_smith", "")
+    response = login(client, "shared_smith")  # correct password, refused by the shared_list guard
     assert response.status_code == 200
     assert session_username(client) is None
 
@@ -176,7 +176,8 @@ def test_buyer_sees_purchase_on_recipient_list(client):
 
 def test_recipient_my_ideas_hides_buyer_and_bought_idea(client):
     """Idea 2 is for alice, added and bought by bob. /my_ideas only lists ideas
-    alice added herself, so neither the idea nor bob shows up."""
+    alice added herself, so neither the idea nor bob shows up. (Ideas alice
+    added herself and that get bought are covered by the before/after test.)"""
     login(client, "alice")
     response = client.get("/my_ideas")
     assert response.status_code == 200
@@ -309,6 +310,16 @@ def test_shared_link_renders(client):
     assert "Alice own idea" in response.get_data(as_text=True)
 
 
+def test_owner_can_open_own_share_link_and_see_buyers(client, env):
+    """CURRENT BEHAVIOR (likely breaks the surprise rule): /shared/<token> is
+    public, so the list owner can open her own link, and the page prints
+    'Purchased by <full name>' for every bought idea."""
+    login(client, "alice")
+    page = client.get(f"/shared/{SHARE_TOKEN}").get_data(as_text=True)
+    assert "Secret telescope" in page
+    assert "Bob Smith" in page
+
+
 def test_shared_link_unknown_token(client):
     assert client.get("/shared/does-not-exist").status_code == 404
 
@@ -378,6 +389,7 @@ def test_shared_link_cancel_purchase_of_unbought_idea_is_refused(client, env):
 @pytest.mark.xfail(
     reason="Bug: /shared/<token>/mark_bought is not gated by ENABLE_LINK_SHARING, "
            "visitors can still mark items bought when link sharing is disabled",
+    raises=AssertionError,
     strict=True,
 )
 def test_shared_link_mark_bought_refused_when_link_sharing_disabled(client, env):
@@ -385,6 +397,21 @@ def test_shared_link_mark_bought_refused_when_link_sharing_disabled(client, env)
     response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1", json={"visitor_name": "Uncle Joe"})
     assert response.status_code != 200
     assert env.idea(1)["bought_by"] is None
+
+
+@pytest.mark.xfail(
+    reason="Bug: /shared/<token>/mark_not_bought is not gated by ENABLE_LINK_SHARING, "
+           "visitors can still cancel purchases when link sharing is disabled",
+    raises=AssertionError,
+    strict=True,
+)
+def test_shared_link_mark_not_bought_refused_when_link_sharing_disabled(client, env):
+    visitor_id = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1",
+                             json={"visitor_name": "Uncle Joe"}).get_json()["visitor_id"]
+    env.set_env("ENABLE_LINK_SHARING", "false")
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_not_bought/1", json={"visitor_id": visitor_id})
+    assert response.status_code != 200
+    assert env.idea(1)["bought_by"] == "visitor:Uncle Joe"
 
 
 # 10. og:image preview ----------------------------------------------------------
@@ -451,13 +478,17 @@ def test_secret_santa_draw_is_a_derangement(client, env):
 def test_secret_santa_assignment_visible_to_participant(client, env, make_client):
     login(client, "admin")
     client.post("/secret_santa", data={"participants": ["alice", "bob", "carol"], "pool_name": "Xmas"})
-    target = env.user(env.user("alice")["assigned_users"]["Xmas"])["full_name"]
+    target_username = env.user("alice")["assigned_users"]["Xmas"]
+    target = env.user(target_username)["full_name"]
+    other = env.user(({"bob", "carol"} - {target_username}).pop())["full_name"]
 
     participant = make_client()
     login(participant, "alice")
     response = participant.get("/secret_santa_assignments")
     assert response.status_code == 200
-    assert target in response.get_data(as_text=True)
+    page = response.get_data(as_text=True)
+    assert target in page
+    assert other not in page  # only alice's own draw is shown
 
 
 # 12. Language ------------------------------------------------------------------

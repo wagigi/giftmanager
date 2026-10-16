@@ -27,6 +27,7 @@ PASSWORDS = {
     "bob": "bobpass",
     "carol": "carolpass",
     "guest_smith": "guestpass",
+    "shared_smith": "sharedpass",  # shared lists have a hash too, login must still refuse them
 }
 
 SHARE_TOKEN = "valid-token"
@@ -42,6 +43,8 @@ OIDC_CLIENT_SECRET=''
 OIDC_SERVER_METADATA_URL=''
 OIDC_LOGOUT_URL=''
 ENABLE_DEFAULT_LOGIN='true'
+ENABLE_AUTO_REGISTRATION='false'
+ENABLE_SELF_REGISTRATION='false'
 ENABLE_LINK_SHARING='true'
 REORDERING='true'
 IMGENABLED='false'
@@ -54,8 +57,17 @@ def cached_password_hash(password):
     return sys.modules["app"].password_hash(password)
 
 
-# Keys that load_dotenv() copies into os.environ on import.
-ENV_KEYS = [line.split("=", 1)[0] for line in ENV_TEMPLATE.splitlines() if "=" in line]
+# Every setting app.py reads. They are removed from os.environ before import,
+# because read_env_variable() and os.getenv() fall back to the process
+# environment for keys missing from the test .env.
+ENV_KEYS = [
+    "SECRET_KEY", "MAILJET_API_KEY", "MAILJET_API_SECRET", "SYSTEM_EMAIL", "DELETE_DAYS",
+    "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_SERVER_METADATA_URL", "OIDC_LOGOUT_URL",
+    "PRIMARY_OIDC_FIELD", "SECONDARY_OIDC_FIELD", "PRIMARY_DB_FIELD", "SECONDARY_DB_FIELD",
+    "ENABLE_AUTO_REGISTRATION", "ENABLE_DEFAULT_LOGIN", "LOGIN_PAGE_MESSAGE", "REORDERING",
+    "IMGENABLED", "ENABLE_LINK_SHARING", "ENABLE_SELF_REGISTRATION", "JOINING_CODE",
+    "CURRENCY_SYMBOL", "CURRENCY_POSITION",
+]
 
 
 def _fmt(dt):
