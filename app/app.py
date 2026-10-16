@@ -1,31 +1,27 @@
 from flask import Flask, abort, render_template, request, redirect, url_for, session, flash, make_response, get_flashed_messages, request, jsonify, send_from_directory
-import requests
-from functools import wraps
-from mailjet_rest import Client
 from datetime import datetime, timedelta
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
 from authlib.integrations.flask_client import OAuth
 import json, secrets
 import os
 import uuid
 import random
 from pathlib import Path
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from dotenv import load_dotenv, set_key, dotenv_values
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from PIL import Image, ImageOps, UnidentifiedImageError
 from flask_babel import Babel, _, lazy_gettext as _l, get_locale as current_babel_locale
 
-# Directory holding .env, users.json, ideas.json and Secret Santa files (set to /app/data in Docker)
-DATA_DIR = os.getenv("DATA_DIR", os.path.dirname(os.path.abspath(__file__)))
-dotenv_path = os.path.join(DATA_DIR, '.env') # Load the .env file from the data directory
-load_dotenv(dotenv_path)
+from config import DATA_DIR, dotenv_path, read_env_variable, SUPPORTED_LANGUAGES
+from storage import load_users, save_users, load_gift_ideas, save_gift_ideas, find_idea_by_id, get_full_name
+from auth import ph, password_hash, verify_password, login_required, admin_required, guest_allowed
+from visibility import get_visible_users, get_visible_groups
+from mailer import send_email_to_buyer_via_mailjet
+from avatars import UPLOADED_AVATAR_PREFIX, AVATAR_SIZE, avatar_url, delete_uploaded_avatar
+from og_image import fetch_og_image
+from cleanup import delete_gift_ideas, delete_old_gift_ideas
+from currency import get_currency_symbol, get_currency_position, format_currency
+from sharing import generate_share_token, generate_share_url
 
 app = Flask(__name__)
-
-SUPPORTED_LANGUAGES = {'en': 'English', 'fr': 'Français', 'nl': 'Nederlands', 'sv': 'Svenska'}
 
 def get_locale():
     if session.get('lang') in SUPPORTED_LANGUAGES:
@@ -46,182 +42,12 @@ babel = Babel(app, locale_selector=get_locale) # Initialize Flask-Babel
 def inject_languages():
     return {'supported_languages': SUPPORTED_LANGUAGES, 'current_locale': str(current_babel_locale())}
 
-def get_mailjet_client():
-    """Return a Mailjet client, or None if the API keys are not configured.
-    Read at call time so keys saved from the email settings page apply without restart."""
-    api_key = os.getenv("MAILJET_API_KEY")
-    api_secret = os.getenv("MAILJET_API_SECRET")
-    if not api_key or not api_secret:
-        return None
-    return Client(auth=(api_key, api_secret), version='v3.1')
-
-ph = PasswordHasher()
-
-def prepopulate_file(filename, data):
-    """Create a data file with default content on first start (e.g. an empty Docker volume)."""
-    if Path(filename).exists():
-        return
-    Path(filename).parent.mkdir(exist_ok=True, parents=True)
-    with open(filename, 'w') as file:
-        file.write(data)
-
-prepopulate_file(app.config['IDEAS_FILE'], """
-        [
-            {
-                "user_id": "demo",
-                "gift_idea_id": 1,
-                "gift_name": "Default",
-                "description": "dont delete",
-                "link": "icbest.ca",
-                "added_by": "demo",
-                "bought_by": ""
-            }
-        ]""")
-
-prepopulate_file(app.config['USERS_FILE'], """
-        [
-        ]""")
-
-prepopulate_file(dotenv_path, """
-MAILJET_API_KEY=''
-MAILJET_API_SECRET=''
-SECRET_KEY='changethis'
-SYSTEM_EMAIL=''
-DELETE_DAYS='30'
-OIDC_CLIENT_ID=''
-OIDC_CLIENT_SECRET=''
-OIDC_SERVER_METADATA_URL=''
-OIDC_LOGOUT_URL=''
-PRIMARY_OIDC_FIELD='email'
-SECONDARY_OIDC_FIELD='preferred_username'
-PRIMARY_DB_FIELD='email'
-SECONDARY_DB_FIELD='username'
-ENABLE_AUTO_REGISTRATION='false'
-LOGIN_PAGE_MESSAGE='No account? Contact a family member to create an account!'
-ENABLE_DEFAULT_LOGIN='true'
-REORDERING='true'
-IMGENABLED='false'
-""")
-
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
-
 @app.route('/set_language/<lang_code>')
 def set_language(lang_code):
     if lang_code in SUPPORTED_LANGUAGES:
         session['lang'] = lang_code
     return redirect(request.referrer or url_for('index'))
 
-
-def read_env_variable(key, default=None):
-    """Read environment variable from .env file with proper defaults"""
-    # Define the path here to avoid the default parameter issue
-    env_path = dotenv_path
-    
-    try:
-        with open(env_path, 'r') as file:
-            for line in file:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    current_key, value = line.split('=', 1)
-                    if current_key.strip() == key:
-                        value = value.strip()
-                        # Remove quotes
-                        if value and ((value[0] == '"' and value[-1] == '"') or (value[0] == "'" and value[-1] == "'")):
-                            value = value[1:-1]
-                        return value if value else default
-    except FileNotFoundError:
-        pass  # .env file doesn't exist, that's okay
-    except Exception as e:
-        print(f"Error reading .env file: {e}")
-    
-    # Fallback to system environment
-    return os.getenv(key, default)
-
-
-def load_gift_ideas():
-    with open(app.config['IDEAS_FILE'], 'r') as file:
-        return json.load(file)
-
-def save_gift_ideas(gift_ideas):
-    with open(app.config['IDEAS_FILE'], 'w') as file:
-        json.dump(gift_ideas, file, indent=4)
-
-def load_users():
-    with open(app.config['USERS_FILE'], 'r') as file:
-        return json.load(file)
-
-def save_users(users):
-    with open(app.config['USERS_FILE'], 'w') as file:
-        json.dump(users, file, indent=4)
-
-
-# Define a decorator for requiring authentication
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'username' not in session:
-            flash(_('Please log in first.'), 'warning')
-            return redirect(url_for('login'))
-        
-        # Check if user is a guest and route doesn't allow guests
-        if is_guest_user(session['username']):
-            # Check if the route has @guest_allowed decorator
-            if not getattr(f, '_guest_allowed', False):
-                flash(_('This feature is not available for guest users.'), 'danger')
-                return redirect(url_for('dashboard'))
-        
-        return f(*args, **kwargs)
-    return decorated_function
-
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Check if the user is logged in
-        if 'username' not in session:
-            flash(_('Please log in first.'), 'warning')
-            return redirect(url_for('login'))
-
-        # Load users from the JSON file
-        users = load_users()
-
-        # Find the user based on the username stored in the session
-        user = next((u for u in users if u['username'] == session['username']), None)
-
-        # Check if the user exists and is an admin
-        if not user or not user.get('admin'):
-            flash(_('Admin access required.'), 'danger')
-            return redirect(url_for('dashboard'))
-
-        # Continue to the original function if the user is an admin
-        return f(*args, **kwargs)
-    
-    return decorated_function
-
-def is_guest_user(username):
-    """Check if a user is a guest"""
-    users = load_users()
-    user = next((u for u in users if u['username'] == username), None)
-    return user and user.get('guest', False)
-
-def guest_allowed(f):
-    """Decorator to allow guest users access to specific routes"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'username' not in session:
-            flash(_('Please log in first.'), 'warning')
-            return redirect(url_for('login'))
-        
-        # Check if user is a guest
-        if is_guest_user(session['username']):
-            return f(*args, **kwargs)
-        else:
-            # Regular users can always access guest-allowed routes
-            return f(*args, **kwargs)
-    
-    # Mark this function as guest allowed
-    decorated_function._guest_allowed = True
-    return decorated_function
 
 @app.route('/manifest.json')
 def manifest():
@@ -263,24 +89,6 @@ def change_email():
     flash(_('Email updated successfully.'), 'success')
     return redirect(url_for('dashboard'))
 
-
-UPLOADED_AVATAR_PREFIX = 'avatars/'
-AVATAR_SIZE = 256  # Uploaded pictures are cropped to a square of this size
-
-def avatar_url(avatar):
-    """Return the URL of a user's avatar, whether built-in (static) or uploaded."""
-    if avatar and avatar.startswith(UPLOADED_AVATAR_PREFIX):
-        return url_for('uploaded_avatar', filename=avatar[len(UPLOADED_AVATAR_PREFIX):])
-    return url_for('static', filename=avatar or 'icons/avatar1.png')
-
-def delete_uploaded_avatar(avatar):
-    """Remove an uploaded avatar file from disk (built-in avatars are left alone)."""
-    if avatar and avatar.startswith(UPLOADED_AVATAR_PREFIX):
-        filename = os.path.basename(avatar)
-        try:
-            Path(app.config['AVATARS_DIR'], filename).unlink(missing_ok=True)
-        except OSError:
-            pass
 
 @app.route('/avatars/<filename>')
 @login_required
@@ -354,22 +162,6 @@ def change_avatar():
 def request_too_large(error):
     flash(_('File is too large (max 10 MB).'), 'profile')
     return redirect(request.referrer or url_for('dashboard'))
-
-
-def get_currency_symbol():
-    return read_env_variable("CURRENCY_SYMBOL", "$")
-
-def get_currency_position():
-    return read_env_variable("CURRENCY_POSITION", "before")
-
-def format_currency(amount):
-    symbol = get_currency_symbol()
-    position = get_currency_position()
-    
-    if position == 'after':
-        return f"{amount}{symbol}"
-    else:  # before (default)
-        return f"{symbol}{amount}"
 
 
 @app.context_processor
@@ -904,57 +696,6 @@ def delete_idea(idea_id):
 
     return '', 403  # Return a response with HTTP status code 403 (forbidden)
 
-def get_user_email_by_username(username):
-    # Use the helper function to load users
-    users = load_users()
-
-    # Find the user by username
-    user = next((u for u in users if u['username'] == username), None)
-    return user.get('email') if user else None
-
-def send_email_to_buyer_via_mailjet(buyer_username, idea_name, message_subject):
-    # Find the idea bought by the buyer
-    gift_ideas_data = load_gift_ideas()
-    for idea in gift_ideas_data:
-        if idea.get('bought_by') == buyer_username:
-            buyer_email = get_user_email_by_username(buyer_username)
-            mailjet = get_mailjet_client()
-
-            if not mailjet:
-                print('Mailjet API keys not configured, email not sent')
-            elif buyer_email:
-                text_part = _("This idea, '%(name)s', has been deleted but you already BOUGHT IT.", name=idea_name)
-
-                # Send an email to the buyer using Mailjet
-                data = {
-                    'Messages': [
-                        {
-                            'From': {
-                                'Email': os.getenv("SYSTEM_EMAIL"),  # Your sender email address
-                                'Name': _('GiftManager'),
-                            },
-                            'To': [
-                                {
-                                    'Email': buyer_email,  # Buyer's email
-                                    'Name': _('Buyer Name'),
-                                },
-                            ],
-                            'Subject': message_subject,
-                            'TextPart': text_part,
-                        }
-                    ]
-                }
-
-                response = mailjet.send.create(data=data)
-
-                if response.status_code == 200:
-                    print('Email sent to buyer successfully')
-                else:
-                    print('Failed to send email to buyer')
-            else:
-                print(f'Buyer email not found for username: {buyer_username}')
-            break
-
 @app.route('/logout')
 def logout():
     session.clear()  # Clear all session data
@@ -962,48 +703,6 @@ def logout():
     expires = datetime.utcnow() + timedelta(seconds=5)
     response.set_cookie('session', '', expires=expires)  # Set the session cookie to expire in 5 seconds
     return response
-
-
-def get_visible_users(current_user, users):
-    """Return the users whose lists (and profile pictures) current_user is allowed to see, based on groups."""
-    is_guest = current_user.get('guest', False)
-    visible_users = []
-    
-    if is_guest:
-        # Handle guest user access
-        access_type = current_user.get('access_type', 'family')
-        
-        if access_type == 'family':
-            # Show users in guest's assigned groups (including guest groups)
-            guest_groups = current_user.get('groups', [])
-            visible_users = [
-                user for user in users
-                if user.get('groups') and any(group in guest_groups for group in user['groups'])
-                and not user.get('guest')  # Don't show other guests
-            ]
-        else:  # people access
-            # Show specific users assigned to guest
-            access_users = current_user.get('access_users', [])
-            visible_users = [
-                user for user in users
-                if user['username'] in access_users and not user.get('guest')
-            ]
-    else:
-        # Regular user logic - SIMPLE VERSION
-        current_user_groups = current_user.get('groups', [])
-        
-        # If current user has no groups, show all non-guest users
-        if not current_user_groups:
-            visible_users = [user for user in users if not user.get('guest')]
-        else:
-            # If current user has groups, show users who share groups OR have no groups
-            visible_users = [
-                user for user in users
-                if (not user.get('groups') or any(group in current_user_groups for group in user.get('groups', [])))
-                and not user.get('guest')
-            ]
-
-    return visible_users
 
 
 @app.route('/dashboard')
@@ -1113,16 +812,6 @@ def change_password():
     flash(_('Password successfully changed'), 'success')
     return redirect(url_for('dashboard'))
 
-def find_idea_by_id(ideas, idea_id):
-    # Iterate through the list of ideas
-    for idea in ideas:
-        # If the gift_idea_id matches, return the idea
-        if idea['gift_idea_id'] == idea_id:
-            return idea
-    # Return None if no matching idea is found
-    return None
-
-
 @app.route('/mark_as_bought/<int:idea_id>', methods=['POST'])
 @login_required
 @guest_allowed
@@ -1196,14 +885,6 @@ def bought_items():
         item['recipient_name'] = get_full_name(item['user_id'])
 
     return render_template('bought_items.html', bought_items=bought_items)
-
-
-def get_full_name(username):
-    users = load_users()  # Load the users from the JSON file
-    for user in users:
-        if user['username'] == username:
-            return user.get('full_name', username)  # Return the full name or fallback to username
-    return username  # If no match found, return the username itself
 
 
 @app.route('/user_gift_ideas/<path:selected_user_id>')
@@ -1392,18 +1073,6 @@ def edit_idea(idea_id):
         flash(_('Idea not found'), 'danger')
 
     return redirect(url_for('dashboard'))
-
-
-# Hash the password using Argon2
-def password_hash(password):
-    return ph.hash(password)
-
-# Verify the hashed password
-def verify_password(hash, password):
-    try:
-        return ph.verify(hash, password)
-    except VerifyMismatchError:
-        return False
 
 
 @app.route('/secret_santa', methods=['GET', 'POST'])
@@ -1687,47 +1356,6 @@ def edit_login_message():
     # Fetch the current login message directly from .env
     current_message = read_env_variable("LOGIN_PAGE_MESSAGE") or "No account? Contact a family member to create an account."
     return render_template('edit_login_message.html', current_message=current_message)
-
-def find_gift_ideas_to_delete(gift_ideas_data, bought_only, older_than_days):
-    threshold_time = datetime.now() - timedelta(days=older_than_days) if older_than_days else None
-
-    matches = []
-    for idea in gift_ideas_data:
-        if bought_only and not idea.get('bought_by'):
-            continue
-
-        if threshold_time:
-            # Age counts from the purchase date for bought ideas, otherwise from when the idea was added.
-            # Ideas without a known date are never considered old.
-            date_str = idea.get('date_bought') if idea.get('bought_by') else idea.get('date_added')
-            if not date_str or datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S') >= threshold_time:
-                continue
-
-        matches.append(idea)
-    return matches
-
-def delete_gift_ideas(bought_only, older_than_days):
-    gift_ideas_data = load_gift_ideas()
-
-    ids_to_delete = {idea['gift_idea_id'] for idea in find_gift_ideas_to_delete(gift_ideas_data, bought_only, older_than_days)}
-    save_gift_ideas([idea for idea in gift_ideas_data if idea['gift_idea_id'] not in ids_to_delete])
-
-    # Record the last execution time
-    last_execution_time = datetime.now().isoformat()
-    with open(Path(app.config['DATA'], 'last_execution_time.txt'), 'w') as time_file:
-        time_file.write(last_execution_time)
-
-    return len(ids_to_delete)
-
-def delete_old_gift_ideas():
-    # Read the number of days from the environment variable
-    threshold_days = int(read_env_variable("DELETE_DAYS", dotenv_path) or 30)
-
-    try:
-        return delete_gift_ideas(bought_only=True, older_than_days=threshold_days)
-    except Exception as e:
-        print(f"Error: {e}")
-        return 0  # Return 0 if an error occurs
 
 @app.route('/delete_old_gift_ideas', methods=['GET', 'POST'])
 @admin_required
@@ -2044,42 +1672,6 @@ def run_script():
     
 
 
-def fetch_og_image(url):
-    try:
-        response = requests.get(url, verify=False)
-        response.raise_for_status()  # Raise an error for bad status codes
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Try to get the og:image tag
-        og_image = soup.find('meta', property='og:image')
-        if og_image:
-            image_url = og_image.get('content')
-            # Convert relative URL to absolute URL if necessary
-            if not image_url.startswith('http'):
-                image_url = urljoin(url, image_url)
-            return image_url
-
-        # Fallback to twitter:image if og:image is not found
-        twitter_image = soup.find('meta', attrs={'name': 'twitter:image'})
-        if twitter_image:
-            image_url = twitter_image.get('content')
-            if not image_url.startswith('http'):
-                image_url = urljoin(url, image_url)
-            return image_url
-
-        # Fallback to image_src if og:image and twitter:image are not found
-        image_src = soup.find('link', rel='image_src')
-        if image_src:
-            image_url = image_src.get('href')
-            if not image_url.startswith('http'):
-                image_url = urljoin(url, image_url)
-            return image_url
-
-        return None  # No image found
-    except Exception as e:
-        print(f"Error fetching OG image: {e}")
-        return None
-
 @app.route('/fetch_og_image', methods=['GET'])
 def get_og_image():
     url = request.args.get('url')
@@ -2203,16 +1795,6 @@ def guest_login():
     
     flash(_('Invalid guest password'), 'login_error')
     return redirect(url_for('login'))
-
-def get_visible_groups(users):
-    """Get all groups except guest private families"""
-    all_groups = set()
-    for user in users:
-        for group in user.get('groups', []):
-            # Exclude guest private families (they start with 'guest_')
-            if not group.startswith('guest_'):
-                all_groups.add(group)
-    return sorted(all_groups)
 
 @app.route('/update_currency_settings', methods=['POST'])
 @admin_required
@@ -2376,9 +1958,6 @@ def update_link_sharing():
     flash(_('Link sharing settings updated!'), 'success')
     return redirect(url_for('setup_advanced'))
 
-
-def generate_share_token():
-    return secrets.token_urlsafe(16)
 
 @app.route('/manage_sharing', methods=['GET', 'POST'])
 @login_required
@@ -2666,15 +2245,6 @@ def mark_shared_not_bought(token, idea_id):
     else:
         return jsonify({'error': _('You can only cancel your own purchases')}), 403
     
-def generate_share_url(token):
-    """Generate share URL with proper scheme (HTTPS if available)"""
-    # Determine the scheme from headers (in case behind reverse proxy)
-    forwarded_proto = request.headers.get('X-Forwarded-Proto', request.scheme)
-    scheme = forwarded_proto.split(',')[0].strip()  # Handle multi-value headers
-    
-    # Generate external URL with proper scheme
-    return url_for("shared_list", token=token, _external=True, _scheme=scheme)
-
 @app.route('/table_view')
 @login_required
 def table_view():

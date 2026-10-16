@@ -8,8 +8,8 @@ Giftmanager is a self-hosted family gift-list web app: users post gift ideas for
 
 ## Stack
 
-- **Backend:** a single Flask module, `app/app.py` (~2700 lines, all routes and helpers). No blueprints, no ORM, no database.
-- **Storage:** flat JSON files, read and rewritten in full on every request (`load_users()` / `save_users()`, `load_gift_ideas()` / `save_gift_ideas()`). There is no locking, which is why gunicorn runs with a single worker (`-w 1 --threads 4`). Keep it that way unless storage changes.
+- **Backend:** Flask. `app/app.py` (~2300 lines) creates the app and holds its config, Babel, OAuth, context processors, error handlers and all routes; the non-route helpers live in small flat modules next to it (see Layout), imported without a package prefix (`from storage import load_users`) because gunicorn runs `app:app` from `/app` and dev runs `flask --app app run` from `app/`. Helper modules never import `app` (use `flask.current_app` or `config`). No blueprints, no ORM, no database.
+- **Storage:** flat JSON files, read and rewritten in full on every request (`load_users()` / `save_users()`, `load_gift_ideas()` / `save_gift_ideas()` in `storage.py`, paths taken from `current_app.config['USERS_FILE']` / `['IDEAS_FILE']`). There is no locking, which is why gunicorn runs with a single worker (`-w 1 --threads 4`). Keep it that way unless storage changes.
 - **Templates:** Jinja2 in `app/templates/`, one standalone HTML page per view (no base layout; each page carries its own `<head>`, inline CSS variables for light/dark theme, Tailwind 2 and Font Awesome from CDN). The only shared partial is `_language_switcher.html`.
 - **Auth:** local passwords hashed with argon2 (`argon2-cffi`), plus optional OIDC via Authlib (`/login_oidc`, `/auth`).
 - **Email:** Mailjet (`get_mailjet_client()` returns `None` when keys are unset, so email is optional).
@@ -19,7 +19,17 @@ Giftmanager is a self-hosted family gift-list web app: users post gift ideas for
 
 ```
 app/
-  app.py               # the whole application
+  app.py               # Flask app, config, Babel, OAuth, context processors, error handlers, all routes
+  config.py            # DATA_DIR, dotenv_path, load_dotenv, first-start files (prepopulate_file), read_env_variable, SUPPORTED_LANGUAGES
+  storage.py           # load/save users.json and ideas.json, find_idea_by_id, get_user_email_by_username, get_full_name
+  auth.py              # argon2 hasher (ph, password_hash, verify_password), login_required, admin_required, guest_allowed
+  visibility.py        # get_visible_users, get_visible_groups
+  mailer.py            # get_mailjet_client, send_email_to_buyer_via_mailjet (not email.py: it would shadow the stdlib)
+  avatars.py           # UPLOADED_AVATAR_PREFIX, AVATAR_SIZE, avatar_url, delete_uploaded_avatar
+  og_image.py          # fetch_og_image (the helper behind /fetch_og_image)
+  cleanup.py           # find_gift_ideas_to_delete, delete_gift_ideas, delete_old_gift_ideas
+  currency.py          # get_currency_symbol, get_currency_position, format_currency
+  sharing.py           # generate_share_token, generate_share_url
   requirements.txt     # unpinned dependencies
   templates/           # one template per page
   static/              # icons, avatars, bg image, manifest.json, sw.js
@@ -36,7 +46,7 @@ data/                  # docker volume (gitignored)
 ## Data directory and configuration
 
 - `DATA_DIR` (env var) holds `.env`, `users.json`, `ideas.json`, `avatars/`, `santa_inst_<pool>.txt` and `last_execution_time.txt`. It defaults to the `app/` directory; in Docker it is `/app/data`, mounted from `./data`.
-- On startup `prepopulate_file()` creates default `ideas.json`, an empty `users.json` and a default `.env` if missing.
+- On startup (when `config.py` is imported) `prepopulate_file()` creates default `ideas.json`, an empty `users.json` and a default `.env` if missing.
 - Configuration lives in `DATA_DIR/.env`, which admin pages **write back to** at runtime with `dotenv.set_key()`. Read runtime-editable settings with `read_env_variable(key, default)` (re-reads the file each call) rather than `os.getenv` (only reflects values loaded at startup). Some older code still uses `os.getenv`; changes to those keys need a restart.
 - Keys: `SECRET_KEY`, `MAILJET_API_KEY`, `MAILJET_API_SECRET`, `SYSTEM_EMAIL`, `DELETE_DAYS`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_SERVER_METADATA_URL`, `OIDC_LOGOUT_URL`, `PRIMARY_OIDC_FIELD`, `SECONDARY_OIDC_FIELD`, `PRIMARY_DB_FIELD`, `SECONDARY_DB_FIELD`, `ENABLE_AUTO_REGISTRATION`, `ENABLE_DEFAULT_LOGIN`, `LOGIN_PAGE_MESSAGE`, `REORDERING`, `IMGENABLED`, `ENABLE_LINK_SHARING`, `ENABLE_SELF_REGISTRATION`, `JOINING_CODE`, `CURRENCY_SYMBOL`, `CURRENCY_POSITION`.
 - The tracked `app/users.json`, `app/ideas.json` and `app/.env` are local dev/test fixtures (fake users), excluded from the Docker image by `.dockerignore`. Don't put real secrets in them.
@@ -94,7 +104,7 @@ Smoke tests live in `tests/` at the repo root (outside `app/`, so the Docker ima
 ```bash
 pip install -r requirements-dev.txt && pytest    # from the repo root
 ```
-- `tests/conftest.py` builds a temporary `DATA_DIR` per test (`.env`, `users.json`, `ideas.json` with an admin, two users in family Smith, one in family Jones, a family guest and a shared list), sets `DATA_DIR` and then (re)imports `app`, because `app.py` reads its data directory at import time. The tracked `app/users.json`, `app/ideas.json` and `app/.env` are never touched.
+- `tests/conftest.py` builds a temporary `DATA_DIR` per test (`.env`, `users.json`, `ideas.json` with an admin, two users in family Smith, one in family Jones, a family guest and a shared list), sets `DATA_DIR` and then (re)imports `app` and every module it loaded from `app/` (`config`, `storage`...), because `config.py` reads the data directory at import time. Patch names where they are used: `mailer.Client`, `og_image.requests` (fixtures `mailer_module`, `og_image_module`). The tracked `app/users.json`, `app/ideas.json` and `app/.env` are never touched.
 - Helpers in `tests/smoke_helpers.py`: `login(client, username)`, `is_redirect_to(response, path)`, `flashes(client)`, `session_username(client)` and the test passwords/tokens. The `env` fixture exposes the temp files (`env.users()`, `env.user(name)`, `env.ideas()`, `env.idea(id)`, `env.update_user(...)`, `env.update_idea(...)`, `env.update_share_link(...)`, `env.set_env(key, value)`, which only affects keys read with `read_env_variable`). Flash messages and page text are in French unless the test calls `/set_language/en` first.
 - Tests freeze current behavior. Confirmed bugs are kept as strict `xfail` tests (remove the marker when fixing one). Questionable behavior whose fix is not decided yet (e.g. security holes) is asserted as-is, in a test whose docstring starts with `CURRENT BEHAVIOR`; update that test when the behavior changes.
 - No network: an autouse fixture makes socket connections fail; `requests.get` is mocked for `/fetch_og_image`, Mailjet keys are empty, OIDC is not configured.
@@ -110,11 +120,11 @@ pybabel update -i app/translations/messages.pot -d app/translations
 # edit the .po files for fr, nl, sv
 pybabel compile -d app/translations
 ```
-Commit both `.po` and compiled `.mo` files. `BABEL_DEFAULT_LOCALE` is `fr`; the request locale comes from the session or `Accept-Language`. New languages must also be added to `SUPPORTED_LANGUAGES` in `app.py`.
+Commit both `.po` and compiled `.mo` files. `BABEL_DEFAULT_LOCALE` is `fr`; the request locale comes from the session or `Accept-Language`. New languages must also be added to `SUPPORTED_LANGUAGES` in `config.py`. `babel.cfg` extracts from every `app/**.py`, so strings in the helper modules are included.
 
 ## Conventions
 
-- Follow the existing style: plain functions in `app.py`, `flash(_('...'), category)` + `redirect(url_for(...))` after POSTs, load-modify-save of the whole JSON file.
+- Follow the existing style: routes as plain functions in `app.py`, non-route helpers in the matching module (no `import app` from a module), `flash(_('...'), category)` + `redirect(url_for(...))` after POSTs, load-modify-save of the whole JSON file.
 - When adding a new runtime setting, give it a default in `prepopulate_file(dotenv_path, ...)` if appropriate and read it with `read_env_variable`.
 - If you add static assets that should work offline, add them to `urlsToCache` in `app/static/sw.js` and bump `CACHE_NAME`.
 
