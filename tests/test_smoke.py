@@ -135,6 +135,19 @@ def test_add_idea_for_another_user_is_saved(client, env):
     assert idea["gift_idea_id"] == 6  # max existing id + 1
 
 
+@pytest.mark.parametrize("path", ["/add_idea/bob", "/add2/"])
+def test_add_idea_recipients_are_the_visible_users(client, env, path):
+    """The recipient dropdown offers the dashboard's users: never another
+    family, never a guest (even one without a family)."""
+    env.update_user("guest_smith", access_type="people", groups=[], access_users=["bob"])
+    login(client, "alice")
+    page = client.get(path).get_data(as_text=True)
+    for name in ("Alice Smith", "Bob Smith", "Admin User", "Smith Shared List"):
+        assert name in page
+    assert "Carol Jones" not in page
+    assert "Smith Guest" not in page
+
+
 def test_add_idea_for_user_of_other_family_is_refused(client, env):
     login(client, "alice")
     for path in ("/add_idea/carol", "/add2/"):
@@ -631,6 +644,7 @@ def test_fetch_og_image_returns_absolute_image_url(client, og_image_module):
     assert response.get_json() == {"og_image_url": "https://shop.example/img/cover.jpg"}
     fake_get.assert_called_once()
     assert fake_get.call_args.args[0] == "https://shop.example/item/42"
+    assert fake_get.call_args.kwargs["timeout"] == 10  # a host that never answers must not hold a thread
 
 
 def test_fetch_og_image_falls_back_to_image_src(client, og_image_module):

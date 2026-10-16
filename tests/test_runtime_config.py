@@ -188,6 +188,14 @@ def test_oidc_matching_tolerates_null_fields(env, app_module, make_client):
     assert username == "carol"
 
 
+def test_oidc_cannot_log_in_as_shared_list(env, app_module, make_client):
+    """/login refuses shared-list accounts; OIDC matching skips them too."""
+    env.set_env("SECONDARY_OIDC_FIELD", "preferred_username")
+    env.set_env("SECONDARY_DB_FIELD", "username")
+    response, username = oidc_login(make_client, app_module, {"preferred_username": "shared_smith"})
+    assert is_redirect_to(response, "/login") and username is None
+
+
 @pytest.mark.parametrize("preferred_username", ["alice", "ALICE", "shared_smith"])
 def test_auto_registration_refuses_existing_username(env, app_module, make_client, preferred_username):
     """An unmatched identity whose preferred_username belongs to an existing
@@ -225,7 +233,10 @@ OIDC_FORM = {
 }
 
 
-def test_setup_oidc_warns_that_client_changes_need_a_restart(client):
+def test_setup_oidc_warns_that_client_changes_need_a_restart(client, app_module, monkeypatch):
+    """The warning compares the saved values with the ones the OAuth client was
+    registered with at startup (empty in the test .env), so it is repeated
+    until the app is restarted."""
     login(client, "admin")
     client.get("/dashboard")  # consume the login flash message
 
@@ -235,7 +246,12 @@ def test_setup_oidc_warns_that_client_changes_need_a_restart(client):
             return [category for category, _ in sess.pop("_flashes", [])]
 
     assert categories(OIDC_FORM) == ["success", "warning"]
-    assert categories(OIDC_FORM) == ["success"]  # nothing that needs a restart changed
+    assert categories(OIDC_FORM) == ["success", "warning"]  # saved again without a restart
+
+    # As if restarted with the saved values
+    monkeypatch.setattr(app_module, "OIDC_STARTUP_SETTINGS",
+                        {key: OIDC_FORM[key] for key in app_module.OIDC_STARTUP_SETTINGS})
+    assert categories(OIDC_FORM) == ["success"]
     assert categories(dict(OIDC_FORM, OIDC_LOGOUT_URL="https://idp.example/bye")) == ["success"]
     assert categories(dict(OIDC_FORM, OIDC_CLIENT_SECRET="rotated")) == ["success", "warning"]
 

@@ -177,6 +177,8 @@ def utility_processor():
 
 
 #OIDC SUPPORT
+# The OAuth client is registered once, at startup: changing these keys needs a restart
+OIDC_STARTUP_SETTINGS = {key: os.getenv(key) or '' for key in ("OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_SERVER_METADATA_URL")}
 oauth = OAuth(app)
 oauth.register(
     name="keycloak",
@@ -250,16 +252,17 @@ def auth():
         # Fields may be missing, null or not strings (on either side)
         return str(value).lower() if value is not None else ""
 
-    # Find user in the database based on OIDC fields
+    # Find user in the database based on OIDC fields (shared lists cannot log in, as on /login)
+    accounts = [user for user in users if not user.get("shared_list")]
     user_in_db = None
     if primary_oidc_value:
         user_in_db = next(
-            (user for user in users if lowered(user.get(primary_db_field)) == lowered(primary_oidc_value)),
+            (user for user in accounts if lowered(user.get(primary_db_field)) == lowered(primary_oidc_value)),
             None
         )
     if not user_in_db and secondary_oidc_value:
         user_in_db = next(
-            (user for user in users if lowered(user.get(secondary_db_field)) == lowered(secondary_oidc_value)),
+            (user for user in accounts if lowered(user.get(secondary_db_field)) == lowered(secondary_oidc_value)),
             None
         )
 
@@ -524,25 +527,11 @@ def add2():
         flash(_("Current user not found."), "danger")
         return redirect(url_for('dashboard'))
 
-    # Get the current user's groups (default to empty list if not present)
-    current_user_groups = current_user_data.get("groups", [])
-
-    # Filter the user list based on groups
-    if not current_user_groups:
-        # If the current user has no groups, allow them to see all users
-        user_list = [
-            {"full_name": user["full_name"], "username": user["username"]}
-            for user in users
-            if not user.get('guest')
-        ]
-    else:
-        # Filter the user list to include only those in the current user's groups
-        user_list = [
-            {"full_name": user["full_name"], "username": user["username"]}
-            for user in users
-            if not user.get("groups") or any(group in user.get("groups", []) for group in current_user_groups)
-            and not user.get('guest')
-        ]
+    # Recipients offered in the form: the lists shown on the dashboard (same rule as can_view_list on POST)
+    user_list = [
+        {"full_name": user["full_name"], "username": user["username"]}
+        for user in get_visible_users(current_user_data, users)
+    ]
 
     if request.method == 'POST':
         # Handle the form submission, process the data, and add the idea
@@ -615,25 +604,11 @@ def add_idea(selected_user_id):
         flash(_("Current user not found."), "danger")
         return redirect(url_for('dashboard'))
 
-    # Get the current user's groups (default to empty list if not present)
-    current_user_groups = current_user_data.get("groups", [])
-
-    # Filter the user list based on groups
-    if not current_user_groups:
-        # If the current user has no groups, allow them to see all users
-        user_list = [
-            {"full_name": user["full_name"], "username": user["username"]}
-            for user in users
-            if not user.get('guest')
-        ]
-    else:
-        # Filter the user list to include only those in the current user's groups
-        user_list = [
-            {"full_name": user["full_name"], "username": user["username"]}
-            for user in users
-            if not user.get("groups") or any(group in user.get("groups", []) for group in current_user_groups)
-            and not user.get('guest')
-        ]
+    # Recipients offered in the form: the lists shown on the dashboard (same rule as can_view_list on POST)
+    user_list = [
+        {"full_name": user["full_name"], "username": user["username"]}
+        for user in get_visible_users(current_user_data, users)
+    ]
 
     if request.method == 'POST':
         # Handle the form submission
@@ -698,31 +673,24 @@ def delete_idea(idea_id):
         return '', 404
 
     shared_list = next((user for user in users if user['username'] == idea['user_id'] and user.get('shared_list')), None)
+    current_user_username = session['username']  # Use 'username' from the session
 
-    if idea:
-        current_user_username = session['username']  # Use 'username' from the session
+    # Check if the idea was added by the current user, if it's in their list, OR if they're a member of the shared list
+    if idea['added_by'] == current_user_username or idea['user_id'] == current_user_username or (shared_list and current_user_username in shared_list.get('list_members', [])):
+        # Check if the idea is bought
+        if idea['bought_by']:
+            # Send an email to the buyer using Mailjet
+            send_email_to_buyer_via_mailjet(idea['bought_by'], f'{idea["gift_name"]}', _('IDEAS DELETED'))
 
-# Check if the idea was added by the current user, if it's in their list, OR if they're a member of the shared list
+        # Delete the idea
+        gift_ideas_data.remove(idea)
 
-        # Check if the idea was added by the current user or if it's in their list
-        if idea['added_by'] == current_user_username or idea['user_id'] == current_user_username or (shared_list and current_user_username in shared_list.get('list_members', [])):
-            # Check if the idea is bought
-            if idea['bought_by']:
-                # Send an email to the buyer using Mailjet
-                send_email_to_buyer_via_mailjet(idea['bought_by'], f'{idea["gift_name"]}', _('IDEAS DELETED'))
+        # Save the updated list of gift ideas using the helper function
+        save_gift_ideas(gift_ideas_data)
 
-            # Delete the idea
-            gift_ideas_data.remove(idea)
+        return '', 204  # Return a response with HTTP status code 204 (no content)
 
-            # Save the updated list of gift ideas using the helper function
-            save_gift_ideas(gift_ideas_data)
-
-            return '', 204  # Return a response with HTTP status code 204 (no content)
-        else:
-            flash(_('You are not authorized to delete this idea.'), 'danger')
-    else:
-        flash(_('Idea not found'), 'danger')
-
+    flash(_('You are not authorized to delete this idea.'), 'danger')
     return '', 403  # Return a response with HTTP status code 403 (forbidden)
 
 @app.route('/logout')
@@ -1086,44 +1054,39 @@ def edit_idea(idea_id):
         return redirect(url_for('dashboard'))
 
     shared_list = next((user for user in users if user['username'] == idea['user_id'] and user.get('shared_list')), None)
+    current_user_username = session['username']  # Use 'username' from the session
 
-    if idea:
-        current_user_username = session['username']  # Use 'username' from the session
+    # Check if the idea was added by the current user or if it's in their list
+    if idea['added_by'] == current_user_username or idea['user_id'] == current_user_username or (shared_list and current_user_username in shared_list.get('list_members', [])):
+        if request.method == 'POST':
+            # Debug: print received form data
+            print(f"Received description: {request.form.get('description')}")
+            print(f"Received link: {request.form.get('link')}")
+            print(f"Received image_path: {request.form.get('image_path')}")  # This is the field for the image path
 
-        # Check if the idea was added by the current user or if it's in their list
-        if idea['added_by'] == current_user_username or idea['user_id'] == current_user_username or (shared_list and current_user_username in shared_list.get('list_members', [])):
-            if request.method == 'POST':
-                # Debug: print received form data
-                print(f"Received description: {request.form.get('description')}")
-                print(f"Received link: {request.form.get('link')}")
-                print(f"Received image_path: {request.form.get('image_path')}")  # This is the field for the image path
+            # Update idea details with submitted form data
+            idea['description'] = request.form.get('description', '')
+            idea['link'] = request.form.get('link', '')
+            idea['value'] = request.form.get('value', None)
+            idea['image_path'] = request.form.get('image_path', '')  # Get the image path from the form
 
-                # Update idea details with submitted form data
-                idea['description'] = request.form.get('description', '')
-                idea['link'] = request.form.get('link', '')
-                idea['value'] = request.form.get('value', None)
-                idea['image_path'] = request.form.get('image_path', '')  # Get the image path from the form
+            # Check if the image path is correctly retrieved
+            if idea['image_path']:
+                print(f"Image path to save: {idea['image_path']}")
+            else:
+                print("No image path provided.")
 
-                # Check if the image path is correctly retrieved
-                if idea['image_path']:
-                    print(f"Image path to save: {idea['image_path']}")
-                else:
-                    print("No image path provided.")
+            # Save the updated gift ideas data back to the JSON file
+            save_gift_ideas(gift_ideas_data)
 
-                # Save the updated gift ideas data back to the JSON file
-                save_gift_ideas(gift_ideas_data)
+            flash(_('Idea updated successfully!'), 'success')
+            return redirect(url_for('user_gift_ideas', selected_user_id=idea['user_id']))
+        
+        imgenabled = read_env_variable('IMGENABLED', 'true').lower() == 'true'
+        # Render the edit idea form with pre-filled data
+        return render_template('edit_idea.html', idea=idea, imgenabled=imgenabled)
 
-                flash(_('Idea updated successfully!'), 'success')
-                return redirect(url_for('user_gift_ideas', selected_user_id=idea['user_id']))
-            
-            imgenabled = read_env_variable('IMGENABLED', 'true').lower() == 'true'
-            # Render the edit idea form with pre-filled data
-            return render_template('edit_idea.html', idea=idea, imgenabled=imgenabled)
-        else:
-            flash(_('You are not authorized to edit this idea.'), 'danger')
-    else:
-        flash(_('Idea not found'), 'danger')
-
+    flash(_('You are not authorized to edit this idea.'), 'danger')
     return redirect(url_for('dashboard'))
 
 
@@ -1556,9 +1519,8 @@ def setup_oidc():
             return render_template('setup_oidc.html', current_values=oidc_env_variables)
 
         try:
-            # The OIDC client is registered at startup, so these keys only apply after a restart
-            restart_keys = ("OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_SERVER_METADATA_URL")
-            needs_restart = any(read_env_variable(key, '') != oidc_env_variables[key] for key in restart_keys)
+            # The OIDC client was registered at startup: warn while the saved values differ from it
+            needs_restart = any(oidc_env_variables[key] != value for key, value in OIDC_STARTUP_SETTINGS.items())
 
             # Save each variable to the .env file
             for key, value in oidc_env_variables.items():
