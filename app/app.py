@@ -844,7 +844,10 @@ def mark_as_bought(idea_id):
         else:
             # If already bought, display a warning
             buyer = idea["bought_by"]
-            buyer = buyer[len('visitor:'):] if buyer.startswith('visitor:') else get_full_name(buyer)
+            if buyer.startswith('visitor:'):
+                buyer = buyer[len('visitor:'):]
+            else:
+                buyer = next((user.get('full_name', buyer) for user in users if user['username'] == buyer), buyer)
             flash(_('"%(name)s" has already been bought by %(buyer)s.', name=idea["gift_name"], buyer=buyer), 'warning')
     else:
         flash(_('Idea not found'), 'danger')
@@ -1314,16 +1317,11 @@ def edit_email_settings():
                 if value:
                     set_key(dotenv_path, key, value)
 
-            # Reload the .env file to reflect changes
-            load_dotenv(dotenv_path, override=True)
-
             flash(_("Email settings updated successfully!"), "success")
         except Exception as e:
             flash(_("An error occurred: %(error)s", error=e), "danger")
         return redirect(url_for('edit_email_settings'))
 
-    # Reload the .env file before fetching current settings
-    load_dotenv(dotenv_path, override=True)  # Ensure we override old values
     current_settings = {
         'MAILJET_API_KEY': '******',  # Mask sensitive values
         'MAILJET_API_SECRET': '******',  # Mask sensitive values
@@ -1539,12 +1537,6 @@ def setup_oidc():
             return render_template('setup_oidc.html', current_values=oidc_env_variables)
 
     # For GET requests, load the current values of OIDC-related environment variables
-    try:
-        # Load the .env file directly using the path
-        load_dotenv(dotenv_path, override=True)
-    except FileNotFoundError:
-        flash(_("Environment file not found. Creating a new one."), "warning")
-    
     current_values = {
         "OIDC_CLIENT_ID": read_env_variable("OIDC_CLIENT_ID", ''),
         "OIDC_CLIENT_SECRET": read_env_variable("OIDC_CLIENT_SECRET", ''),

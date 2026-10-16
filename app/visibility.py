@@ -45,10 +45,14 @@ def get_visible_users(current_user, users):
 
 def can_view_list(current_user, target_username, users):
     """True if current_user may see (and act on) the gift list of target_username:
-    their own list, or a user/shared list shown on their dashboard (get_visible_users)."""
+    their own list, a user/shared list shown on their dashboard (get_visible_users), or a shared
+    list they are a member of (even if an admin put that list in another family)."""
     if not current_user:
         return False
     if target_username == current_user['username'] and not current_user.get('guest'):
+        return True
+    target = next((user for user in users if user['username'] == target_username), None)
+    if target and target.get('shared_list') and current_user['username'] in target.get('list_members', []):
         return True
     return any(user['username'] == target_username for user in get_visible_users(current_user, users))
 

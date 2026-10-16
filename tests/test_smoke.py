@@ -425,6 +425,17 @@ def test_user_gift_ideas_of_visible_user_is_reachable(client, env, target):
     assert client.get(f"/user_gift_ideas/{target}").status_code == 200
 
 
+def test_shared_list_members_keep_access_when_list_is_in_another_family(client, env, make_client):
+    env.update_user("shared_smith", groups=["Jones"])
+    env.write_ideas(env.ideas() + [dict(env.idea(3), gift_idea_id=20, user_id="shared_smith", gift_name="Shared idea")])
+    login(client, "alice")  # member, family Smith
+    assert client.get("/user_gift_ideas/shared_smith").status_code == 200
+
+    guest = make_client()  # Smith family guest, not a member
+    guest.post("/guest_login", data={"password": "guestpass"})
+    assert is_redirect_to(guest.get("/user_gift_ideas/shared_smith"), "/dashboard")
+
+
 def test_user_gift_ideas_of_unknown_user_is_refused(client):
     login(client, "alice")
     assert is_redirect_to(client.get("/user_gift_ideas/nobody"), "/dashboard")
