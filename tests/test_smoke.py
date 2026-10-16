@@ -151,9 +151,10 @@ def test_mark_as_bought_does_not_overwrite_existing_buyer(client, env, make_clie
     login(client, "alice")
     client.post("/mark_as_bought/3")
     other = make_client()
-    login(other, "bob")
+    login(other, "admin")
     other.post("/mark_as_bought/3")
     assert env.idea(3)["bought_by"] == "alice"
+    assert [category for category, _ in flashes(other)] == ["login_success", "warning"]
 
 
 def test_only_the_buyer_can_mark_as_not_bought(client, env, make_client):
@@ -163,6 +164,48 @@ def test_only_the_buyer_can_mark_as_not_bought(client, env, make_client):
     login(other, "admin")  # sees everyone, so only the buyer rule can refuse
     other.post("/mark_as_not_bought/3")  # always answers 204, refused or not
     assert env.idea(3)["bought_by"] == "alice"
+    assert [category for category, _ in flashes(other)] == ["login_success", "danger"]
+
+
+def test_mark_as_bought_ignores_families(client, env):
+    """CURRENT BEHAVIOR (likely a visibility hole): /mark_as_bought does not
+    check families, so alice (Smith) can buy carol's (Jones) idea by id."""
+    login(client, "alice")
+    client.post("/mark_as_bought/4")
+    assert env.idea(4)["bought_by"] == "alice"
+
+
+# Deleting an idea --------------------------------------------------------------
+
+def test_delete_own_idea(client, env):
+    login(client, "alice")
+    assert client.delete("/delete_idea/5").status_code == 204
+    assert 5 not in [i["gift_idea_id"] for i in env.ideas()]
+
+
+def test_delete_bought_idea_without_mailjet_keys(client, env):
+    """The recipient may delete an idea someone else added. The buyer email is
+    skipped because the Mailjet keys are empty (no network call)."""
+    login(client, "alice")
+    assert client.delete("/delete_idea/2").status_code == 204
+    assert 2 not in [i["gift_idea_id"] for i in env.ideas()]
+
+
+def test_delete_idea_of_someone_else_is_refused(client, env):
+    login(client, "carol")
+    assert client.delete("/delete_idea/1").status_code == 403
+    assert 1 in [i["gift_idea_id"] for i in env.ideas()]
+
+
+@pytest.mark.xfail(
+    reason="Bug: /delete_idea reads idea['user_id'] before checking that the idea exists, "
+           "so an unknown id raises TypeError (HTTP 500) instead of answering 403",
+    raises=TypeError,
+    strict=True,
+)
+def test_delete_unknown_idea(client):
+    login(client, "alice")
+    assert client.delete("/delete_idea/999").status_code == 403
 
 
 # 6. Surprise rule ----------------------------------------------------------------
@@ -189,6 +232,21 @@ def test_recipient_my_ideas_hides_buyer_and_bought_idea(client):
     assert "Secret telescope" not in page
     assert "Bob Smith" not in page
     assert "2026-01-02" not in page  # date_bought
+
+
+@pytest.mark.xfail(
+    reason="Bug (surprise rule): when the recipient POSTs /mark_as_bought on her own idea "
+           "that is already bought, the warning flash names the buyer (the UI offers no button "
+           "for this, it takes a hand-crafted POST)",
+    raises=AssertionError,
+    strict=True,
+)
+def test_recipient_mark_as_bought_does_not_reveal_buyer(client, env):
+    login(client, "alice")
+    client.get("/dashboard")  # consume the login flash message
+    client.post("/mark_as_bought/2")
+    assert env.idea(2)["bought_by"] == "bob"
+    assert not any("bob" in message.lower() for _, message in flashes(client))
 
 
 def test_recipient_self_list_redirects_to_my_ideas(client):
