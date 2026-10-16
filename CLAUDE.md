@@ -27,7 +27,7 @@ app/
   users.json, ideas.json, .env   # local dev data (test data only, see below)
 babel.cfg              # extraction config for pybabel
 requirements-dev.txt   # app requirements + pytest
-pyproject.toml         # pytest config only (testpaths)
+pyproject.toml         # pytest config only (testpaths, pythonpath)
 tests/                 # pytest smoke tests (conftest.py builds a temp DATA_DIR)
 Dockerfile, docker-compose.yml
 data/                  # docker volume (gitignored)
@@ -95,7 +95,7 @@ Smoke tests live in `tests/` at the repo root (outside `app/`, so the Docker ima
 pip install -r requirements-dev.txt && pytest    # from the repo root
 ```
 - `tests/conftest.py` builds a temporary `DATA_DIR` per test (`.env`, `users.json`, `ideas.json` with an admin, two users in family Smith, one in family Jones, a family guest and a shared list), sets `DATA_DIR` and then (re)imports `app`, because `app.py` reads its data directory at import time. The tracked `app/users.json`, `app/ideas.json` and `app/.env` are never touched.
-- Helpers in `tests/smoke_helpers.py`: `login(client, username)`, `flashes(client)`, `session_username(client)` and the test passwords/tokens. The `env` fixture exposes the temp files (`env.users()`, `env.ideas()`, `env.update_user(...)`, `env.update_idea(...)`, `env.set_env(key, value)`). Flash messages and page text are in French unless the test calls `/set_language/en` first.
+- Helpers in `tests/smoke_helpers.py`: `login(client, username)`, `flashes(client)`, `session_username(client)` and the test passwords/tokens. The `env` fixture exposes the temp files (`env.users()`, `env.ideas()`, `env.update_user(...)`, `env.update_idea(...)`, `env.set_env(key, value)`, which only affects keys read with `read_env_variable`). Flash messages and page text are in French unless the test calls `/set_language/en` first.
 - Tests freeze current behavior. Confirmed bugs are kept as strict `xfail` tests (remove the marker when fixing one). Questionable behavior whose fix is not decided yet (e.g. security holes) is asserted as-is, in a test whose docstring starts with `CURRENT BEHAVIOR`; update that test when the behavior changes.
 - No network: `requests.get` is mocked for `/fetch_og_image`, Mailjet keys are empty, OIDC is not configured.
 
