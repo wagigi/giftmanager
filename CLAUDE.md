@@ -27,6 +27,7 @@ app/
   users.json, ideas.json, .env   # local dev data (test data only, see below)
 babel.cfg              # extraction config for pybabel
 requirements-dev.txt   # app requirements + pytest
+pyproject.toml         # pytest config only (testpaths)
 tests/                 # pytest smoke tests (conftest.py builds a temp DATA_DIR)
 Dockerfile, docker-compose.yml
 data/                  # docker volume (gitignored)
@@ -91,7 +92,7 @@ docker compose up --build    # data persisted in ./data
 
 Smoke tests live in `tests/` at the repo root (outside `app/`, so the Docker image doesn't ship them):
 ```bash
-pip install -r requirements-dev.txt && pytest
+pip install -r requirements-dev.txt && pytest    # from the repo root
 ```
 - `tests/conftest.py` builds a temporary `DATA_DIR` per test (`.env`, `users.json`, `ideas.json` with an admin, two users in family Smith, one in family Jones, a family guest and a shared list), sets `DATA_DIR` and then (re)imports `app`, because `app.py` reads its data directory at import time. The tracked `app/users.json`, `app/ideas.json` and `app/.env` are never touched.
 - Helpers: `login(client, username)`, `flashes(client)`, `session_username(client)`; the `env` fixture exposes the temp files (`env.users()`, `env.ideas()`, `env.set_env(key, value)`).

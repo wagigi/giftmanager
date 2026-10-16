@@ -82,7 +82,7 @@ def build_users(password_hash):
     def user(username, full_name, **extra):
         data = {
             "username": username,
-            "password": password_hash(PASSWORDS[username]) if username in PASSWORDS else "",
+            "password": password_hash(PASSWORDS[username]),
             "email": f"{username}@example.com",
             "full_name": full_name,
             "birthday": "2000-01-01",
@@ -192,10 +192,8 @@ def env(tmp_path):
             os.environ.pop(key, None)
         os.environ["DATA_DIR"] = str(data_dir)
 
-        if "app" in sys.modules:
-            module = importlib.reload(sys.modules["app"])
-        else:
-            module = importlib.import_module("app")
+        sys.modules.pop("app", None)  # fresh module, no globals left over from a previous test
+        module = importlib.import_module("app")
         assert module.DATA_DIR == str(data_dir), "app was not imported against the temporary DATA_DIR"
 
         module.app.config["TESTING"] = True
