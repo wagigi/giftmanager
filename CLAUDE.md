@@ -47,7 +47,7 @@ data/                  # docker volume (gitignored)
 
 - `DATA_DIR` (env var) holds `.env`, `users.json`, `ideas.json`, `avatars/`, `santa_inst_<pool>.txt` and `last_execution_time.txt`. It defaults to the `app/` directory; in Docker it is `/app/data`, mounted from `./data`.
 - On startup (when `config.py` is imported) `prepopulate_file()` creates default `ideas.json`, an empty `users.json` and a default `.env` if missing.
-- Configuration lives in `DATA_DIR/.env`, which admin pages **write back to** at runtime with `dotenv.set_key()`. Read runtime-editable settings with `read_env_variable(key, default)` (re-reads the file each call) rather than `os.getenv` (only reflects values loaded at startup). Only a few keys still use `os.getenv` and need a restart: `DATA_DIR`, `SECRET_KEY` (`app.config`) and `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` / `OIDC_SERVER_METADATA_URL` (the OAuth client is registered once at import; `/login` also uses `OIDC_CLIENT_ID` to decide whether to show the OIDC button).
+- Configuration lives in `DATA_DIR/.env`, which admin pages **write back to** at runtime with `dotenv.set_key()`. Write settings with `set_key()` only (never by hand) and read runtime-editable ones with `read_env_variable(key, default)` rather than `os.getenv` (only reflects values loaded at startup). `read_env_variable` re-reads the file on each call with `dotenv_values(interpolate=False)`, so quoting, escapes, inline comments and duplicate keys (last wins) match `set_key()`; an empty value returns `default`, and a key missing from the file falls back to the process environment. Only a few keys still use `os.getenv` and need a restart: `DATA_DIR`, `SECRET_KEY` (`app.config`) and `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` / `OIDC_SERVER_METADATA_URL` (the OAuth client is registered once at import; `/login` also uses `OIDC_CLIENT_ID` to decide whether to show the OIDC button). `/setup_oidc` warns the admin when one of these three changes.
 - Keys: `SECRET_KEY`, `MAILJET_API_KEY`, `MAILJET_API_SECRET`, `SYSTEM_EMAIL`, `DELETE_DAYS`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_SERVER_METADATA_URL`, `OIDC_LOGOUT_URL`, `PRIMARY_OIDC_FIELD`, `SECONDARY_OIDC_FIELD`, `PRIMARY_DB_FIELD`, `SECONDARY_DB_FIELD`, `ENABLE_AUTO_REGISTRATION`, `ENABLE_DEFAULT_LOGIN`, `LOGIN_PAGE_MESSAGE`, `REORDERING`, `IMGENABLED`, `ENABLE_LINK_SHARING`, `ENABLE_SELF_REGISTRATION`, `JOINING_CODE`, `CURRENCY_SYMBOL`, `CURRENCY_POSITION`.
 - The tracked `app/users.json`, `app/ideas.json` and `app/.env` are local dev/test fixtures (fake users), excluded from the Docker image by `.dockerignore`. Don't put real secrets in them.
 
@@ -65,20 +65,21 @@ The same list also holds two special kinds of entries:
 ## Access control
 
 - `@login_required` redirects anonymous users and blocks guests unless the view is also wrapped by `@guest_allowed` (it checks the `_guest_allowed` attribute on the wrapped function, so put `@login_required` above `@guest_allowed`).
-- `@admin_required` checks `admin` on the user record.
-- Visibility of other users' lists is computed by `get_visible_users()` from groups (users without groups see everyone non-guest; users with groups see shared-group members and group-less users).
-- Recipients must never see who bought their own gifts; preserve this when touching idea views.
-- Public share links: `/shared/<token>` and its mark-bought routes are unauthenticated and gated by `ENABLE_LINK_SHARING` and link expiry.
+- `@admin_required` checks `admin` on the user record. Both decorators clear the session and redirect to `/login` when the session's account no longer exists (deleted user or guest).
+- Visibility of other users' lists is computed by `get_visible_users()` from groups (users without groups see everyone non-guest; users with groups see shared-group members and group-less users; family guests see members of their `groups`, people guests their `access_users`). `can_view_list(current_user, username, users)` (own list or a visible one) must guard every route that shows or changes a list by username or idea id: `/user_gift_ideas` (flash + redirect to the dashboard), `/mark_as_bought` (treated as not found), `/add_idea` and `/add2` POST. `/table_view` shows the same users as the dashboard.
+- Recipients must never see who bought their own gifts, nor whether they were bought, nor the ideas others added for them; preserve this when touching idea views. Their own list is shown as on `/my_ideas` (only ideas they added, no bought state) in `/table_view` and when they open their own share link while logged in; `/mark_as_bought` on one's own idea is always refused with the same message.
+- Public share links: `/shared/<token>` and its mark-bought/not-bought routes are unauthenticated and all gated the same way (`ENABLE_LINK_SHARING`, link active and not expired) through `find_share_link()` in `sharing.py`.
+- `/fetch_og_image` requires a logged-in non-guest user (it fetches arbitrary URLs server-side).
 
 ## Main features → routes
 
 - Setup wizard on empty install: `/setupadmin` → `/setupenv` (only reachable via Referer from setupadmin).
-- Auth: `/login`, `/logout`, `/register` (self-registration), `/login_oidc`, `/auth`, `/setup_profile`, `/guest_login`.
+- Auth: `/login`, `/logout`, `/register` (self-registration), `/login_oidc`, `/auth` (OIDC callback; auto-registration names the account after `preferred_username` and refuses a missing or already taken one), `/setup_profile`, `/guest_login`.
 - Ideas: `/dashboard`, `/my_ideas`, `/user_gift_ideas/<user>`, `/add_idea/<user>`, `/add2/`, `/edit_idea/<id>`, `/delete_idea/<id>` (DELETE), `/mark_as_bought/<id>`, `/mark_as_not_bought/<id>`, `/bought_items`, `/table_view`, `/update_order`, `/fetch_og_image`.
 - Profile: `/change_password`, `/change_email`, `/change_avatar`, `/avatars/<file>`.
 - Secret Santa: `/secret_santa` (admin; simple shuffled cycle per pool), `/secret_santa_assignments`.
 - Sharing: `/manage_sharing`, `/manage_shared_lists`, `/shared/<token>`.
-- Admin: `/admin`, `/users`, `/families`, `/manage_guest_users`, `/edit_email_settings`, `/edit_login_message`, `/setup_oidc`, `/setup_advanced`, `/delete_old_gift_ideas`, `/change_delete_days`, `/rundl` (purges ideas older than `DELETE_DAYS`; meant to be hit by an external cron).
+- Admin: `/admin`, `/users`, `/families`, `/manage_guest_users`, `/edit_email_settings`, `/edit_login_message`, `/setup_oidc`, `/setup_advanced`, `/delete_old_gift_ideas`, `/change_delete_days`, `/rundl` (purges bought ideas older than `DELETE_DAYS`, default 30 when unset or invalid, skipping ideas with malformed dates; unauthenticated, meant to be hit by an external cron).
 - `/set_language/<code>` stores the locale in the session.
 
 The app version string is hard-coded in `dashboard()` (`app_version = "v2.6.2"`); bump it on release.
@@ -115,7 +116,7 @@ There are no linters or CI configured.
 
 Wrap user-facing strings with `_()` in Python (use named placeholders: `_('Pool "%(name)s"', name=x)`) and `{{ _('...') }}` in templates. After changing strings:
 ```bash
-pybabel extract -F babel.cfg -o app/translations/messages.pot .
+pybabel extract -F babel.cfg -k _l -o app/translations/messages.pot .
 pybabel update -i app/translations/messages.pot -d app/translations
 # edit the .po files for fr, nl, sv
 pybabel compile -d app/translations
