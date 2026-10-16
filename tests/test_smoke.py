@@ -177,11 +177,11 @@ def test_delete_own_idea(client, env):
     assert 5 not in [i["gift_idea_id"] for i in env.ideas()]
 
 
-def test_delete_bought_idea_without_mailjet_keys(client, env):
+def test_delete_bought_idea_without_mailjet_keys(client, env, mailer_module):
     """The recipient may delete an idea someone else added. The buyer email is
     skipped because the Mailjet keys are empty (no network call)."""
     login(client, "alice")
-    with mock.patch.object(env.module, "Client") as mailjet_client:
+    with mock.patch.object(mailer_module, "Client") as mailjet_client:
         assert client.delete("/delete_idea/2").status_code == 204
     mailjet_client.assert_not_called()
     assert 2 not in [i["gift_idea_id"] for i in env.ideas()]
@@ -528,10 +528,10 @@ def _fake_response(html):
     return response
 
 
-def test_fetch_og_image_returns_absolute_image_url(client, app_module):
+def test_fetch_og_image_returns_absolute_image_url(client, og_image_module):
     login(client, "alice")
     html = '<html><head><meta property="og:image" content="/img/cover.jpg"></head></html>'
-    with mock.patch.object(app_module.requests, "get", return_value=_fake_response(html)) as fake_get:
+    with mock.patch.object(og_image_module.requests, "get", return_value=_fake_response(html)) as fake_get:
         response = client.get("/fetch_og_image", query_string={"url": "https://shop.example/item/42"})
     assert response.status_code == 200
     assert response.get_json() == {"og_image_url": "https://shop.example/img/cover.jpg"}
@@ -539,17 +539,17 @@ def test_fetch_og_image_returns_absolute_image_url(client, app_module):
     assert fake_get.call_args.args[0] == "https://shop.example/item/42"
 
 
-def test_fetch_og_image_falls_back_to_image_src(client, app_module):
+def test_fetch_og_image_falls_back_to_image_src(client, og_image_module):
     login(client, "alice")
     html = '<html><head><link rel="image_src" href="/a.jpg"></head></html>'
-    with mock.patch.object(app_module.requests, "get", return_value=_fake_response(html)):
+    with mock.patch.object(og_image_module.requests, "get", return_value=_fake_response(html)):
         response = client.get("/fetch_og_image", query_string={"url": "https://shop.example/item/42"})
     assert response.get_json() == {"og_image_url": "https://shop.example/a.jpg"}
 
 
-def test_fetch_og_image_without_image(client, app_module):
+def test_fetch_og_image_without_image(client, og_image_module):
     login(client, "alice")
-    with mock.patch.object(app_module.requests, "get", return_value=_fake_response("<html></html>")):
+    with mock.patch.object(og_image_module.requests, "get", return_value=_fake_response("<html></html>")):
         response = client.get("/fetch_og_image", query_string={"url": "https://shop.example/"})
     assert response.status_code == 404
 
@@ -559,12 +559,12 @@ def test_fetch_og_image_requires_url(client):
     assert client.get("/fetch_og_image").status_code == 400
 
 
-def test_fetch_og_image_does_not_require_login(client, app_module):
+def test_fetch_og_image_does_not_require_login(client, og_image_module):
     """CURRENT BEHAVIOR (likely a security hole): /fetch_og_image has no
     @login_required, so an anonymous visitor can make the server fetch any URL
     (with TLS verification disabled), e.g. internal addresses (SSRF)."""
     html = '<meta property="og:image" content="https://internal.example/x.png">'
-    with mock.patch.object(app_module.requests, "get", return_value=_fake_response(html)) as fake_get:
+    with mock.patch.object(og_image_module.requests, "get", return_value=_fake_response(html)) as fake_get:
         response = client.get("/fetch_og_image", query_string={"url": "http://10.0.0.1/"})
     assert response.status_code == 200
     assert fake_get.call_args.args[0] == "http://10.0.0.1/"
