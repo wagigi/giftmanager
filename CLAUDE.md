@@ -95,7 +95,7 @@ pip install -r requirements-dev.txt && pytest
 ```
 - `tests/conftest.py` builds a temporary `DATA_DIR` per test (`.env`, `users.json`, `ideas.json` with an admin, two users in family Smith, one in family Jones, a family guest and a shared list), sets `DATA_DIR` and then (re)imports `app`, because `app.py` reads its data directory at import time. The tracked `app/users.json`, `app/ideas.json` and `app/.env` are never touched.
 - Helpers: `login(client, username)`, `flashes(client)`, `session_username(client)`; the `env` fixture exposes the temp files (`env.users()`, `env.ideas()`, `env.set_env(key, value)`).
-- Tests freeze current behavior. Known bugs are kept as strict `xfail` tests; when you fix one, remove its marker.
+- Tests freeze current behavior. Confirmed bugs are kept as strict `xfail` tests (remove the marker when fixing one). Questionable behavior whose fix is not decided yet (e.g. security holes) is asserted as-is, in a test whose docstring starts with `CURRENT BEHAVIOR`; update that test when the behavior changes.
 - No network: `requests.get` is mocked for `/fetch_og_image`, Mailjet keys are empty, OIDC is not configured.
 
 There are no linters or CI configured.

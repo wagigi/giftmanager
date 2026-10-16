@@ -10,7 +10,9 @@ import json
 import os
 import sys
 from datetime import datetime, timedelta
+from functools import lru_cache
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
@@ -44,6 +46,13 @@ ENABLE_LINK_SHARING='true'
 REORDERING='true'
 IMGENABLED='false'
 """
+
+@lru_cache(maxsize=None)
+def cached_password_hash(password):
+    """argon2 hashing is slow; hash each test password once per session.
+    Uses the app's own password_hash(), imported lazily so DATA_DIR is set first."""
+    return sys.modules["app"].password_hash(password)
+
 
 # Keys that load_dotenv() copies into os.environ on import.
 ENV_KEYS = [line.split("=", 1)[0] for line in ENV_TEMPLATE.splitlines() if "=" in line]
@@ -158,32 +167,31 @@ class Env:
 
 
 @pytest.fixture
-def env(tmp_path, monkeypatch):
+def env(tmp_path):
     """Fresh DATA_DIR populated with test data, and `app` imported against it."""
-    saved_environ = dict(os.environ)
-    for key in ENV_KEYS:
-        monkeypatch.delenv(key, raising=False)
-
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     (data_dir / ".env").write_text(ENV_TEMPLATE)
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
 
-    if "app" in sys.modules:
-        module = importlib.reload(sys.modules["app"])
-    else:
-        module = importlib.import_module("app")
-    assert module.DATA_DIR == str(data_dir), "app was not imported against the temporary DATA_DIR"
+    # patch.dict restores os.environ on exit, including the keys that
+    # load_dotenv() adds while app is imported.
+    with mock.patch.dict(os.environ):
+        for key in ENV_KEYS:
+            os.environ.pop(key, None)
+        os.environ["DATA_DIR"] = str(data_dir)
 
-    module.app.config["TESTING"] = True
-    handle = Env(module, data_dir)
-    handle.write_users(build_users(module.password_hash))
-    handle.write_ideas(build_ideas())
+        if "app" in sys.modules:
+            module = importlib.reload(sys.modules["app"])
+        else:
+            module = importlib.import_module("app")
+        assert module.DATA_DIR == str(data_dir), "app was not imported against the temporary DATA_DIR"
 
-    yield handle
+        module.app.config["TESTING"] = True
+        handle = Env(module, data_dir)
+        handle.write_users(build_users(cached_password_hash))
+        handle.write_ideas(build_ideas())
 
-    os.environ.clear()
-    os.environ.update(saved_environ)
+        yield handle
 
 
 @pytest.fixture

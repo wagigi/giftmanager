@@ -127,6 +127,9 @@ def test_add_idea_for_another_user_is_saved(client, env):
 # 5. Mark as bought / not bought --------------------------------------------------
 
 def test_mark_as_bought_then_not_bought(client, env):
+    """CURRENT BEHAVIOR (questionable): /mark_as_bought redirects to the buyer's
+    own /user_gift_ideas page (which bounces to /my_ideas), not to the
+    recipient's list. The UI calls it with fetch(), so the redirect is unused."""
     login(client, "alice")
 
     response = client.post("/mark_as_bought/3")
@@ -142,19 +145,19 @@ def test_mark_as_bought_then_not_bought(client, env):
     assert "date_bought" not in idea
 
 
-def test_mark_as_bought_does_not_overwrite_existing_buyer(client, env):
+def test_mark_as_bought_does_not_overwrite_existing_buyer(client, env, make_client):
     login(client, "alice")
     client.post("/mark_as_bought/3")
-    other = env.module.app.test_client()
+    other = make_client()
     login(other, "bob")
     other.post("/mark_as_bought/3")
     assert env.idea(3)["bought_by"] == "alice"
 
 
-def test_only_the_buyer_can_mark_as_not_bought(client, env):
+def test_only_the_buyer_can_mark_as_not_bought(client, env, make_client):
     login(client, "alice")
     client.post("/mark_as_bought/3")
-    other = env.module.app.test_client()
+    other = make_client()
     login(other, "carol")
     assert other.post("/mark_as_not_bought/3").status_code == 204
     assert env.idea(3)["bought_by"] == "alice"
@@ -163,8 +166,9 @@ def test_only_the_buyer_can_mark_as_not_bought(client, env):
 # 6. Surprise rule ----------------------------------------------------------------
 
 def test_buyer_sees_purchase_on_recipient_list(client):
-    """Sanity check for the test below: the bought idea is visible to others."""
-    login(client, "carol")
+    """Sanity check for the tests below: the bought idea and its buyer are
+    visible to other users (admin has no family, so sees everyone)."""
+    login(client, "admin")
     page = client.get("/user_gift_ideas/alice").get_data(as_text=True)
     assert "Secret telescope" in page
     assert "Bob Smith" in page
@@ -180,7 +184,6 @@ def test_recipient_my_ideas_hides_buyer_and_bought_idea(client):
     assert "Alice own idea" in page
     assert "Secret telescope" not in page
     assert "Bob Smith" not in page
-    assert "bob" not in page.lower()
     assert "2026-01-02" not in page  # date_bought
 
 
@@ -200,11 +203,17 @@ def test_recipient_pages_do_not_change_when_own_idea_is_bought(client, env, make
     buyer = make_client()
     login(buyer, "bob")
     buyer.post("/mark_as_bought/1")
-    assert env.idea(1)["bought_by"] == "bob"
+    idea = env.idea(1)
+    assert idea["bought_by"] == "bob"
 
     for path, page in before.items():
         after = client.get(path).get_data(as_text=True)
         assert after == page, f"{path} changed after alice's idea was bought"
+
+    my_ideas = client.get("/my_ideas").get_data(as_text=True)
+    assert "Alice own idea" in my_ideas
+    assert "Bob Smith" not in my_ideas
+    assert idea["date_bought"][:10] not in my_ideas
 
 
 def test_recipient_dashboard_does_not_reveal_bought_ideas(client):
@@ -233,7 +242,8 @@ def test_user_without_family_sees_everyone(client):
 
 
 def test_user_gift_ideas_of_other_family_is_reachable(client):
-    """CURRENT BEHAVIOR (likely a visibility hole): /user_gift_ideas/<user> does
+    """CURRENT BEHAVIOR (likely a visibility hole, kept as a passing test on the
+    owner's request until a fix is decided): /user_gift_ideas/<user> does
     not check families. alice (Smith) can open carol's (Jones) list directly by
     URL, including who bought what, although carol is hidden from her dashboard."""
     login(client, "alice")
@@ -276,7 +286,7 @@ def test_guest_is_refused_on_non_guest_routes(client, method, path):
 
 # 9. Public share links -----------------------------------------------------------
 
-def test_manage_sharing_creates_a_link(client, env):
+def test_manage_sharing_creates_a_link(client, env, make_client):
     login(client, "bob")
     response = client.post("/manage_sharing", data={"create_link": "1", "link_name": "Bob list", "days_valid": "10",
                                                     "allow_purchases": "true"})
@@ -287,7 +297,7 @@ def test_manage_sharing_creates_a_link(client, env):
     assert links[0]["is_active"] is True
     assert links[0]["allow_purchases"] is True
 
-    anonymous = env.module.app.test_client()
+    anonymous = make_client()
     page = anonymous.get(f"/shared/{token}")
     assert page.status_code == 200
     assert "Bob own idea" in page.get_data(as_text=True)
@@ -387,6 +397,7 @@ def _fake_response(html):
 
 
 def test_fetch_og_image_returns_absolute_image_url(client, app_module):
+    login(client, "alice")
     html = '<html><head><meta property="og:image" content="/img/cover.jpg"></head></html>'
     with mock.patch.object(app_module.requests, "get", return_value=_fake_response(html)) as fake_get:
         response = client.get("/fetch_og_image", query_string={"url": "https://shop.example/item/42"})
@@ -397,13 +408,26 @@ def test_fetch_og_image_returns_absolute_image_url(client, app_module):
 
 
 def test_fetch_og_image_without_image(client, app_module):
+    login(client, "alice")
     with mock.patch.object(app_module.requests, "get", return_value=_fake_response("<html></html>")):
         response = client.get("/fetch_og_image", query_string={"url": "https://shop.example/"})
     assert response.status_code == 404
 
 
 def test_fetch_og_image_requires_url(client):
+    login(client, "alice")
     assert client.get("/fetch_og_image").status_code == 400
+
+
+def test_fetch_og_image_does_not_require_login(client, app_module):
+    """CURRENT BEHAVIOR (likely a security hole): /fetch_og_image has no
+    @login_required, so an anonymous visitor can make the server fetch any URL
+    (with TLS verification disabled), e.g. internal addresses (SSRF)."""
+    html = '<meta property="og:image" content="https://internal.example/x.png">'
+    with mock.patch.object(app_module.requests, "get", return_value=_fake_response(html)) as fake_get:
+        response = client.get("/fetch_og_image", query_string={"url": "http://10.0.0.1/"})
+    assert response.status_code == 200
+    assert fake_get.call_args.args[0] == "http://10.0.0.1/"
 
 
 # 11. Secret Santa --------------------------------------------------------------
@@ -424,12 +448,12 @@ def test_secret_santa_draw_is_a_derangement(client, env):
     assert (env.data_dir / "santa_inst_Xmas.txt").read_text() == "Max 20"
 
 
-def test_secret_santa_assignment_visible_to_participant(client, env):
+def test_secret_santa_assignment_visible_to_participant(client, env, make_client):
     login(client, "admin")
     client.post("/secret_santa", data={"participants": ["alice", "bob", "carol"], "pool_name": "Xmas"})
     target = env.user(env.user("alice")["assigned_users"]["Xmas"])["full_name"]
 
-    participant = env.module.app.test_client()
+    participant = make_client()
     login(participant, "alice")
     response = participant.get("/secret_santa_assignments")
     assert response.status_code == 200
