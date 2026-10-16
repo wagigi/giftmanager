@@ -234,10 +234,10 @@ def auth():
         return redirect(url_for("login"))
     
     # Retrieve fields dynamically from the environment
-    primary_oidc_field = os.getenv("PRIMARY_OIDC_FIELD", "").lower()
-    secondary_oidc_field = os.getenv("SECONDARY_OIDC_FIELD", "").lower()
-    primary_db_field = os.getenv("PRIMARY_DB_FIELD", "").lower()
-    secondary_db_field = os.getenv("SECONDARY_DB_FIELD", "").lower()
+    primary_oidc_field = read_env_variable("PRIMARY_OIDC_FIELD", "").lower()
+    secondary_oidc_field = read_env_variable("SECONDARY_OIDC_FIELD", "").lower()
+    primary_db_field = read_env_variable("PRIMARY_DB_FIELD", "").lower()
+    secondary_db_field = read_env_variable("SECONDARY_DB_FIELD", "").lower()
 
     # Get field values from OIDC user info
     primary_oidc_value = user_info.get(primary_oidc_field)
@@ -1323,7 +1323,7 @@ def edit_email_settings():
     current_settings = {
         'MAILJET_API_KEY': '******',  # Mask sensitive values
         'MAILJET_API_SECRET': '******',  # Mask sensitive values
-        'SYSTEM_EMAIL': os.getenv('SYSTEM_EMAIL', ''),
+        'SYSTEM_EMAIL': read_env_variable('SYSTEM_EMAIL', ''),
     }
     return render_template('edit_email_settings.html', settings=current_settings)
 
@@ -1543,16 +1543,16 @@ def setup_oidc():
         flash(_("Environment file not found. Creating a new one."), "warning")
     
     current_values = {
-        "OIDC_CLIENT_ID": os.getenv("OIDC_CLIENT_ID", ''),
-        "OIDC_CLIENT_SECRET": os.getenv("OIDC_CLIENT_SECRET", ''),
-        "OIDC_SERVER_METADATA_URL": os.getenv("OIDC_SERVER_METADATA_URL", ''),
-        "OIDC_LOGOUT_URL": os.getenv("OIDC_LOGOUT_URL", ''),
-        "PRIMARY_OIDC_FIELD": os.getenv("PRIMARY_OIDC_FIELD", 'email'),
-        "SECONDARY_OIDC_FIELD": os.getenv("SECONDARY_OIDC_FIELD", 'preferred_username'),
-        "PRIMARY_DB_FIELD": os.getenv("PRIMARY_DB_FIELD", 'email'),
-        "SECONDARY_DB_FIELD": os.getenv("SECONDARY_DB_FIELD", 'username'),
-        "ENABLE_AUTO_REGISTRATION": os.getenv("ENABLE_AUTO_REGISTRATION", 'false'),
-        "ENABLE_DEFAULT_LOGIN": os.getenv("ENABLE_DEFAULT_LOGIN", 'true'),
+        "OIDC_CLIENT_ID": read_env_variable("OIDC_CLIENT_ID", ''),
+        "OIDC_CLIENT_SECRET": read_env_variable("OIDC_CLIENT_SECRET", ''),
+        "OIDC_SERVER_METADATA_URL": read_env_variable("OIDC_SERVER_METADATA_URL", ''),
+        "OIDC_LOGOUT_URL": read_env_variable("OIDC_LOGOUT_URL", ''),
+        "PRIMARY_OIDC_FIELD": read_env_variable("PRIMARY_OIDC_FIELD", 'email'),
+        "SECONDARY_OIDC_FIELD": read_env_variable("SECONDARY_OIDC_FIELD", 'preferred_username'),
+        "PRIMARY_DB_FIELD": read_env_variable("PRIMARY_DB_FIELD", 'email'),
+        "SECONDARY_DB_FIELD": read_env_variable("SECONDARY_DB_FIELD", 'username'),
+        "ENABLE_AUTO_REGISTRATION": read_env_variable("ENABLE_AUTO_REGISTRATION", 'false'),
+        "ENABLE_DEFAULT_LOGIN": read_env_variable("ENABLE_DEFAULT_LOGIN", 'true'),
     }
 
     return render_template('setup_oidc.html', current_values=current_values)
