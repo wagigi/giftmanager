@@ -186,13 +186,21 @@ class Env:
 
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
-    """Fail any test that opens a real network connection."""
+    """Fail any test that tries to open a real network connection. Attempts are
+    also recorded and checked at teardown, because app code may swallow the
+    error (fetch_og_image catches every Exception)."""
+    attempts = []
+
     def refuse(*args, **kwargs):
+        attempts.append(args)
         raise RuntimeError("network access is disabled in tests")
+
     monkeypatch.setattr(socket.socket, "connect", refuse)
     monkeypatch.setattr(socket.socket, "connect_ex", refuse)
     monkeypatch.setattr(socket, "create_connection", refuse)
     monkeypatch.setattr(socket, "getaddrinfo", refuse)  # no DNS lookups either
+    yield
+    assert not attempts, f"test tried to access the network: {attempts!r}"
 
 
 @pytest.fixture
