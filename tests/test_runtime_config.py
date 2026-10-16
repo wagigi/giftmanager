@@ -2,8 +2,9 @@
 
 Each test edits the test .env (with the same writer as the admin pages) after
 `app` was imported, and checks that the new value applies without re-importing
-anything. os.environ is never touched here: the conftest removed these keys
-from it before import, so only the .env file can supply them.
+anything. os.environ is not touched here (except for an unrelated test key in
+the environment-fallback test): the conftest removed these keys from it before
+import, so only the .env file can supply them.
 """
 from unittest import mock
 
@@ -237,3 +238,95 @@ def test_setup_oidc_warns_that_client_changes_need_a_restart(client):
     assert categories(OIDC_FORM) == ["success"]  # nothing that needs a restart changed
     assert categories(dict(OIDC_FORM, OIDC_LOGOUT_URL="https://idp.example/bye")) == ["success"]
     assert categories(dict(OIDC_FORM, OIDC_CLIENT_SECRET="rotated")) == ["success", "warning"]
+
+
+# read_env_variable parsing (python-dotenv) ------------------------------------------
+
+@pytest.fixture
+def config_module(env):
+    import sys
+    return sys.modules["config"]
+
+
+@pytest.mark.parametrize("line, expected", [
+    ("KEY=plain", "plain"),
+    ("KEY='single quoted'", "single quoted"),
+    ('KEY="double quoted"', "double quoted"),
+    ("KEY=value # inline comment", "value"),
+    ("KEY='value # not a comment'", "value # not a comment"),
+    (r"KEY='it\'s'", "it's"),
+    (r"KEY='back\\slash'", "back\\slash"),
+    ("KEY='${HOME}'", "${HOME}"),  # no variable expansion
+    ("export KEY=exported", "exported"),
+])
+def test_read_env_variable_parses_like_python_dotenv(env, config_module, line, expected):
+    env.env_file.write_text(env.env_file.read_text() + line + "\n")
+    assert config_module.read_env_variable("KEY") == expected
+
+
+def test_read_env_variable_last_duplicate_wins(env, config_module):
+    env.env_file.write_text(env.env_file.read_text() + "KEY=first\nKEY=second\n")
+    assert config_module.read_env_variable("KEY") == "second"
+
+
+@pytest.mark.parametrize("line", ["KEY=", "KEY=''", "KEY"])
+def test_read_env_variable_empty_value_returns_default(env, config_module, line):
+    env.env_file.write_text(env.env_file.read_text() + line + "\n")
+    assert config_module.read_env_variable("KEY", "fallback") == "fallback"
+    assert config_module.read_env_variable("KEY") is None
+
+
+def test_read_env_variable_missing_key_falls_back_to_environment(env, config_module, monkeypatch):
+    assert config_module.read_env_variable("GM_TEST_KEY", "fallback") == "fallback"
+    monkeypatch.setenv("GM_TEST_KEY", "from-environ")
+    assert config_module.read_env_variable("GM_TEST_KEY", "fallback") == "from-environ"
+
+
+def test_read_env_variable_without_env_file(env, config_module):
+    env.env_file.unlink()
+    assert config_module.read_env_variable("GM_TEST_KEY", "fallback") == "fallback"
+
+
+# Admin pages write through set_key: values round-trip -------------------------------
+
+TRICKY = "it's a \\ test ${HOME} # not a comment \"quoted\""
+
+
+def test_setup_oidc_value_round_trips(client, env, config_module):
+    login(client, "admin")
+    client.post("/setup_oidc", data=dict(OIDC_FORM, OIDC_CLIENT_SECRET=TRICKY, OIDC_LOGOUT_URL=TRICKY))
+    assert config_module.read_env_variable("OIDC_CLIENT_SECRET") == TRICKY
+    assert config_module.read_env_variable("OIDC_LOGOUT_URL") == TRICKY
+    page = client.get("/setup_oidc").get_data(as_text=True)
+    assert 'value="it&#39;s a \\ test ${HOME} # not a comment &#34;quoted&#34;"' in page
+
+
+def test_edit_login_message_round_trips(client, env, config_module, make_client):
+    login(client, "admin")
+    client.post("/edit_login_message", data={"login_message": TRICKY})
+    assert config_module.read_env_variable("LOGIN_PAGE_MESSAGE") == TRICKY
+    assert "it&#39;s a \\ test ${HOME} # not a comment &#34;quoted&#34;" in make_client().get("/login").get_data(as_text=True)
+
+    # Saved again: the existing line is replaced, not duplicated
+    client.post("/edit_login_message", data={"login_message": "Second message"})
+    assert config_module.read_env_variable("LOGIN_PAGE_MESSAGE") == "Second message"
+    assert env.env_file.read_text().count("LOGIN_PAGE_MESSAGE=") == 1
+
+
+def test_edit_login_message_adds_missing_key(client, env, config_module):
+    """The old writer only replaced an existing LOGIN_PAGE_MESSAGE line, so on a
+    .env without one the new message was silently dropped."""
+    assert "LOGIN_PAGE_MESSAGE" not in env.env_file.read_text()
+    login(client, "admin")
+    client.post("/edit_login_message", data={"login_message": "Hello family"})
+    assert config_module.read_env_variable("LOGIN_PAGE_MESSAGE") == "Hello family"
+
+
+def test_edit_email_settings_round_trips_and_keeps_blank_fields(client, env, config_module):
+    env.set_env("MAILJET_API_KEY", "old-key")
+    login(client, "admin")
+    client.post("/edit_email_settings", data={"MAILJET_API_KEY": "", "MAILJET_API_SECRET": TRICKY,
+                                              "SYSTEM_EMAIL": "o'brien@example.com"})
+    assert config_module.read_env_variable("MAILJET_API_KEY") == "old-key"  # blank: unchanged
+    assert config_module.read_env_variable("MAILJET_API_SECRET") == TRICKY
+    assert config_module.read_env_variable("SYSTEM_EMAIL") == "o'brien@example.com"

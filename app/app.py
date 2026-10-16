@@ -1340,27 +1340,12 @@ def edit_email_settings():
         system_email = request.form.get('SYSTEM_EMAIL', None)
 
         try:
-            # Read current .env content
-            with open(dotenv_path, 'r') as file:
-                env_content = file.readlines()
-
-            # Update the variables in the .env file
-            new_env_content = []
-            for line in env_content:
-                key, _sep, value = line.partition('=')
-                key = key.strip()
-                if key == 'MAILJET_API_KEY' and mailjet_api_key:
-                    new_env_content.append(f"MAILJET_API_KEY='{mailjet_api_key}'\n")
-                elif key == 'MAILJET_API_SECRET' and mailjet_api_secret:
-                    new_env_content.append(f"MAILJET_API_SECRET='{mailjet_api_secret}'\n")
-                elif key == 'SYSTEM_EMAIL' and system_email:
-                    new_env_content.append(f"SYSTEM_EMAIL='{system_email}'\n")
-                else:
-                    new_env_content.append(line)
-
-            # Write updated content back to .env
-            with open(dotenv_path, 'w') as file:
-                file.writelines(new_env_content)
+            # Blank fields keep the current value
+            for key, value in (('MAILJET_API_KEY', mailjet_api_key),
+                               ('MAILJET_API_SECRET', mailjet_api_secret),
+                               ('SYSTEM_EMAIL', system_email)):
+                if value:
+                    set_key(dotenv_path, key, value)
 
             # Reload the .env file to reflect changes
             load_dotenv(dotenv_path, override=True)
@@ -1387,15 +1372,7 @@ def edit_login_message():
         if new_message:
             try:
                 # Update the .env file
-                with open(dotenv_path, 'r') as file:
-                    lines = file.readlines()
-
-                with open(dotenv_path, 'w') as file:
-                    for line in lines:
-                        if line.strip().startswith("LOGIN_PAGE_MESSAGE="):
-                            file.write(f"LOGIN_PAGE_MESSAGE='{new_message}'\n")
-                        else:
-                            file.write(line)
+                set_key(dotenv_path, "LOGIN_PAGE_MESSAGE", new_message)
 
                 flash(_("Login message updated successfully!"), "success")
             except Exception as e:

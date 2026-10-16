@@ -1,7 +1,7 @@
 """Data directory, .env handling and first-start defaults."""
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 
 
 # Directory holding .env, users.json, ideas.json and Secret Santa files (set to /app/data in Docker)
@@ -59,26 +59,21 @@ IMGENABLED='false'
 
 
 def read_env_variable(key, default=None):
-    """Read environment variable from .env file with proper defaults"""
-    # Define the path here to avoid the default parameter issue
-    env_path = dotenv_path
-    
+    """Read a runtime-editable setting from DATA_DIR/.env at call time.
+
+    The file is parsed by python-dotenv, so quoting, escapes, inline comments and duplicate keys
+    (the last one wins) behave as for set_key(), which the admin pages use to write it. Variable
+    expansion is disabled so that values written by set_key() read back unchanged.
+    A key present with an empty value (or without '=') returns `default`; a key missing from the
+    file falls back to the process environment, then to `default`."""
     try:
-        with open(env_path, 'r') as file:
-            for line in file:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    current_key, value = line.split('=', 1)
-                    if current_key.strip() == key:
-                        value = value.strip()
-                        # Remove quotes
-                        if value and ((value[0] == '"' and value[-1] == '"') or (value[0] == "'" and value[-1] == "'")):
-                            value = value[1:-1]
-                        return value if value else default
-    except FileNotFoundError:
-        pass  # .env file doesn't exist, that's okay
+        values = dotenv_values(dotenv_path, interpolate=False)
     except Exception as e:
         print(f"Error reading .env file: {e}")
-    
+        values = {}
+
+    if key in values:
+        return values[key] or default
+
     # Fallback to system environment
     return os.getenv(key, default)
