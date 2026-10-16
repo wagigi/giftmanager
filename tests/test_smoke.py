@@ -69,6 +69,21 @@ def test_index_redirects_anonymous_to_login(client):
     assert is_redirect_to(client.get("/"), "/login")
 
 
+@pytest.mark.parametrize("path", ["/dashboard", "/my_ideas", "/user_gift_ideas/bob", "/admin"])
+def test_session_of_deleted_user_is_logged_out(client, env, path):
+    login(client, "alice")
+    env.write_users([u for u in env.users() if u["username"] != "alice"])
+    assert is_redirect_to(client.get(path), "/login")
+    assert session_username(client) is None
+
+
+def test_session_of_deleted_guest_is_logged_out(client, env):
+    client.post("/guest_login", data={"password": "guestpass"})
+    env.write_users([u for u in env.users() if u["username"] != "guest_smith"])
+    assert is_redirect_to(client.get("/dashboard"), "/login")
+    assert session_username(client) is None
+
+
 # 3. Admin routes -----------------------------------------------------------------
 
 ADMIN_PAGES = ["/admin", "/users", "/families", "/manage_guest_users", "/secret_santa", "/setup_advanced"]
