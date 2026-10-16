@@ -8,6 +8,7 @@ never read or written.
 import importlib
 import json
 import os
+import socket
 import sys
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -183,6 +184,15 @@ class Env:
         set_key(str(self.env_file), key, value)  # same writer as the admin pages
 
 
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    """Fail any test that opens a real network connection."""
+    def refuse(*args, **kwargs):
+        raise RuntimeError("network access is disabled in tests")
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+    monkeypatch.setattr(socket, "create_connection", refuse)
+
+
 @pytest.fixture
 def env(tmp_path):
     """Fresh DATA_DIR populated with test data, and `app` imported against it."""
@@ -199,8 +209,10 @@ def env(tmp_path):
 
         # Fresh import of app and of any module it loaded from app/, so no
         # import-time state (e.g. DATA_DIR) is left over from a previous test.
+        app_files = set(os.listdir(APP_DIR))
         for name, mod in list(sys.modules.items()):
-            if os.path.dirname(os.path.realpath(getattr(mod, "__file__", None) or "/")) == str(APP_DIR):
+            path = getattr(mod, "__file__", None) or ""
+            if os.path.basename(path) in app_files and os.path.dirname(os.path.realpath(path)) == str(APP_DIR):
                 del sys.modules[name]
         module = importlib.import_module("app")
         assert module.DATA_DIR == str(data_dir), "app was not imported against the temporary DATA_DIR"

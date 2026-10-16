@@ -187,7 +187,9 @@ def test_delete_bought_idea_without_mailjet_keys(client, env):
     """The recipient may delete an idea someone else added. The buyer email is
     skipped because the Mailjet keys are empty (no network call)."""
     login(client, "alice")
-    assert client.delete("/delete_idea/2").status_code == 204
+    with mock.patch.object(env.module, "Client") as mailjet_client:
+        assert client.delete("/delete_idea/2").status_code == 204
+    mailjet_client.assert_not_called()
     assert 2 not in [i["gift_idea_id"] for i in env.ideas()]
 
 
