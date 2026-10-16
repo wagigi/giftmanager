@@ -1,4 +1,5 @@
 """Data directory, .env handling and first-start defaults."""
+import io
 import os
 from pathlib import Path
 from dotenv import load_dotenv, dotenv_values
@@ -67,17 +68,21 @@ def read_env_variable(key, default=None):
     A key present with an empty value (or without '=') returns `default`; a key missing from the
     file falls back to the process environment, then to `default`."""
     try:
-        values = dotenv_values(dotenv_path, interpolate=False)
+        with open(dotenv_path, 'r') as file:
+            text = file.read()
+    except FileNotFoundError:
+        text = ''  # .env file doesn't exist, that's okay
     except Exception as e:
         print(f"Error reading .env file: {e}")
-        values = {}
+        text = ''
 
+    values = dotenv_values(stream=io.StringIO(text), interpolate=False)
     if key in values:
         return values[key] or default
 
     # Older versions of the email settings and login message pages wrote values with unescaped
     # quotes, which python-dotenv cannot parse (it skips the line): read those lines as before
-    legacy_value = _read_unparsed_line(key)
+    legacy_value = _read_unparsed_line(text, key)
     if legacy_value is not None:
         return legacy_value or default
 
@@ -85,20 +90,16 @@ def read_env_variable(key, default=None):
     return os.getenv(key, default)
 
 
-def _read_unparsed_line(key):
+def _read_unparsed_line(text, key):
     """Value of the first `key=...` line, read with the rules of the former hand-written parser
     (outer quotes stripped, no escapes). Only used for lines python-dotenv could not parse."""
-    try:
-        with open(dotenv_path, 'r') as file:
-            for line in file:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    current_key, value = line.split('=', 1)
-                    if current_key.strip() == key:
-                        value = value.strip()
-                        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
-                            value = value[1:-1]
-                        return value
-    except OSError:
-        pass
+    for line in text.splitlines():
+        line = line.strip()
+        if line and not line.startswith('#') and '=' in line:
+            current_key, value = line.split('=', 1)
+            if current_key.strip() == key:
+                value = value.strip()
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                    value = value[1:-1]
+                return value
     return None

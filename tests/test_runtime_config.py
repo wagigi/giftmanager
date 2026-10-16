@@ -114,7 +114,7 @@ def test_secondary_db_field_is_read_at_call_time(env, app_module, make_client):
 
 
 def test_enable_auto_registration_is_read_at_call_time(env, app_module, make_client):
-    newcomer = {"email": "new@example.com", "preferred_username": "newcomer", "name": "New Comer"}
+    newcomer = {"email": "new@example.com", "preferred_username": " newcomer ", "name": "New Comer"}  # stored stripped
     env.set_env("PRIMARY_OIDC_FIELD", "email")
     env.set_env("PRIMARY_DB_FIELD", "email")
 
@@ -196,7 +196,7 @@ def test_oidc_cannot_log_in_as_shared_list(env, app_module, make_client):
     assert is_redirect_to(response, "/login") and username is None
 
 
-@pytest.mark.parametrize("preferred_username", ["alice", "ALICE", "shared_smith"])
+@pytest.mark.parametrize("preferred_username", ["alice", "ALICE", " alice ", "shared_smith"])
 def test_auto_registration_refuses_existing_username(env, app_module, make_client, preferred_username):
     """An unmatched identity whose preferred_username belongs to an existing
     account must not be logged in as that account, nor create a duplicate."""

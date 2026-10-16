@@ -280,6 +280,7 @@ def auth():
         if not isinstance(new_username, str) or not new_username.strip():
             flash(_("Cannot create your account: the identity provider did not send a username."), "danger")
             return redirect(url_for("login"))
+        new_username = new_username.strip()
         if any(lowered(user.get("username")) == new_username.lower() for user in users):
             flash(_('Cannot create your account: the username "%(username)s" is already taken. '
                     'Contact an administrator.', username=new_username), "danger")
@@ -842,7 +843,9 @@ def mark_as_bought(idea_id):
             save_gift_ideas(gift_ideas_data)  # Save the updated list
         else:
             # If already bought, display a warning
-            flash(_('"%(name)s" has already been bought by %(buyer)s.', name=idea["gift_name"], buyer=idea["bought_by"]), 'warning')
+            buyer = idea["bought_by"]
+            buyer = buyer[len('visitor:'):] if buyer.startswith('visitor:') else get_full_name(buyer)
+            flash(_('"%(name)s" has already been bought by %(buyer)s.', name=idea["gift_name"], buyer=buyer), 'warning')
     else:
         flash(_('Idea not found'), 'danger')
         return redirect(url_for('dashboard'))
@@ -2226,7 +2229,7 @@ def table_view():
     current_user = next((user for user in users if user['username'] == current_user_username), None)
 
     # Same users as on the dashboard (families, no guests)
-    visible_users = get_visible_users(current_user, users) if current_user else []
+    visible_users = get_visible_users(current_user, users)
 
     # Create a dictionary to store gifts for each user
     user_gifts = {user['username']: [] for user in visible_users}

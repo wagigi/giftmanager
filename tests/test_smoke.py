@@ -205,6 +205,22 @@ def test_mark_as_bought_does_not_overwrite_existing_buyer(client, env, make_clie
     assert [category for category, _ in flashes(other)] == ["login_success", "warning"]
 
 
+def test_already_bought_message_names_the_buyer_for_other_users(client, env):
+    """Non-recipients may see the buyer: full name, or the visitor's name without the internal prefix."""
+    login(client, "alice")
+    client.get("/set_language/en")
+    client.get("/dashboard")  # consume the login flash message
+    client.post("/mark_as_bought/3")
+    client.get("/dashboard")
+    env.update_idea(3, bought_by="visitor:Uncle Joe")
+    client.post("/mark_as_bought/3")
+    assert [message for _, message in flashes(client)] == ['"Bob own idea" has already been bought by Uncle Joe.']
+    env.update_idea(3, bought_by="admin")
+    client.get("/dashboard")
+    client.post("/mark_as_bought/3")
+    assert [message for _, message in flashes(client)] == ['"Bob own idea" has already been bought by Admin User.']
+
+
 def test_only_the_buyer_can_mark_as_not_bought(client, env, make_client):
     login(client, "alice")
     client.post("/mark_as_bought/3")
