@@ -359,6 +359,26 @@ def test_read_env_variable_reads_legacy_unescaped_quotes(env, config_module, cli
     login(client, "admin")
     client.post("/edit_login_message", data={"login_message": "C'est réparé"})
     assert config_module.read_env_variable("LOGIN_PAGE_MESSAGE") == "C'est réparé"
+    # The unparsable line was replaced, not kept next to the new one
+    assert "l'administrateur" not in env.env_file.read_text()
+    assert env.env_file.read_text().count("LOGIN_PAGE_MESSAGE=") == 1
+
+
+def test_set_env_variable_keeps_multiline_and_other_lines(env, config_module):
+    env.env_file.write_text("A='x'\nMULTI='line1\nline2'\nBROKEN='it's'\nKEY='old'\n")
+    config_module.set_env_variable("KEY", "new")
+    assert env.env_file.read_text() == "A='x'\nMULTI='line1\nline2'\nBROKEN='it's'\nKEY='new'\n"
+    config_module.set_env_variable("BROKEN", "it's")
+    assert config_module.read_env_variable("BROKEN") == "it's"
+    assert config_module.read_env_variable("MULTI") == "line1\nline2"
+    assert env.env_file.read_text().count("BROKEN=") == 1
+
+
+def test_read_env_variable_does_not_log_for_legacy_lines(env, config_module, caplog):
+    env.env_file.write_text(env.env_file.read_text() + "LOGIN_PAGE_MESSAGE='l'admin'\n")
+    with caplog.at_level("WARNING"):
+        config_module.read_env_variable("LOGIN_PAGE_MESSAGE")
+    assert not [r for r in caplog.records if r.name.startswith("dotenv")]
 
 
 def test_login_oidc_button_follows_the_registered_client(client, app_module, monkeypatch):

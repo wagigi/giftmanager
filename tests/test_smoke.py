@@ -458,6 +458,12 @@ def test_shared_list_members_keep_access_when_list_is_in_another_family(client, 
     assert is_redirect_to(guest.get("/user_gift_ideas/shared_smith"), "/dashboard")
 
 
+def test_table_view_lists_shared_lists_of_another_family_for_members(client, env):
+    env.update_user("shared_smith", groups=["Jones"])
+    login(client, "alice")
+    assert "Smith Shared List" in client.get("/table_view").get_data(as_text=True)
+
+
 def test_user_gift_ideas_of_unknown_user_is_refused(client):
     login(client, "alice")
     assert is_redirect_to(client.get("/user_gift_ideas/nobody"), "/dashboard")
@@ -796,6 +802,8 @@ def test_setup_wizard_saves_environment(client, env):
     assert is_redirect_to(response, "/")
     assert "DELETE_DAYS='45'" in env.env_file.read_text()
 
+    assert [category for category, _ in flashes(client)][-1] == "success"  # no OIDC set: no restart notice
+
     # One-shot: the wizard cannot be replayed
     assert is_redirect_to(client.post("/setupenv", data={"DELETE_DAYS": "1"}), "/login")
     assert "DELETE_DAYS='45'" in env.env_file.read_text()
@@ -808,3 +816,11 @@ def test_setupenv_refuses_spoofed_referer(client, env):
                            headers={"Referer": "http://evil.example/setupadmin"})
     assert is_redirect_to(response, "/login")
     assert env.env_file.read_text() == before
+
+
+def test_setup_wizard_warns_that_oidc_needs_a_restart(client, env):
+    env.write_users([])
+    client.post("/setupadmin", data={"admin_username": "root", "admin_password": "pw", "admin_email": "",
+                                     "full_name": "Root", "birthday": "", "avatar": "icons/avatar1.png"})
+    client.post("/setupenv", data={"OIDC_CLIENT_ID": "client"})
+    assert [category for category, _ in flashes(client)][-1] == "login_warning"

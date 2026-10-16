@@ -10,7 +10,7 @@ from dotenv import load_dotenv, set_key, dotenv_values
 from PIL import Image, ImageOps, UnidentifiedImageError
 from flask_babel import Babel, _, lazy_gettext as _l, get_locale as current_babel_locale
 
-from config import DATA_DIR, dotenv_path, read_env_variable, SUPPORTED_LANGUAGES
+from config import DATA_DIR, dotenv_path, read_env_variable, set_env_variable, SUPPORTED_LANGUAGES
 from storage import load_users, save_users, load_gift_ideas, save_gift_ideas, find_idea_by_id, get_full_name
 from auth import ph, password_hash, verify_password, login_required, admin_required, guest_allowed
 from visibility import get_visible_users, get_visible_groups, can_view_list
@@ -1323,7 +1323,7 @@ def edit_email_settings():
                                ('MAILJET_API_SECRET', mailjet_api_secret),
                                ('SYSTEM_EMAIL', system_email)):
                 if value:
-                    set_key(dotenv_path, key, value)
+                    set_env_variable(key, value)
 
             flash(_("Email settings updated successfully!"), "success")
         except Exception as e:
@@ -1345,7 +1345,7 @@ def edit_login_message():
         if new_message:
             try:
                 # Update the .env file
-                set_key(dotenv_path, "LOGIN_PAGE_MESSAGE", new_message)
+                set_env_variable("LOGIN_PAGE_MESSAGE", new_message)
 
                 flash(_("Login message updated successfully!"), "success")
             except Exception as e:
@@ -1504,6 +1504,9 @@ def setupenv():
         session.pop('setupenv_allowed', None)
 
         flash(_('Environment variables saved successfully!'), 'success')
+        # The OIDC client was registered at startup (shown on the login page, hence the category)
+        if any(env_variables[key] != value for key, value in OIDC_STARTUP_SETTINGS.items()):
+            flash(_('Restart the application to apply the new client ID, client secret or server metadata URL.'), 'login_warning')
         return redirect(url_for('index'))
 
     # Render the setup environment page
@@ -2233,8 +2236,8 @@ def table_view():
     current_user_username = session['username']
     current_user = next((user for user in users if user['username'] == current_user_username), None)
 
-    # Same users as on the dashboard (families, no guests)
-    visible_users = get_visible_users(current_user, users)
+    # Same lists as /user_gift_ideas accepts (dashboard users, plus shared lists the user is a member of)
+    visible_users = [user for user in users if can_view_list(current_user, user['username'], users)]
 
     # Create a dictionary to store gifts for each user
     user_gifts = {user['username']: [] for user in visible_users}
