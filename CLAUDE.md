@@ -26,6 +26,9 @@ app/
   translations/        # Babel .po/.mo per language + messages.pot
   users.json, ideas.json, .env   # local dev data (test data only, see below)
 babel.cfg              # extraction config for pybabel
+requirements-dev.txt   # app requirements + pytest
+pyproject.toml         # pytest config only (testpaths, pythonpath)
+tests/                 # pytest smoke tests (conftest.py builds a temp DATA_DIR)
 Dockerfile, docker-compose.yml
 data/                  # docker volume (gitignored)
 ```
@@ -35,7 +38,7 @@ data/                  # docker volume (gitignored)
 - `DATA_DIR` (env var) holds `.env`, `users.json`, `ideas.json`, `avatars/`, `santa_inst_<pool>.txt` and `last_execution_time.txt`. It defaults to the `app/` directory; in Docker it is `/app/data`, mounted from `./data`.
 - On startup `prepopulate_file()` creates default `ideas.json`, an empty `users.json` and a default `.env` if missing.
 - Configuration lives in `DATA_DIR/.env`, which admin pages **write back to** at runtime with `dotenv.set_key()`. Read runtime-editable settings with `read_env_variable(key, default)` (re-reads the file each call) rather than `os.getenv` (only reflects values loaded at startup). Some older code still uses `os.getenv`; changes to those keys need a restart.
-- Keys: `SECRET_KEY`, `MAILJET_API_KEY`, `MAILJET_API_SECRET`, `SYSTEM_EMAIL`, `DELETE_DAYS`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_SERVER_METADATA_URL`, `OIDC_LOGOUT_URL`, `PRIMARY_OIDC_FIELD`, `SECONDARY_OIDC_FIELD`, `PRIMARY_DB_FIELD`, `SECONDARY_DB_FIELD`, `ENABLE_AUTO_REGISTRATION`, `ENABLE_DEFAULT_LOGIN`, `LOGIN_PAGE_MESSAGE`, `REORDERING`, `IMGENABLED`, `ENABLE_LINK_SHARING`, `ENABLE_SELF_REGISTRATION`, `CURRENCY_SYMBOL`, `CURRENCY_POSITION`.
+- Keys: `SECRET_KEY`, `MAILJET_API_KEY`, `MAILJET_API_SECRET`, `SYSTEM_EMAIL`, `DELETE_DAYS`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_SERVER_METADATA_URL`, `OIDC_LOGOUT_URL`, `PRIMARY_OIDC_FIELD`, `SECONDARY_OIDC_FIELD`, `PRIMARY_DB_FIELD`, `SECONDARY_DB_FIELD`, `ENABLE_AUTO_REGISTRATION`, `ENABLE_DEFAULT_LOGIN`, `LOGIN_PAGE_MESSAGE`, `REORDERING`, `IMGENABLED`, `ENABLE_LINK_SHARING`, `ENABLE_SELF_REGISTRATION`, `JOINING_CODE`, `CURRENCY_SYMBOL`, `CURRENCY_POSITION`.
 - The tracked `app/users.json`, `app/ideas.json` and `app/.env` are local dev/test fixtures (fake users), excluded from the Docker image by `.dockerignore`. Don't put real secrets in them.
 
 ## Data model
@@ -85,7 +88,18 @@ Docker:
 docker compose up --build    # data persisted in ./data
 ```
 
-There are no tests, linters or CI configured.
+## Tests
+
+Smoke tests live in `tests/` at the repo root (outside `app/`, so the Docker image doesn't ship them):
+```bash
+pip install -r requirements-dev.txt && pytest    # from the repo root
+```
+- `tests/conftest.py` builds a temporary `DATA_DIR` per test (`.env`, `users.json`, `ideas.json` with an admin, two users in family Smith, one in family Jones, a family guest and a shared list), sets `DATA_DIR` and then (re)imports `app`, because `app.py` reads its data directory at import time. The tracked `app/users.json`, `app/ideas.json` and `app/.env` are never touched.
+- Helpers in `tests/smoke_helpers.py`: `login(client, username)`, `is_redirect_to(response, path)`, `flashes(client)`, `session_username(client)` and the test passwords/tokens. The `env` fixture exposes the temp files (`env.users()`, `env.user(name)`, `env.ideas()`, `env.idea(id)`, `env.update_user(...)`, `env.update_idea(...)`, `env.update_share_link(...)`, `env.set_env(key, value)`, which only affects keys read with `read_env_variable`). Flash messages and page text are in French unless the test calls `/set_language/en` first.
+- Tests freeze current behavior. Confirmed bugs are kept as strict `xfail` tests (remove the marker when fixing one). Questionable behavior whose fix is not decided yet (e.g. security holes) is asserted as-is, in a test whose docstring starts with `CURRENT BEHAVIOR`; update that test when the behavior changes.
+- No network: an autouse fixture makes socket connections fail; `requests.get` is mocked for `/fetch_og_image`, Mailjet keys are empty, OIDC is not configured.
+
+There are no linters or CI configured.
 
 ## Translations (Flask-Babel)
 
@@ -108,3 +122,4 @@ Commit both `.po` and compiled `.mo` files. `BABEL_DEFAULT_LOCALE` is `fr`; the 
 
 - Before opening any pull request, have the changes reviewed by an agent by running `/code-review` on the branch. Fix the findings that hold up (or note why one is dismissed) before creating the PR.
 - This is enforced by a Claude Code hook (`.claude/settings.json` → `.claude/hooks/require-code-review.sh`): a `/code-review` of the current branch with a clean tree records HEAD in `.git/claude-code-review-head` once it has finished (interrupted or failed reviews don't count), and `gh pr create` / `gh pr new` is denied unless that commit is the current HEAD. Commit before reviewing; any new commit (including review fixes) needs another `/code-review`. It only guards Claude Code; it is not a security boundary.
+- Every PR description on GitHub (the body passed to `gh pr create`) starts with a short summary of the feature: **What** changed, **How** it was done, **Why** it was needed. Keep each part to a few simple bullet points.
