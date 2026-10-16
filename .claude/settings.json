@@ -28,7 +28,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/require-code-review.sh record"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/require-code-review.sh pending"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/require-code-review.sh promote"
           }
         ]
       }

@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # Enforces the "run /code-review before opening a PR" rule from CLAUDE.md.
 #
-#   record  - PostToolUse(Skill) / UserPromptSubmit: when /code-review runs on
-#             the current branch with a clean tree, remember HEAD.
+# A review only counts once it has finished, on the current branch, with a
+# clean tree:
+#   record  - PostToolUse(Skill): /code-review runs forked, so this fires after
+#             the review completed successfully. Records HEAD.
+#   pending - UserPromptSubmit: a typed /code-review only marks HEAD as pending;
+#             any other prompt discards a pending review.
+#   promote - Stop: the turn finished normally (not interrupted, no API error),
+#             so a pending review is promoted to recorded.
 #   check   - PreToolUse(Bash): deny PR creation unless the recorded commit is
 #             the current HEAD.
 #
-# The marker lives in the (per-worktree) git dir, so it is never committed.
+# Markers live in the (per-worktree) git dir, so they are never committed.
 # This is a guardrail for Claude, not a security boundary: `gh api` or a PR
 # opened outside Claude Code is not covered.
 set -euo pipefail
@@ -14,40 +20,61 @@ set -euo pipefail
 mode="${1:-}"
 input="$(cat)"
 
+enter_cwd() {
+  cd "$(jq -r '.cwd // empty' <<<"$input" | grep . || echo "${CLAUDE_PROJECT_DIR:-.}")"
+  marker="$(git rev-parse --git-path claude-code-review-head)"
+  pending="$(git rev-parse --git-path claude-code-review-pending)"
+}
+
+# Succeeds when /code-review args target the current branch (no target, or a
+# target naming it, e.g. "main...<branch>") and the tree is clean.
+reviews_current_head() {
+  local branch
+  branch="$(git branch --show-current)"
+  [[ -n "$branch" ]] || return 1
+  set -f
+  set -- $1
+  set +f
+  while (($#)); do
+    case "$1" in
+      low|medium|high|xhigh|max|ultra|--fix|--comment|--post|--no-post) ;;
+      --max-findings=*) ;;
+      --max-findings) (($# > 1)) && shift ;;
+      "$branch"|*..."$branch"|*.."$branch") ;;
+      *) return 1 ;;
+    esac
+    shift
+  done
+  # A review with uncommitted tracked changes did not review HEAD.
+  git diff --quiet HEAD --
+}
+
 case "$mode" in
   record)
-    # Cheap pre-filter: most prompts / skills are unrelated.
     [[ "$input" == *code-review* ]] || exit 0
-    cd "$(jq -r '.cwd // empty' <<<"$input" | grep . || echo "${CLAUDE_PROJECT_DIR:-.}")"
-    skill="$(jq -r '.tool_input.skill // empty' <<<"$input")"
-    prompt="$(jq -r '.prompt // empty' <<<"$input")"
-    if [[ "$skill" == "code-review" ]]; then
-      args="$(jq -r '.tool_input.args // empty' <<<"$input")"
-    elif [[ "$prompt" =~ ^[[:space:]]*/code-review([[:space:]]+(.*))?$ ]]; then
-      args="${BASH_REMATCH[2]}"
-    else
-      exit 0
+    [[ "$(jq -r '.tool_input.skill // empty' <<<"$input")" == "code-review" ]] || exit 0
+    enter_cwd
+    if reviews_current_head "$(jq -r '.tool_input.args // empty' <<<"$input")"; then
+      git rev-parse HEAD >"$marker"
     fi
-    branch="$(git branch --show-current)"
-    [[ -n "$branch" ]] || exit 0
-    # Only a review of the current branch counts: no target, or a target
-    # naming this branch (e.g. "main...<branch>").
-    set -f
-    set -- $args
-    set +f
-    while (($#)); do
-      case "$1" in
-        low|medium|high|xhigh|max|ultra|--fix|--comment|--post|--no-post) ;;
-        --max-findings=*) ;;
-        --max-findings) (($# > 1)) && shift ;;
-        "$branch"|*..."$branch"|*.."$branch") ;;
-        *) exit 0 ;;
-      esac
-      shift
-    done
-    # A review with uncommitted tracked changes did not review HEAD.
-    git diff --quiet HEAD -- || exit 0
-    git rev-parse HEAD >"$(git rev-parse --git-path claude-code-review-head)"
+    ;;
+  pending)
+    enter_cwd
+    rm -f "$pending"
+    prompt="$(jq -r '.prompt // empty' <<<"$input")"
+    if [[ "$prompt" =~ ^[[:space:]]*/code-review([[:space:]]+(.*))?$ ]] &&
+      reviews_current_head "${BASH_REMATCH[2]}"; then
+      git rev-parse HEAD >"$pending"
+    fi
+    ;;
+  promote)
+    enter_cwd
+    [[ -f "$pending" ]] || exit 0
+    if [[ "$(cat "$pending")" == "$(git rev-parse HEAD)" ]] && git diff --quiet HEAD --; then
+      mv "$pending" "$marker"
+    else
+      rm -f "$pending"
+    fi
     ;;
   check)
     # Fail open fast for the vast majority of commands, before any jq/git.
@@ -57,12 +84,12 @@ case "$mode" in
     # left-to-right pass, and join backslash-continued lines.
     unquoted="$(tr '\n' ' ' <<<"$cmd" | sed -E "s/\\\\ / /g; s/'[^']*'|\"[^\"]*\"//g")"
     grep -Eq '(^|[^[:alnum:]_-])gh([[:space:]]+-{1,2}[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+pr[[:space:]]+(create|new)([[:space:]]|$)' <<<"$unquoted" || exit 0
-    cd "$(jq -r '.cwd // empty' <<<"$input" | grep . || echo "${CLAUDE_PROJECT_DIR:-.}")"
+    enter_cwd
     head="$(git rev-parse HEAD)"
-    reviewed="$(cat "$(git rev-parse --git-path claude-code-review-head)" 2>/dev/null || true)"
+    reviewed="$(cat "$marker" 2>/dev/null || true)"
     [[ "$reviewed" == "$head" ]] && exit 0
     if [[ -z "$reviewed" ]]; then
-      reason="No /code-review has been recorded for this checkout."
+      reason="No completed /code-review has been recorded for this checkout."
     else
       reason="The last /code-review covered ${reviewed:0:7}, but HEAD is now ${head:0:7}."
     fi
@@ -70,7 +97,7 @@ case "$mode" in
       '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $r}}'
     ;;
   *)
-    echo "usage: $0 record|check" >&2
+    echo "usage: $0 record|pending|promote|check" >&2
     exit 1
     ;;
 esac
