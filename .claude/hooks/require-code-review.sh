@@ -8,7 +8,9 @@
 #   pending - UserPromptSubmit: a typed /code-review only marks HEAD as pending;
 #             any other prompt discards a pending review.
 #   promote - Stop: the turn finished normally (not interrupted, no API error),
-#             so a pending review is promoted to recorded.
+#             so a pending review is promoted to recorded. Known gap: after an
+#             interrupt, a turn started without a user prompt (e.g. a
+#             background task waking Claude) can still promote it.
 #   check   - PreToolUse(Bash): deny PR creation unless the recorded commit is
 #             the current HEAD.
 #
@@ -40,7 +42,7 @@ reviews_current_head() {
       low|medium|high|xhigh|max|ultra|--fix|--comment|--post|--no-post) ;;
       --max-findings=*) ;;
       --max-findings) (($# > 1)) && shift ;;
-      "$branch"|*..."$branch"|*.."$branch") ;;
+      "$branch"|HEAD|*.."$branch"|*..HEAD) ;;
       *) return 1 ;;
     esac
     shift
@@ -60,6 +62,7 @@ case "$mode" in
     ;;
   pending)
     enter_cwd
+    [[ "$input" == *code-review* || -f "$pending" ]] || exit 0
     rm -f "$pending"
     prompt="$(jq -r '.prompt // empty' <<<"$input")"
     if [[ "$prompt" =~ ^[[:space:]]*/code-review([[:space:]]+(.*))?$ ]] &&
