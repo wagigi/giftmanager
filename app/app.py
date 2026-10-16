@@ -246,16 +246,20 @@ def auth():
     # Load users from the JSON file
     users = load_users()
 
+    def lowered(value):
+        # Fields may be missing, null or not strings (on either side)
+        return str(value).lower() if value is not None else ""
+
     # Find user in the database based on OIDC fields
     user_in_db = None
     if primary_oidc_value:
         user_in_db = next(
-            (user for user in users if user.get(primary_db_field, "").lower() == primary_oidc_value.lower()), 
+            (user for user in users if lowered(user.get(primary_db_field)) == lowered(primary_oidc_value)),
             None
         )
     if not user_in_db and secondary_oidc_value:
         user_in_db = next(
-            (user for user in users if user.get(secondary_db_field, "").lower() == secondary_oidc_value.lower()), 
+            (user for user in users if lowered(user.get(secondary_db_field)) == lowered(secondary_oidc_value)),
             None
         )
 
@@ -267,9 +271,20 @@ def auth():
     
     # Handle auto-registration if enabled
     if read_env_variable("ENABLE_AUTO_REGISTRATION", "false").lower() == "true":
+        # The new account is named after preferred_username. Never create a duplicate username:
+        # the session would then be logged in as the existing account.
+        new_username = user_info.get("preferred_username")
+        if not isinstance(new_username, str) or not new_username.strip():
+            flash(_("Cannot create your account: the identity provider did not send a username."), "danger")
+            return redirect(url_for("login"))
+        if any(lowered(user.get("username")) == new_username.lower() for user in users):
+            flash(_('Cannot create your account: the username "%(username)s" is already taken. '
+                    'Contact an administrator.', username=new_username), "danger")
+            return redirect(url_for("login"))
+
         # Create a new user profile
         new_user = {
-            "username": user_info.get("preferred_username"),
+            "username": new_username,
             "email": user_info.get("email"),
             "full_name": user_info.get("name"),
             "admin": False,
@@ -1562,11 +1577,17 @@ def setup_oidc():
             return render_template('setup_oidc.html', current_values=oidc_env_variables)
 
         try:
+            # The OIDC client is registered at startup, so these keys only apply after a restart
+            restart_keys = ("OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_SERVER_METADATA_URL")
+            needs_restart = any(read_env_variable(key, '') != oidc_env_variables[key] for key in restart_keys)
+
             # Save each variable to the .env file
             for key, value in oidc_env_variables.items():
                 set_key(dotenv_path, key, value)
 
             flash(_('OIDC settings saved successfully!'), 'success')
+            if needs_restart:
+                flash(_('Restart the application to apply the new client ID, client secret or server metadata URL.'), 'warning')
             return redirect(url_for('setup_oidc'))  # Redirect to home page after saving
         except Exception as e:
             flash(_("Error saving OIDC settings: %(error)s", error=e), "danger")

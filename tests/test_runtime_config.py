@@ -174,3 +174,66 @@ def test_setup_oidc_form_shows_current_select_value(client, env, key, first, sec
     assert selected(first) and not selected(second)
     env.set_env(key, second)
     assert selected(second) and not selected(first)
+
+
+# OIDC robustness ------------------------------------------------------------------
+
+def test_oidc_matching_tolerates_null_fields(env, app_module, make_client):
+    """A user whose matched field is null used to crash /auth (None.lower())."""
+    env.update_user("bob", email=None)
+    env.set_env("PRIMARY_OIDC_FIELD", "email")
+    env.set_env("PRIMARY_DB_FIELD", "email")
+    response, username = oidc_login(make_client, app_module, {"email": "carol@example.com"})
+    assert username == "carol"
+
+
+@pytest.mark.parametrize("preferred_username", ["alice", "ALICE", "shared_smith"])
+def test_auto_registration_refuses_existing_username(env, app_module, make_client, preferred_username):
+    """An unmatched identity whose preferred_username belongs to an existing
+    account must not be logged in as that account, nor create a duplicate."""
+    env.set_env("ENABLE_AUTO_REGISTRATION", "true")
+    env.set_env("PRIMARY_OIDC_FIELD", "email")
+    env.set_env("PRIMARY_DB_FIELD", "email")
+    env.set_env("SECONDARY_OIDC_FIELD", "nickname")
+    env.set_env("SECONDARY_DB_FIELD", "username")
+    before = env.users()
+    response, username = oidc_login(make_client, app_module,
+                                    {"email": "intruder@example.com", "preferred_username": preferred_username})
+    assert is_redirect_to(response, "/login") and username is None
+    assert env.users() == before
+
+
+@pytest.mark.parametrize("preferred_username", [None, "", "   "])
+def test_auto_registration_refuses_missing_username(env, app_module, make_client, preferred_username):
+    env.set_env("ENABLE_AUTO_REGISTRATION", "true")
+    env.set_env("PRIMARY_OIDC_FIELD", "email")
+    env.set_env("PRIMARY_DB_FIELD", "email")
+    before = env.users()
+    response, username = oidc_login(make_client, app_module,
+                                    {"email": "new@example.com", "preferred_username": preferred_username})
+    assert is_redirect_to(response, "/login") and username is None
+    assert env.users() == before
+
+
+OIDC_FORM = {
+    "OIDC_CLIENT_ID": "client", "OIDC_CLIENT_SECRET": "secret",
+    "OIDC_SERVER_METADATA_URL": "https://idp.example/.well-known/openid-configuration",
+    "OIDC_LOGOUT_URL": "https://idp.example/logout", "PRIMARY_OIDC_FIELD": "email",
+    "SECONDARY_OIDC_FIELD": "preferred_username", "PRIMARY_DB_FIELD": "email",
+    "SECONDARY_DB_FIELD": "username", "ENABLE_AUTO_REGISTRATION": "false", "ENABLE_DEFAULT_LOGIN": "true",
+}
+
+
+def test_setup_oidc_warns_that_client_changes_need_a_restart(client):
+    login(client, "admin")
+    client.get("/dashboard")  # consume the login flash message
+
+    def categories(form):
+        assert is_redirect_to(client.post("/setup_oidc", data=form), "/setup_oidc")
+        with client.session_transaction() as sess:
+            return [category for category, _ in sess.pop("_flashes", [])]
+
+    assert categories(OIDC_FORM) == ["success", "warning"]
+    assert categories(OIDC_FORM) == ["success"]  # nothing that needs a restart changed
+    assert categories(dict(OIDC_FORM, OIDC_LOGOUT_URL="https://idp.example/bye")) == ["success"]
+    assert categories(dict(OIDC_FORM, OIDC_CLIENT_SECRET="rotated")) == ["success", "warning"]
