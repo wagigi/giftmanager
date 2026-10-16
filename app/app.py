@@ -13,7 +13,7 @@ from flask_babel import Babel, _, lazy_gettext as _l, get_locale as current_babe
 from config import DATA_DIR, dotenv_path, read_env_variable, SUPPORTED_LANGUAGES
 from storage import load_users, save_users, load_gift_ideas, save_gift_ideas, find_idea_by_id, get_full_name
 from auth import ph, password_hash, verify_password, login_required, admin_required, guest_allowed
-from visibility import get_visible_users, get_visible_groups
+from visibility import get_visible_users, get_visible_groups, can_view_list
 from mailer import send_email_to_buyer_via_mailjet
 from avatars import UPLOADED_AVATAR_PREFIX, AVATAR_SIZE, avatar_url, delete_uploaded_avatar
 from og_image import fetch_og_image
@@ -538,6 +538,11 @@ def add2():
         value = request.form.get('value', None)  # Optional field
         image_path = request.form.get('imagePath', '')  # Get the image path from the form
 
+        # Ideas can only be added to the user's own list or to lists shown on their dashboard
+        if not can_view_list(current_user_data, user, users):
+            flash(_('You are not allowed to add ideas to this list.'), 'danger')
+            return redirect(url_for('dashboard'))
+
         # Retrieve the logged-in user's username
         added_by = session.get('username')
 
@@ -624,6 +629,11 @@ def add_idea(selected_user_id):
         value = request.form.get('value', None)  # Optional field
         image_path = request.form.get('imagePath', '')  # Get the image path from the form
         
+        # Ideas can only be added to the user's own list or to lists shown on their dashboard
+        if not can_view_list(current_user_data, user, users):
+            flash(_('You are not allowed to add ideas to this list.'), 'danger')
+            return redirect(url_for('dashboard'))
+
         # Retrieve the currently logged-in user
         added_by = session.get('username')
 
@@ -823,8 +833,13 @@ def mark_as_bought(idea_id):
     # Load the current gift ideas from the JSON file
     gift_ideas_data = load_gift_ideas()
 
-    # Find the idea by its ID
+    users = load_users()
+    current_user = next((user for user in users if user['username'] == session['username']), None)
+
+    # Find the idea by its ID (ideas on lists the user cannot see are treated as not found)
     idea = find_idea_by_id(gift_ideas_data, idea_id)
+    if idea and not can_view_list(current_user, idea['user_id'], users):
+        idea = None
 
     if idea:
         if not idea['bought_by']:
@@ -840,9 +855,10 @@ def mark_as_bought(idea_id):
             flash(_('"%(name)s" has already been bought by %(buyer)s.', name=idea["gift_name"], buyer=idea["bought_by"]), 'warning')
     else:
         flash(_('Idea not found'), 'danger')
+        return redirect(url_for('dashboard'))
 
-    # Redirect to the user's gift ideas page
-    return redirect(url_for('user_gift_ideas', selected_user_id=session['username']))
+    # Redirect to the recipient's gift ideas page (the UI calls this route with fetch() and ignores it)
+    return redirect(url_for('user_gift_ideas', selected_user_id=idea['user_id']))
 
 
 @app.route('/mark_as_not_bought/<int:idea_id>', methods=['POST'])
@@ -901,6 +917,13 @@ def user_gift_ideas(selected_user_id):
         # Redirect to a different page, e.g., 'my_ideas'
         return redirect(url_for('my_ideas'))
 
+    # Only lists shown on the dashboard can be opened (families, guest access rules)
+    users = load_users()
+    current_user = next((user for user in users if user['username'] == connected_user), None)
+    if not can_view_list(current_user, selected_user_id, users):
+        flash(_('You are not allowed to view this list.'), 'danger')
+        return redirect(url_for('dashboard'))
+
     # Filter the gift ideas for the selected user
     gift_ideas_data = load_gift_ideas()  # Load the gift ideas from the JSON file
     user_gift_ideas = [idea for idea in gift_ideas_data if idea['user_id'] == selected_user_id]
@@ -912,8 +935,7 @@ def user_gift_ideas(selected_user_id):
     if not user_gift_ideas:
         flash(_('No gift ideas for this user.'), 'info')
         return redirect(url_for('noidea'))
-    
-    users = load_users()
+
     shared_list = next((user for user in users if user['username'] == selected_user_id and user.get('shared_list')), None)
     is_shared_list_member = shared_list and connected_user in shared_list.get('list_members', [])
     # Call get_full_name function to fetch the user's full name directly in the route
@@ -956,8 +978,10 @@ def update_order():
     # Load the gift ideas from the JSON file using load_gift_ideas()
     gift_ideas_data = load_gift_ideas()
 
-    # Loop to update the priorities of ideas
+    # Loop to update the priorities of ideas (only ideas on the user's own list can be reordered)
     for idea in gift_ideas_data:
+        if idea['user_id'] != session['username']:
+            continue
         for item in new_order:
             if int(idea['gift_idea_id']) == int(item['gift_idea_id']):
                 priority = item.get('priority')
@@ -2221,23 +2245,30 @@ def table_view():
     users = load_users()
     ideas = load_gift_ideas()
     current_user_username = session['username']
+    current_user = next((user for user in users if user['username'] == current_user_username), None)
+
+    # Same users as on the dashboard (families, no guests)
+    visible_users = get_visible_users(current_user, users) if current_user else []
 
     # Create a dictionary to store gifts for each user
-    user_gifts = {user['username']: [] for user in users}
+    user_gifts = {user['username']: [] for user in visible_users}
 
     for idea in ideas:
+        # Surprise rule: in their own column, users only see the ideas they added themselves (as on /my_ideas)
+        if idea['user_id'] == current_user_username and idea.get('added_by') != current_user_username:
+            continue
         if idea['user_id'] in user_gifts:
             user_gifts[idea['user_id']].append(idea)
 
     # Prepare data for the template
-    table_data = []
-    for user in users:
-        if not user.get('guest'):
-            table_data.append({
-                'full_name': user['full_name'],
-                'username': user['username'],
-                'gifts': user_gifts[user['username']]
-            })
+    table_data = [
+        {
+            'full_name': user['full_name'],
+            'username': user['username'],
+            'gifts': user_gifts[user['username']]
+        }
+        for user in visible_users
+    ]
 
     # Find the maximum number of gifts for any user
     max_gifts = 0

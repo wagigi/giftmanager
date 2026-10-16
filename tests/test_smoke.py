@@ -120,16 +120,42 @@ def test_add_idea_for_another_user_is_saved(client, env):
     assert idea["gift_idea_id"] == 6  # max existing id + 1
 
 
+def test_add_idea_for_user_of_other_family_is_refused(client, env):
+    login(client, "alice")
+    for path in ("/add_idea/carol", "/add2/"):
+        response = client.post(path, data={"user": "carol", "name": "Sneaky", "description": "", "link": "",
+                                           "value": "", "imagePath": ""})
+        assert is_redirect_to(response, "/dashboard")
+    assert "Sneaky" not in [i["gift_name"] for i in env.ideas()]
+
+
+def test_add_idea_for_self_and_shared_list(client, env):
+    login(client, "alice")
+    for target in ("alice", "shared_smith"):
+        client.post("/add2/", data={"user": target, "name": f"For {target}", "imagePath": ""})
+    assert {i["user_id"] for i in env.ideas() if i["gift_name"].startswith("For ")} == {"alice", "shared_smith"}
+
+
+def test_update_order_only_changes_own_ideas(client, env):
+    login(client, "alice")
+    response = client.post("/update_order", json={"order": [
+        {"gift_idea_id": 1, "priority": 2},
+        {"gift_idea_id": 4, "priority": 1},  # carol's idea
+    ]})
+    assert response.status_code == 200
+    assert env.idea(1)["priority"] == 2
+    assert "priority" not in env.idea(4)
+
+
 # 5. Mark as bought / not bought --------------------------------------------------
 
 def test_mark_as_bought_then_not_bought(client, env):
-    """CURRENT BEHAVIOR (questionable): /mark_as_bought redirects to the buyer's
-    own /user_gift_ideas page (which bounces to /my_ideas), not to the
-    recipient's list. The UI calls it with fetch(), so the redirect is unused."""
+    """/mark_as_bought redirects to the recipient's list (it used to redirect to
+    the buyer's own list). The UI calls it with fetch(), so the redirect is unused."""
     login(client, "alice")
 
     response = client.post("/mark_as_bought/3")
-    assert is_redirect_to(response, "/user_gift_ideas/alice")
+    assert is_redirect_to(response, "/user_gift_ideas/bob")
     idea = env.idea(3)
     assert idea["bought_by"] == "alice"
     assert idea["date_bought"]
@@ -161,12 +187,33 @@ def test_only_the_buyer_can_mark_as_not_bought(client, env, make_client):
     assert [category for category, _ in flashes(other)] == ["login_success", "danger"]
 
 
-def test_mark_as_bought_ignores_families(client, env):
-    """CURRENT BEHAVIOR (likely a visibility hole): /mark_as_bought does not
-    check families, so alice (Smith) can buy carol's (Jones) idea by id."""
+def test_mark_as_bought_respects_families(client, env):
+    """alice (Smith) cannot buy carol's (Jones) idea by id: carol is not on her
+    dashboard. The idea is reported as not found."""
     login(client, "alice")
+    client.get("/dashboard")  # consume the login flash message
+    response = client.post("/mark_as_bought/4")
+    assert is_redirect_to(response, "/dashboard")
+    assert env.idea(4)["bought_by"] is None
+    assert [category for category, _ in flashes(client)] == ["danger"]
+
+
+def test_guest_mark_as_bought_respects_families(client, env):
+    client.post("/guest_login", data={"password": "guestpass"})
     client.post("/mark_as_bought/4")
-    assert env.idea(4)["bought_by"] == "alice"
+    assert env.idea(4)["bought_by"] is None
+    client.post("/mark_as_bought/3")  # bob is in the guest's family
+    assert env.idea(3)["bought_by"] == "guest_smith"
+
+
+def test_people_guest_only_sees_assigned_users(client, env):
+    """A guest with access_type 'people' sees only its access_users."""
+    env.update_user("guest_smith", access_type="people", groups=[], access_users=["carol"])
+    client.post("/guest_login", data={"password": "guestpass"})
+    assert client.get("/user_gift_ideas/carol").status_code == 200
+    assert is_redirect_to(client.get("/user_gift_ideas/bob"), "/dashboard")
+    client.post("/mark_as_bought/3")
+    assert env.idea(3)["bought_by"] is None
 
 
 # Deleting an idea --------------------------------------------------------------
@@ -279,20 +326,22 @@ def test_recipient_pages_do_not_change_when_own_idea_is_bought(client, env, make
     assert idea["date_bought"][:10] not in my_ideas
 
 
-def test_recipient_table_view_hides_bought_marker(client, make_client):
-    """CURRENT BEHAVIOR (questionable): /table_view lists every idea for alice,
-    including the ones others added for her (unlike /my_ideas), so she sees
-    the surprise idea's name. It does hide the bought marker in her own
-    column. Idea 2 is the only bought idea in the fixtures."""
+def test_recipient_table_view_hides_surprises(client, make_client):
+    """Like /my_ideas, alice's own column only lists the ideas she added
+    herself: the surprise idea added (and bought) by bob is not shown, nor any
+    bought marker. Idea 2 is the only bought idea in the fixtures."""
     login(client, "alice")
     page = client.get("/table_view").get_data(as_text=True)
-    assert "Secret telescope" in page
+    assert "Alice own idea" in page
+    assert "Secret telescope" not in page
     assert "fa-check-circle" not in page
     assert "Bob Smith" in page  # bob's column header, not a buyer marker
 
     other = make_client()
-    login(other, "carol")
-    assert other.get("/table_view").get_data(as_text=True).count("fa-check-circle") == 1
+    login(other, "admin")  # no family: sees alice's column with the bought marker
+    page = other.get("/table_view").get_data(as_text=True)
+    assert "Secret telescope" in page
+    assert page.count("fa-check-circle") == 1
 
 
 # 7. Family visibility ------------------------------------------------------------
@@ -313,29 +362,40 @@ def test_user_without_family_sees_everyone(client):
         assert name in page
 
 
-def test_user_gift_ideas_of_other_family_is_reachable(client, env):
-    """CURRENT BEHAVIOR (likely a visibility hole, kept as a passing test on the
-    owner's request until a fix is decided): /user_gift_ideas/<user> does
-    not check families. alice (Smith) can open carol's (Jones) list directly by
-    URL, including who bought what, although carol is hidden from her dashboard."""
+def test_user_gift_ideas_of_other_family_is_refused(client, env):
+    """alice (Smith) cannot open carol's (Jones) list by URL: carol is hidden
+    from her dashboard, so the list is refused like other denied pages."""
     env.update_idea(4, bought_by="admin")
 
     login(client, "alice")
-    client.get("/set_language/en")
+    client.get("/dashboard")  # consume the login flash message
     response = client.get("/user_gift_ideas/carol")
-    assert response.status_code == 200
-    page = response.get_data(as_text=True)
-    assert "Carol own idea" in page
-    assert "Purchased by: Admin User" in page
+    assert is_redirect_to(response, "/dashboard")
+    assert [category for category, _ in flashes(client)] == ["danger"]
 
 
-def test_table_view_ignores_families(client):
-    """CURRENT BEHAVIOR (likely a visibility hole): /table_view lists every
-    non-guest user, including other families."""
+@pytest.mark.parametrize("target", ["bob", "admin", "shared_smith"])
+def test_user_gift_ideas_of_visible_user_is_reachable(client, env, target):
+    """Same family, users without a family and shared lists stay reachable."""
+    env.write_ideas(env.ideas() + [dict(env.idea(3), gift_idea_id=10 + len(target), user_id=target)])
+    login(client, "alice")
+    assert client.get(f"/user_gift_ideas/{target}").status_code == 200
+
+
+def test_user_gift_ideas_of_unknown_user_is_refused(client):
+    login(client, "alice")
+    assert is_redirect_to(client.get("/user_gift_ideas/nobody"), "/dashboard")
+
+
+def test_table_view_respects_families(client):
+    """/table_view shows the same users as the dashboard."""
     login(client, "alice")
     response = client.get("/table_view")
     assert response.status_code == 200
-    assert "Carol Jones" in response.get_data(as_text=True)
+    page = response.get_data(as_text=True)
+    assert "Bob Smith" in page and "Admin User" in page
+    assert "Carol Jones" not in page and "Carol own idea" not in page
+    assert "Smith Guest" not in page
 
 
 # 8. Guests -----------------------------------------------------------------------
@@ -355,18 +415,13 @@ def test_guest_login_and_allowed_route(client):
     assert client.get("/user_gift_ideas/bob").status_code == 200
 
 
-def test_guest_can_open_other_family_list_by_url(client, env):
-    """CURRENT BEHAVIOR (likely a visibility hole): same missing family check
-    as for regular users, so the Smith family guest can read the Jones
-    family's list, buyers included, by URL."""
+def test_guest_cannot_open_other_family_list_by_url(client, env):
+    """The Smith family guest cannot read the Jones family's list by URL, nor
+    the list of a user without a family (family guests only see their families)."""
     env.update_idea(4, bought_by="admin")
     client.post("/guest_login", data={"password": "guestpass"})
-    client.get("/set_language/en")
-    response = client.get("/user_gift_ideas/carol")
-    assert response.status_code == 200
-    page = response.get_data(as_text=True)
-    assert "Carol own idea" in page
-    assert "Purchased by: Admin User" in page
+    assert is_redirect_to(client.get("/user_gift_ideas/carol"), "/dashboard")
+    assert is_redirect_to(client.get("/user_gift_ideas/admin"), "/dashboard")
 
 
 def test_guest_login_with_wrong_password(client):

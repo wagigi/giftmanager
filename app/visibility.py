@@ -43,6 +43,16 @@ def get_visible_users(current_user, users):
     return visible_users
 
 
+def can_view_list(current_user, target_username, users):
+    """True if current_user may see (and act on) the gift list of target_username:
+    their own list, or a user/shared list shown on their dashboard (get_visible_users)."""
+    if not current_user:
+        return False
+    if target_username == current_user['username'] and not current_user.get('guest'):
+        return True
+    return any(user['username'] == target_username for user in get_visible_users(current_user, users))
+
+
 def get_visible_groups(users):
     """Get all groups except guest private families"""
     all_groups = set()
