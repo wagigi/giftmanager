@@ -1,0 +1,451 @@
+"""Smoke tests freezing the current behavior of the main routes.
+
+These tests describe what the app does today, not what it should do. When a
+test documents questionable behavior, the docstring says so.
+"""
+from unittest import mock
+
+import pytest
+
+from conftest import EXPIRED_TOKEN, SHARE_TOKEN, flashes, login, session_username
+
+
+def is_redirect_to(response, path):
+    return response.status_code in (301, 302, 303, 307, 308) and response.headers["Location"].endswith(path)
+
+
+# 1. Login ---------------------------------------------------------------------
+
+def test_login_page_renders(client):
+    response = client.get("/login")
+    assert response.status_code == 200
+    assert b'name="username"' in response.data
+    assert b'name="password"' in response.data
+
+
+def test_login_with_good_password_redirects_to_dashboard(client):
+    response = login(client, "alice")
+    assert is_redirect_to(response, "/dashboard")
+    assert session_username(client) == "alice"
+
+
+def test_login_is_case_insensitive_on_username(client):
+    response = login(client, "ALICE", "alicepass")
+    assert is_redirect_to(response, "/dashboard")
+    assert session_username(client) == "alice"
+
+
+def test_login_with_wrong_password_does_not_open_session(client):
+    response = login(client, "alice", "wrong")
+    assert response.status_code == 200
+    assert session_username(client) is None
+
+
+def test_login_with_unknown_user_does_not_open_session(client):
+    response = login(client, "nobody", "whatever")
+    assert response.status_code == 200
+    assert session_username(client) is None
+
+
+def test_shared_list_account_cannot_log_in(client):
+    response = login(client, "shared_smith", "")
+    assert response.status_code == 200
+    assert session_username(client) is None
+
+
+def test_logout_clears_session(client):
+    login(client, "alice")
+    response = client.get("/logout")
+    assert is_redirect_to(response, "/login")
+    assert session_username(client) is None
+
+
+# 2. Anonymous access ------------------------------------------------------------
+
+@pytest.mark.parametrize("path", ["/dashboard", "/my_ideas", "/bought_items", "/user_gift_ideas/bob", "/add_idea/bob"])
+def test_anonymous_is_redirected_to_login(client, path):
+    response = client.get(path)
+    assert is_redirect_to(response, "/login")
+
+
+def test_index_redirects_anonymous_to_login(client):
+    assert is_redirect_to(client.get("/"), "/login")
+
+
+# 3. Admin routes -----------------------------------------------------------------
+
+ADMIN_PAGES = ["/admin", "/users", "/families", "/manage_guest_users", "/secret_santa", "/setup_advanced"]
+
+
+@pytest.mark.parametrize("path", ADMIN_PAGES)
+def test_normal_user_cannot_open_admin_pages(client, path):
+    login(client, "alice")
+    client.get("/dashboard")  # consume the login flash message
+    response = client.get(path)
+    assert response.status_code != 200
+    assert is_redirect_to(response, "/dashboard")
+    assert [category for category, _ in flashes(client)] == ["danger"]
+
+
+@pytest.mark.parametrize("path", ["/admin", "/users"])
+def test_anonymous_cannot_open_admin_pages(client, path):
+    assert is_redirect_to(client.get(path), "/login")
+
+
+@pytest.mark.parametrize("path", ADMIN_PAGES)
+def test_admin_can_open_admin_pages(client, path):
+    login(client, "admin")
+    assert client.get(path).status_code == 200
+
+
+# 4. Adding an idea --------------------------------------------------------------
+
+def test_add_idea_page_renders(client):
+    login(client, "alice")
+    response = client.get("/add_idea/bob")
+    assert response.status_code == 200
+
+
+def test_add_idea_for_another_user_is_saved(client, env):
+    login(client, "alice")
+    response = client.post(
+        "/add_idea/bob",
+        data={"user": "bob", "name": "Board game", "description": "Any", "link": "", "value": "25", "imagePath": ""},
+    )
+    assert is_redirect_to(response, "/user_gift_ideas/bob")
+
+    new = [i for i in env.ideas() if i["gift_name"] == "Board game"]
+    assert len(new) == 1
+    idea = new[0]
+    assert idea["user_id"] == "bob"
+    assert idea["added_by"] == "alice"
+    assert idea["bought_by"] is None
+    assert idea["value"] == "25"
+    assert idea["gift_idea_id"] == 6  # max existing id + 1
+
+
+# 5. Mark as bought / not bought --------------------------------------------------
+
+def test_mark_as_bought_then_not_bought(client, env):
+    login(client, "alice")
+
+    response = client.post("/mark_as_bought/3")
+    assert is_redirect_to(response, "/user_gift_ideas/alice")
+    idea = env.idea(3)
+    assert idea["bought_by"] == "alice"
+    assert idea["date_bought"]
+
+    response = client.post("/mark_as_not_bought/3")
+    assert response.status_code == 204
+    idea = env.idea(3)
+    assert not idea["bought_by"]
+    assert "date_bought" not in idea
+
+
+def test_mark_as_bought_does_not_overwrite_existing_buyer(client, env):
+    login(client, "alice")
+    client.post("/mark_as_bought/3")
+    other = env.module.app.test_client()
+    login(other, "bob")
+    other.post("/mark_as_bought/3")
+    assert env.idea(3)["bought_by"] == "alice"
+
+
+def test_only_the_buyer_can_mark_as_not_bought(client, env):
+    login(client, "alice")
+    client.post("/mark_as_bought/3")
+    other = env.module.app.test_client()
+    login(other, "carol")
+    assert other.post("/mark_as_not_bought/3").status_code == 204
+    assert env.idea(3)["bought_by"] == "alice"
+
+
+# 6. Surprise rule ----------------------------------------------------------------
+
+def test_buyer_sees_purchase_on_recipient_list(client):
+    """Sanity check for the test below: the bought idea is visible to others."""
+    login(client, "carol")
+    page = client.get("/user_gift_ideas/alice").get_data(as_text=True)
+    assert "Secret telescope" in page
+    assert "Bob Smith" in page
+
+
+def test_recipient_my_ideas_hides_buyer_and_bought_idea(client):
+    """Idea 2 is for alice, added and bought by bob. /my_ideas only lists ideas
+    alice added herself, so neither the idea nor bob shows up."""
+    login(client, "alice")
+    response = client.get("/my_ideas")
+    assert response.status_code == 200
+    page = response.get_data(as_text=True)
+    assert "Alice own idea" in page
+    assert "Secret telescope" not in page
+    assert "Bob Smith" not in page
+    assert "bob" not in page.lower()
+    assert "2026-01-02" not in page  # date_bought
+
+
+def test_recipient_self_list_redirects_to_my_ideas(client):
+    login(client, "alice")
+    assert is_redirect_to(client.get("/user_gift_ideas/alice"), "/my_ideas")
+
+
+def test_recipient_pages_do_not_change_when_own_idea_is_bought(client, env, make_client):
+    """Buying one of alice's own ideas must not change anything alice can see
+    on /my_ideas and /dashboard. (bob is in alice's family, so his name is on
+    the dashboard anyway; what matters is that nothing reveals the purchase.)"""
+    login(client, "alice")
+    client.get("/dashboard")  # consume the login flash message
+    before = {path: client.get(path).get_data(as_text=True) for path in ("/my_ideas", "/dashboard")}
+
+    buyer = make_client()
+    login(buyer, "bob")
+    buyer.post("/mark_as_bought/1")
+    assert env.idea(1)["bought_by"] == "bob"
+
+    for path, page in before.items():
+        after = client.get(path).get_data(as_text=True)
+        assert after == page, f"{path} changed after alice's idea was bought"
+
+
+def test_recipient_dashboard_does_not_reveal_bought_ideas(client):
+    login(client, "alice")
+    page = client.get("/dashboard").get_data(as_text=True)
+    assert "Secret telescope" not in page
+    assert "2026-01-02" not in page
+
+
+# 7. Family visibility ------------------------------------------------------------
+
+def test_dashboard_shows_same_family_and_hides_other_family(client):
+    login(client, "alice")
+    page = client.get("/dashboard").get_data(as_text=True)
+    assert "Bob Smith" in page
+    assert "Admin User" in page  # users without a family are visible to everyone
+    assert "Carol Jones" not in page
+    assert "Smith Guest" not in page  # guests are never listed
+
+
+def test_user_without_family_sees_everyone(client):
+    login(client, "admin")
+    page = client.get("/dashboard").get_data(as_text=True)
+    for name in ("Alice Smith", "Bob Smith", "Carol Jones"):
+        assert name in page
+
+
+def test_user_gift_ideas_of_other_family_is_reachable(client):
+    """CURRENT BEHAVIOR (likely a visibility hole): /user_gift_ideas/<user> does
+    not check families. alice (Smith) can open carol's (Jones) list directly by
+    URL, including who bought what, although carol is hidden from her dashboard."""
+    login(client, "alice")
+    response = client.get("/user_gift_ideas/carol")
+    assert response.status_code == 200
+    assert "Carol own idea" in response.get_data(as_text=True)
+
+
+# 8. Guests -----------------------------------------------------------------------
+
+def test_guest_login_and_allowed_route(client):
+    response = client.post("/guest_login", data={"password": "guestpass"})
+    assert is_redirect_to(response, "/dashboard")
+    assert session_username(client) == "guest_smith"
+
+    page = client.get("/dashboard")
+    assert page.status_code == 200
+    text = page.get_data(as_text=True)
+    assert "Alice Smith" in text and "Bob Smith" in text
+    assert "Carol Jones" not in text
+    assert "Admin User" not in text  # family guests only see members of their families
+
+    assert client.get("/user_gift_ideas/bob").status_code == 200
+
+
+def test_guest_login_with_wrong_password(client):
+    response = client.post("/guest_login", data={"password": "nope"})
+    assert is_redirect_to(response, "/login")
+    assert session_username(client) is None
+
+
+@pytest.mark.parametrize("method,path", [("get", "/my_ideas"), ("post", "/change_password"), ("get", "/add_idea/bob")])
+def test_guest_is_refused_on_non_guest_routes(client, method, path):
+    client.post("/guest_login", data={"password": "guestpass"})
+    client.get("/dashboard")  # consume the login flash message
+    response = getattr(client, method)(path)
+    assert is_redirect_to(response, "/dashboard")
+    assert [category for category, _ in flashes(client)] == ["danger"]
+
+
+# 9. Public share links -----------------------------------------------------------
+
+def test_manage_sharing_creates_a_link(client, env):
+    login(client, "bob")
+    response = client.post("/manage_sharing", data={"create_link": "1", "link_name": "Bob list", "days_valid": "10",
+                                                    "allow_purchases": "true"})
+    assert response.status_code == 200
+    links = env.user("bob")["sharing"]["public_links"]
+    assert len(links) == 1
+    token = links[0]["token"]
+    assert links[0]["is_active"] is True
+    assert links[0]["allow_purchases"] is True
+
+    anonymous = env.module.app.test_client()
+    page = anonymous.get(f"/shared/{token}")
+    assert page.status_code == 200
+    assert "Bob own idea" in page.get_data(as_text=True)
+
+
+def test_shared_link_renders(client):
+    response = client.get(f"/shared/{SHARE_TOKEN}")
+    assert response.status_code == 200
+    assert "Alice own idea" in response.get_data(as_text=True)
+
+
+def test_shared_link_unknown_token(client):
+    assert client.get("/shared/does-not-exist").status_code == 404
+
+
+def test_shared_link_expired_token(client):
+    assert client.get(f"/shared/{EXPIRED_TOKEN}").status_code == 410
+
+
+def test_shared_link_inactive_token(client, env):
+    users = env.users()
+    alice = next(u for u in users if u["username"] == "alice")
+    alice["sharing"]["public_links"][0]["is_active"] = False
+    env.write_users(users)
+    assert client.get(f"/shared/{SHARE_TOKEN}").status_code == 410
+
+
+def test_shared_link_refused_when_link_sharing_disabled(client, env):
+    env.set_env("ENABLE_LINK_SHARING", "false")
+    assert client.get(f"/shared/{SHARE_TOKEN}").status_code == 404
+
+
+def test_manage_sharing_refused_when_link_sharing_disabled(client, env):
+    env.set_env("ENABLE_LINK_SHARING", "false")
+    login(client, "alice")
+    assert is_redirect_to(client.get("/manage_sharing"), "/dashboard")
+
+
+def test_shared_link_mark_bought_and_not_bought(client, env):
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1", json={"visitor_name": "Uncle Joe"})
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["success"] is True
+    idea = env.idea(1)
+    assert idea["bought_by"] == "visitor:Uncle Joe"
+    assert idea["visitor_id"] == body["visitor_id"]
+    purchases = env.user("alice")["sharing"]["public_links"][0]["visitor_purchases"]
+    assert [p["idea_id"] for p in purchases] == [1]
+
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_not_bought/1", json={"visitor_id": body["visitor_id"]})
+    assert response.status_code == 200
+    assert not env.idea(1)["bought_by"]
+
+
+def test_shared_link_mark_bought_on_other_users_idea_is_refused(client, env):
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/3", json={"visitor_name": "Uncle Joe"})
+    assert response.status_code == 404
+    assert env.idea(3)["bought_by"] is None
+
+
+def test_shared_link_mark_bought_with_expired_token_is_refused(client, env):
+    response = client.post(f"/shared/{EXPIRED_TOKEN}/mark_bought/1", json={"visitor_name": "Uncle Joe"})
+    assert response.status_code == 404
+    assert env.idea(1)["bought_by"] is None
+
+
+@pytest.mark.xfail(
+    reason="Bug: /shared/<token>/mark_not_bought crashes (AttributeError on None.startswith, HTTP 500) "
+           "when the idea is not bought, because bought_by is stored as null rather than missing",
+    raises=AttributeError,
+    strict=True,
+)
+def test_shared_link_cancel_purchase_of_unbought_idea_is_refused(client, env):
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_not_bought/1", json={"visitor_id": "someone"})
+    assert response.status_code == 403
+
+
+@pytest.mark.xfail(
+    reason="Bug: /shared/<token>/mark_bought is not gated by ENABLE_LINK_SHARING, "
+           "visitors can still mark items bought when link sharing is disabled",
+    strict=True,
+)
+def test_shared_link_mark_bought_refused_when_link_sharing_disabled(client, env):
+    env.set_env("ENABLE_LINK_SHARING", "false")
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1", json={"visitor_name": "Uncle Joe"})
+    assert response.status_code != 200
+    assert env.idea(1)["bought_by"] is None
+
+
+# 10. og:image preview ----------------------------------------------------------
+
+def _fake_response(html):
+    response = mock.Mock()
+    response.text = html
+    response.raise_for_status.return_value = None
+    return response
+
+
+def test_fetch_og_image_returns_absolute_image_url(client, app_module):
+    html = '<html><head><meta property="og:image" content="/img/cover.jpg"></head></html>'
+    with mock.patch.object(app_module.requests, "get", return_value=_fake_response(html)) as fake_get:
+        response = client.get("/fetch_og_image", query_string={"url": "https://shop.example/item/42"})
+    assert response.status_code == 200
+    assert response.get_json() == {"og_image_url": "https://shop.example/img/cover.jpg"}
+    fake_get.assert_called_once()
+    assert fake_get.call_args.args[0] == "https://shop.example/item/42"
+
+
+def test_fetch_og_image_without_image(client, app_module):
+    with mock.patch.object(app_module.requests, "get", return_value=_fake_response("<html></html>")):
+        response = client.get("/fetch_og_image", query_string={"url": "https://shop.example/"})
+    assert response.status_code == 404
+
+
+def test_fetch_og_image_requires_url(client):
+    assert client.get("/fetch_og_image").status_code == 400
+
+
+# 11. Secret Santa --------------------------------------------------------------
+
+def test_secret_santa_draw_is_a_derangement(client, env):
+    participants = ["alice", "bob", "carol"]
+    login(client, "admin")
+    response = client.post(
+        "/secret_santa",
+        data={"participants": participants, "pool_name": "Xmas", "instructions": "Max 20"},
+    )
+    assert is_redirect_to(response, "/secret_santa_assignments")
+
+    assignments = {u["username"]: u["assigned_users"]["Xmas"] for u in env.users() if "assigned_users" in u}
+    assert set(assignments) == set(participants)
+    assert sorted(assignments.values()) == sorted(participants)  # a permutation
+    assert all(giver != target for giver, target in assignments.items())  # nobody draws themselves
+    assert (env.data_dir / "santa_inst_Xmas.txt").read_text() == "Max 20"
+
+
+def test_secret_santa_assignment_visible_to_participant(client, env):
+    login(client, "admin")
+    client.post("/secret_santa", data={"participants": ["alice", "bob", "carol"], "pool_name": "Xmas"})
+    target = env.user(env.user("alice")["assigned_users"]["Xmas"])["full_name"]
+
+    participant = env.module.app.test_client()
+    login(participant, "alice")
+    response = participant.get("/secret_santa_assignments")
+    assert response.status_code == 200
+    assert target in response.get_data(as_text=True)
+
+
+# 12. Language ------------------------------------------------------------------
+
+def test_set_language_stores_locale_in_session(client):
+    response = client.get("/set_language/en")
+    assert response.status_code == 302
+    with client.session_transaction() as sess:
+        assert sess["lang"] == "en"
+
+
+def test_set_language_ignores_unsupported_code(client):
+    client.get("/set_language/xx")
+    with client.session_transaction() as sess:
+        assert "lang" not in sess
