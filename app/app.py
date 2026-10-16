@@ -19,7 +19,7 @@ from avatars import UPLOADED_AVATAR_PREFIX, AVATAR_SIZE, avatar_url, delete_uplo
 from og_image import fetch_og_image
 from cleanup import delete_gift_ideas, delete_old_gift_ideas
 from currency import get_currency_symbol, get_currency_position, format_currency
-from sharing import generate_share_token, generate_share_url
+from sharing import generate_share_token, generate_share_url, link_sharing_enabled, find_share_link
 
 app = Flask(__name__)
 
@@ -2070,42 +2070,22 @@ def manage_sharing():
 
 @app.route('/shared/<token>')
 def shared_list(token):
-
-
-    if not read_env_variable('ENABLE_LINK_SHARING', 'true').lower() == 'true':
+    """Public view of a shared gift list or individual user list"""
+    if not link_sharing_enabled():
         return render_template('shared_list_expired.html'), 404
 
-
-    """Public view of a shared gift list or individual user list"""
     users = load_users()
     gift_ideas_data = load_gift_ideas()
-    
+
     # Find the entity (user or shared list) that owns this share token
-    share_owner = None
-    active_link = None
-    is_expired = False
-    
-    for user in users:
-        if 'sharing' in user and 'public_links' in user['sharing']:
-            for link in user['sharing']['public_links']:
-                if link['token'] == token:
-                    # Check if link has expired
-                    expires_at = datetime.strptime(link['expires_at'], '%Y-%m-%d %H:%M:%S')
-                    if datetime.now() <= expires_at and link.get('is_active', True):
-                        share_owner = user
-                        active_link = link
-                    else:
-                        share_owner = user
-                        active_link = link
-                        is_expired = True
-                    break
-    
-    if not share_owner or not active_link:
+    share_owner, active_link, usable = find_share_link(users, token)
+
+    if not share_owner:
         return render_template('shared_list_expired.html'), 404
-    
-    if is_expired:
-        return render_template('shared_list_expired.html'), 410  # 410 Gone
-    
+
+    if not usable:
+        return render_template('shared_list_expired.html'), 410  # 410 Gone (expired or deactivated)
+
     # Get gift ideas for the share owner (could be individual user or shared list)
     user_gift_ideas = [
         idea for idea in gift_ideas_data 
@@ -2129,24 +2109,15 @@ def shared_list(token):
 @app.route('/shared/<token>/mark_bought/<int:idea_id>', methods=['POST'])
 def mark_shared_bought(token, idea_id):
     """Allow visitors to mark items as bought in shared lists"""
+    # Same gating as the public page: link sharing enabled, link known, active and not expired
+    if not link_sharing_enabled():
+        return jsonify({'error': _('Share link not found or expired')}), 404
+
     users = load_users()
     gift_ideas_data = load_gift_ideas()
-    
-    # Find the share link
-    share_owner = None
-    active_link = None
-    
-    for user in users:
-        if 'sharing' in user and 'public_links' in user['sharing']:
-            for link in user['sharing']['public_links']:
-                if link['token'] == token and link.get('is_active', True):
-                    expires_at = datetime.strptime(link['expires_at'], '%Y-%m-%d %H:%M:%S')
-                    if datetime.now() <= expires_at:
-                        share_owner = user
-                        active_link = link
-                    break
-    
-    if not share_owner or not active_link:
+
+    share_owner, active_link, usable = find_share_link(users, token)
+    if not usable:
         return jsonify({'error': _('Share link not found or expired')}), 404
     
     if not active_link.get('allow_purchases', False):
@@ -2158,7 +2129,7 @@ def mark_shared_bought(token, idea_id):
         return jsonify({'error': _('Gift idea not found')}), 404
     
     # Get visitor name from request
-    visitor_name = request.json.get('visitor_name', '').strip()
+    visitor_name = str((request.get_json(silent=True) or {}).get('visitor_name') or '').strip()
     if not visitor_name:
         return jsonify({'error': _('Visitor name is required')}), 400
     
@@ -2195,24 +2166,15 @@ def mark_shared_bought(token, idea_id):
 @app.route('/shared/<token>/mark_not_bought/<int:idea_id>', methods=['POST'])
 def mark_shared_not_bought(token, idea_id):
     """Allow visitors to unmark items as bought"""
+    # Same gating as the public page: link sharing enabled, link known, active and not expired
+    if not link_sharing_enabled():
+        return jsonify({'error': _('Share link not found or expired')}), 404
+
     users = load_users()
     gift_ideas_data = load_gift_ideas()
-    
-    # Find the share link
-    share_owner = None
-    active_link = None
-    
-    for user in users:
-        if 'sharing' in user and 'public_links' in user['sharing']:
-            for link in user['sharing']['public_links']:
-                if link['token'] == token and link.get('is_active', True):
-                    expires_at = datetime.strptime(link['expires_at'], '%Y-%m-%d %H:%M:%S')
-                    if datetime.now() <= expires_at:
-                        share_owner = user
-                        active_link = link
-                    break
-    
-    if not share_owner or not active_link:
+
+    share_owner, active_link, usable = find_share_link(users, token)
+    if not usable:
         return jsonify({'error': _('Share link not found or expired')}), 404
     
     # Find the gift idea
@@ -2221,12 +2183,13 @@ def mark_shared_not_bought(token, idea_id):
         return jsonify({'error': _('Gift idea not found')}), 404
     
     # Get visitor ID from request
-    visitor_id = request.json.get('visitor_id')
+    visitor_id = (request.get_json(silent=True) or {}).get('visitor_id')
     if not visitor_id:
         return jsonify({'error': _('Visitor ID required')}), 400
     
     # Check if this visitor made the purchase
-    if idea.get('bought_by', '').startswith('visitor:') and idea.get('visitor_id') == visitor_id:
+    # bought_by is null (not missing) on ideas that are not bought
+    if (idea.get('bought_by') or '').startswith('visitor:') and idea.get('visitor_id') == visitor_id:
         idea['bought_by'] = None
         idea.pop('date_bought', None)
         idea.pop('visitor_id', None)

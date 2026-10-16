@@ -474,48 +474,54 @@ def test_shared_link_mark_bought_on_other_users_idea_is_refused(client, env):
     assert env.idea(3)["bought_by"] is None
 
 
+def test_shared_link_mark_bought_with_inactive_token_is_refused(client, env):
+    env.update_share_link("alice", SHARE_TOKEN, is_active=False)
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1", json={"visitor_name": "Uncle Joe"})
+    assert response.status_code == 404
+    assert env.idea(1)["bought_by"] is None
+
+
+def test_shared_link_mark_not_bought_with_expired_token_is_refused(client, env):
+    visitor_id = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1",
+                             json={"visitor_name": "Uncle Joe"}).get_json()["visitor_id"]
+    env.update_share_link("alice", SHARE_TOKEN, expires_at="2000-01-01 00:00:00")
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_not_bought/1", json={"visitor_id": visitor_id})
+    assert response.status_code == 404
+    assert env.idea(1)["bought_by"] == "visitor:Uncle Joe"
+
+
+def test_shared_link_mark_bought_without_json_body_is_refused(client, env):
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1")
+    assert response.status_code == 400
+    assert env.idea(1)["bought_by"] is None
+
+
 def test_shared_link_mark_bought_with_expired_token_is_refused(client, env):
     response = client.post(f"/shared/{EXPIRED_TOKEN}/mark_bought/1", json={"visitor_name": "Uncle Joe"})
     assert response.status_code == 404
     assert env.idea(1)["bought_by"] is None
 
 
-@pytest.mark.xfail(
-    reason="Bug: /shared/<token>/mark_not_bought crashes (AttributeError on None.startswith, HTTP 500) "
-           "when the idea is not bought, because bought_by is stored as null rather than missing",
-    raises=AttributeError,
-    strict=True,
-)
 def test_shared_link_cancel_purchase_of_unbought_idea_is_refused(client, env):
+    """bought_by is stored as null on ideas that are not bought (used to crash with a 500)."""
     response = client.post(f"/shared/{SHARE_TOKEN}/mark_not_bought/1", json={"visitor_id": "someone"})
     assert response.status_code == 403
-
-
-@pytest.mark.xfail(
-    reason="Bug: /shared/<token>/mark_bought is not gated by ENABLE_LINK_SHARING, "
-           "visitors can still mark items bought when link sharing is disabled",
-    raises=AssertionError,
-    strict=True,
-)
-def test_shared_link_mark_bought_refused_when_link_sharing_disabled(client, env):
-    env.set_env("ENABLE_LINK_SHARING", "false")
-    response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1", json={"visitor_name": "Uncle Joe"})
-    assert response.status_code != 200
     assert env.idea(1)["bought_by"] is None
 
 
-@pytest.mark.xfail(
-    reason="Bug: /shared/<token>/mark_not_bought is not gated by ENABLE_LINK_SHARING, "
-           "visitors can still cancel purchases when link sharing is disabled",
-    raises=AssertionError,
-    strict=True,
-)
+def test_shared_link_mark_bought_refused_when_link_sharing_disabled(client, env):
+    env.set_env("ENABLE_LINK_SHARING", "false")
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1", json={"visitor_name": "Uncle Joe"})
+    assert response.status_code == 404
+    assert env.idea(1)["bought_by"] is None
+
+
 def test_shared_link_mark_not_bought_refused_when_link_sharing_disabled(client, env):
     visitor_id = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1",
                              json={"visitor_name": "Uncle Joe"}).get_json()["visitor_id"]
     env.set_env("ENABLE_LINK_SHARING", "false")
     response = client.post(f"/shared/{SHARE_TOKEN}/mark_not_bought/1", json={"visitor_id": visitor_id})
-    assert response.status_code != 200
+    assert response.status_code == 404
     assert env.idea(1)["bought_by"] == "visitor:Uncle Joe"
 
 
