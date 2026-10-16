@@ -20,18 +20,7 @@ APP_DIR = Path(__file__).resolve().parent.parent / "app"
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
-# Plain-text passwords of the users created below.
-PASSWORDS = {
-    "admin": "adminpass",
-    "alice": "alicepass",
-    "bob": "bobpass",
-    "carol": "carolpass",
-    "guest_smith": "guestpass",
-    "shared_smith": "sharedpass",  # shared lists have a hash too, login must still refuse them
-}
-
-SHARE_TOKEN = "valid-token"
-EXPIRED_TOKEN = "expired-token"
+from helpers import EXPIRED_TOKEN, PASSWORDS, SHARE_TOKEN
 
 ENV_TEMPLATE = """SECRET_KEY='test-secret-key'
 MAILJET_API_KEY=''
@@ -171,6 +160,22 @@ class Env:
     def write_ideas(self, ideas):
         self.ideas_file.write_text(json.dumps(ideas, indent=4))
 
+    def update_user(self, username, **fields):
+        users = self.users()
+        next(u for u in users if u["username"] == username).update(fields)
+        self.write_users(users)
+
+    def update_idea(self, idea_id, **fields):
+        ideas = self.ideas()
+        next(i for i in ideas if i["gift_idea_id"] == idea_id).update(fields)
+        self.write_ideas(ideas)
+
+    def update_share_link(self, username, token, **fields):
+        users = self.users()
+        user = next(u for u in users if u["username"] == username)
+        next(l for l in user["sharing"]["public_links"] if l["token"] == token).update(fields)
+        self.write_users(users)
+
     def set_env(self, key, value):
         """Rewrite one key of the test .env (read at call time by read_env_variable)."""
         lines = [l for l in self.env_file.read_text().splitlines() if not l.startswith(f"{key}=")]
@@ -218,21 +223,3 @@ def client(env):
 def make_client(env):
     """Factory for extra, independent test clients (separate sessions)."""
     return env.module.app.test_client
-
-
-def login(client, username, password=None):
-    """Log in through the /login form. Returns the (non-followed) response."""
-    if password is None:
-        password = PASSWORDS[username]
-    return client.post("/login", data={"username": username, "password": password})
-
-
-def flashes(client):
-    """Flash messages currently stored in the client's session, as (category, message)."""
-    with client.session_transaction() as sess:
-        return list(sess.get("_flashes", []))
-
-
-def session_username(client):
-    with client.session_transaction() as sess:
-        return sess.get("username")

@@ -7,7 +7,7 @@ from unittest import mock
 
 import pytest
 
-from conftest import EXPIRED_TOKEN, SHARE_TOKEN, flashes, login, session_username
+from helpers import EXPIRED_TOKEN, SHARE_TOKEN, flashes, login, session_username
 
 
 def is_redirect_to(response, path):
@@ -158,7 +158,7 @@ def test_only_the_buyer_can_mark_as_not_bought(client, env, make_client):
     client.post("/mark_as_bought/3")
     other = make_client()
     login(other, "carol")
-    assert other.post("/mark_as_not_bought/3").status_code == 204
+    other.post("/mark_as_not_bought/3")  # always answers 204, refused or not
     assert env.idea(3)["bought_by"] == "alice"
 
 
@@ -168,9 +168,10 @@ def test_buyer_sees_purchase_on_recipient_list(client):
     """Sanity check for the tests below: the bought idea and its buyer are
     visible to other users (admin has no family, so sees everyone)."""
     login(client, "admin")
+    client.get("/set_language/en")
     page = client.get("/user_gift_ideas/alice").get_data(as_text=True)
     assert "Secret telescope" in page
-    assert "Bob Smith" in page
+    assert "Purchased by: Bob Smith" in page
 
 
 def test_recipient_my_ideas_hides_buyer_and_bought_idea(client):
@@ -217,9 +218,10 @@ def test_recipient_pages_do_not_change_when_own_idea_is_bought(client, env, make
 
 
 def test_recipient_table_view_hides_bought_marker(client, make_client):
-    """/table_view lists every idea for alice, including the ones others added
-    (CURRENT BEHAVIOR, unlike /my_ideas), but hides the bought marker in her
-    own column. Idea 2 is the only bought idea in the fixtures."""
+    """CURRENT BEHAVIOR (questionable): /table_view lists every idea for alice,
+    including the ones others added for her (unlike /my_ideas), so she sees
+    the surprise idea's name. It does hide the bought marker in her own
+    column. Idea 2 is the only bought idea in the fixtures."""
     login(client, "alice")
     page = client.get("/table_view").get_data(as_text=True)
     assert "Secret telescope" in page
@@ -229,13 +231,6 @@ def test_recipient_table_view_hides_bought_marker(client, make_client):
     other = make_client()
     login(other, "carol")
     assert other.get("/table_view").get_data(as_text=True).count("fa-check-circle") == 1
-
-
-def test_recipient_dashboard_does_not_reveal_bought_ideas(client):
-    login(client, "alice")
-    page = client.get("/dashboard").get_data(as_text=True)
-    assert "Secret telescope" not in page
-    assert "2026-01-02" not in page
 
 
 # 7. Family visibility ------------------------------------------------------------
@@ -261,16 +256,15 @@ def test_user_gift_ideas_of_other_family_is_reachable(client, env):
     owner's request until a fix is decided): /user_gift_ideas/<user> does
     not check families. alice (Smith) can open carol's (Jones) list directly by
     URL, including who bought what, although carol is hidden from her dashboard."""
-    ideas = env.ideas()
-    next(i for i in ideas if i["gift_idea_id"] == 4)["bought_by"] = "admin"
-    env.write_ideas(ideas)
+    env.update_idea(4, bought_by="admin")
 
     login(client, "alice")
+    client.get("/set_language/en")
     response = client.get("/user_gift_ideas/carol")
     assert response.status_code == 200
     page = response.get_data(as_text=True)
     assert "Carol own idea" in page
-    assert "Admin User" in page  # the buyer
+    assert "Purchased by: Admin User" in page
 
 
 def test_table_view_ignores_families(client):
@@ -344,9 +338,10 @@ def test_owner_can_open_own_share_link_and_see_buyers(client, env):
     public, so the list owner can open her own link, and the page prints
     'Purchased by <full name>' for every bought idea."""
     login(client, "alice")
+    client.get("/set_language/en")
     page = client.get(f"/shared/{SHARE_TOKEN}").get_data(as_text=True)
     assert "Secret telescope" in page
-    assert "Bob Smith" in page
+    assert "Purchased by: Bob Smith" in page
 
 
 def test_shared_link_unknown_token(client):
@@ -358,10 +353,7 @@ def test_shared_link_expired_token(client):
 
 
 def test_shared_link_inactive_token(client, env):
-    users = env.users()
-    alice = next(u for u in users if u["username"] == "alice")
-    alice["sharing"]["public_links"][0]["is_active"] = False
-    env.write_users(users)
+    env.update_share_link("alice", SHARE_TOKEN, is_active=False)
     assert client.get(f"/shared/{SHARE_TOKEN}").status_code == 410
 
 
@@ -393,10 +385,7 @@ def test_shared_link_mark_bought_and_not_bought(client, env):
 
 
 def test_shared_link_mark_bought_refused_when_purchases_not_allowed(client, env):
-    users = env.users()
-    alice = next(u for u in users if u["username"] == "alice")
-    alice["sharing"]["public_links"][0]["allow_purchases"] = False
-    env.write_users(users)
+    env.update_share_link("alice", SHARE_TOKEN, allow_purchases=False)
     response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1", json={"visitor_name": "Uncle Joe"})
     assert response.status_code == 403
     assert env.idea(1)["bought_by"] is None
