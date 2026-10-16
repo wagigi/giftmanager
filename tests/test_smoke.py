@@ -1,7 +1,7 @@
-"""Smoke tests freezing the current behavior of the main routes.
+"""Smoke tests of the main routes, including access control and the surprise rule.
 
-These tests describe what the app does today, not what it should do. When a
-test documents questionable behavior, the docstring says so.
+They freeze the current behavior. When a test documents questionable
+behavior, the docstring says so (see the Tests section of CLAUDE.md).
 """
 from datetime import datetime, timedelta
 from unittest import mock
