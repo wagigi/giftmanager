@@ -15,6 +15,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from dotenv import set_key
 
 # app/ and tests/ are put on sys.path by `pythonpath` in pyproject.toml.
 APP_DIR = Path(__file__).resolve().parent.parent / "app"
@@ -179,9 +180,7 @@ class Env:
         """Rewrite one key of the test .env. Only code that reads the key with
         read_env_variable() sees the change; os.getenv() keeps the value loaded
         into os.environ when app was imported."""
-        lines = [l for l in self.env_file.read_text().splitlines() if not l.startswith(f"{key}=")]
-        lines.append(f"{key}='{value}'")
-        self.env_file.write_text("\n".join(lines) + "\n")
+        set_key(str(self.env_file), key, value)  # same writer as the admin pages
 
 
 @pytest.fixture
@@ -201,7 +200,7 @@ def env(tmp_path):
         # Fresh import of app and of any module it loaded from app/, so no
         # import-time state (e.g. DATA_DIR) is left over from a previous test.
         for name, mod in list(sys.modules.items()):
-            if os.path.dirname(getattr(mod, "__file__", None) or "") == str(APP_DIR):
+            if os.path.dirname(os.path.realpath(getattr(mod, "__file__", None) or "/")) == str(APP_DIR):
                 del sys.modules[name]
         module = importlib.import_module("app")
         assert module.DATA_DIR == str(data_dir), "app was not imported against the temporary DATA_DIR"

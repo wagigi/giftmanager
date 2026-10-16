@@ -3,6 +3,7 @@
 These tests describe what the app does today, not what it should do. When a
 test documents questionable behavior, the docstring says so.
 """
+from datetime import datetime, timedelta
 from unittest import mock
 from urllib.parse import urlparse
 
@@ -159,7 +160,7 @@ def test_only_the_buyer_can_mark_as_not_bought(client, env, make_client):
     login(client, "alice")
     client.post("/mark_as_bought/3")
     other = make_client()
-    login(other, "carol")
+    login(other, "admin")  # sees everyone, so only the buyer rule can refuse
     other.post("/mark_as_not_bought/3")  # always answers 204, refused or not
     assert env.idea(3)["bought_by"] == "alice"
 
@@ -336,6 +337,10 @@ def test_manage_sharing_creates_a_link(client, env, make_client):
     token = links[0]["token"]
     assert links[0]["is_active"] is True
     assert links[0]["allow_purchases"] is True
+    created = datetime.strptime(links[0]["created_at"], "%Y-%m-%d %H:%M:%S")
+    expires = datetime.strptime(links[0]["expires_at"], "%Y-%m-%d %H:%M:%S")
+    # two separate datetime.now() calls, truncated to the second
+    assert abs(expires - created - timedelta(days=10)) <= timedelta(seconds=1)
 
     anonymous = make_client()
     page = anonymous.get(f"/shared/{token}")
