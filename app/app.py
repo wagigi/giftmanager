@@ -390,7 +390,7 @@ def login():
 
     # For GET requests, render the login page
     # OIDC is enabled when the OAuth client was registered with a client ID at startup
-    # (not os.getenv: some admin pages reload .env into os.environ before a restart)
+    # (changing OIDC_CLIENT_ID in .env needs a restart)
     oidc_enabled = bool(OIDC_STARTUP_SETTINGS["OIDC_CLIENT_ID"])
     login_message = read_env_variable("LOGIN_PAGE_MESSAGE") or _l("No account? Contact a family member to create an account.")
     # If default login is disabled, render an OIDC-only login page
@@ -529,10 +529,11 @@ def add2():
         flash(_("Current user not found."), "danger")
         return redirect(url_for('dashboard'))
 
-    # Recipients offered in the form: the lists shown on the dashboard (same rule as can_view_list on POST)
+    # Recipients offered in the form: the same rule as the POST check
     user_list = [
         {"full_name": user["full_name"], "username": user["username"]}
-        for user in get_visible_users(current_user_data, users)
+        for user in users
+        if can_view_list(current_user_data, user["username"], users)
     ]
 
     if request.method == 'POST':
@@ -606,10 +607,11 @@ def add_idea(selected_user_id):
         flash(_("Current user not found."), "danger")
         return redirect(url_for('dashboard'))
 
-    # Recipients offered in the form: the lists shown on the dashboard (same rule as can_view_list on POST)
+    # Recipients offered in the form: the same rule as the POST check
     user_list = [
         {"full_name": user["full_name"], "username": user["username"]}
-        for user in get_visible_users(current_user_data, users)
+        for user in users
+        if can_view_list(current_user_data, user["username"], users)
     ]
 
     if request.method == 'POST':
@@ -864,8 +866,14 @@ def mark_as_not_bought(idea_id):
     # Load the current gift ideas from the JSON file
     gift_ideas_data = load_gift_ideas()
 
-    # Find the idea by its ID
+    # Find the idea by its ID. Unless the user bought it, ideas on lists they cannot see and ideas on
+    # their own list are treated as not found (the refusal message would name hidden ideas)
     idea = find_idea_by_id(gift_ideas_data, idea_id)
+    if idea and idea['bought_by'] != session['username']:
+        users = load_users()
+        current_user = next((user for user in users if user['username'] == session['username']), None)
+        if idea['user_id'] == session['username'] or not can_view_list(current_user, idea['user_id'], users):
+            idea = None
 
     if idea:
         # Check if the idea has already been bought and if the current user is the buyer
@@ -1454,6 +1462,9 @@ def setup():
         # Save the updated users list
         save_users(users_data)
 
+        # Only this browser, right after creating the first admin, may then open /setupenv
+        session['setupenv_allowed'] = True
+
         flash(_('Admin account created successfully. Please configure the environment variables.'), 'success')
         return redirect(url_for('setupenv'))  # Redirect to the setupenv route
 
@@ -1462,8 +1473,9 @@ def setup():
 
 @app.route('/setupenv', methods=['GET', 'POST'])
 def setupenv():
-    referer = request.headers.get('Referer')
-    if not referer or '/setupadmin' not in referer:
+    # Unauthenticated page: only reachable right after /setupadmin created the first admin, in the
+    # same session (a Referer check was spoofable and also refused the form's own POST)
+    if not session.get('setupenv_allowed'):
         flash(_('You must access this page from the setupadmin route.'), 'error')
         return redirect(url_for('login'))  # Redirect to login if not accessed correctly
 
@@ -1489,6 +1501,7 @@ def setupenv():
         # Save each variable to .env file
         for key, value in env_variables.items():
             set_key(dotenv_path, key, value)
+        session.pop('setupenv_allowed', None)
 
         flash(_('Environment variables saved successfully!'), 'success')
         return redirect(url_for('index'))

@@ -221,6 +221,28 @@ def test_already_bought_message_names_the_buyer_for_other_users(client, env):
     assert [message for _, message in flashes(client)] == ['"Bob own idea" has already been bought by Admin User.']
 
 
+def test_mark_as_not_bought_does_not_name_hidden_ideas(client, env):
+    """The 'You did not buy "<name>"' refusal used to name any idea by id:
+    ideas on invisible lists and surprise ideas on one's own list are now not found."""
+    login(client, "alice")
+    client.get("/dashboard")  # consume the login flash message
+    for idea_id in (4, 2):  # carol's idea (other family), surprise idea for alice
+        client.post(f"/mark_as_not_bought/{idea_id}")
+        messages = [message for _, message in flashes(client)]
+        assert len(messages) == 1
+        assert "Carol own idea" not in messages[0] and "Secret telescope" not in messages[0]
+        client.get("/dashboard")
+    assert env.idea(2)["bought_by"] == "bob"
+
+
+def test_buyer_can_cancel_after_leaving_the_family(client, env):
+    login(client, "alice")
+    client.post("/mark_as_bought/3")
+    env.update_user("bob", groups=["Jones"])
+    client.post("/mark_as_not_bought/3")
+    assert not env.idea(3)["bought_by"]
+
+
 def test_only_the_buyer_can_mark_as_not_bought(client, env, make_client):
     login(client, "alice")
     client.post("/mark_as_bought/3")
@@ -759,3 +781,30 @@ def test_set_language_ignores_unsupported_code(client):
     client.get("/set_language/xx")
     with client.session_transaction() as sess:
         assert "lang" not in sess
+
+
+# First-start setup -------------------------------------------------------------
+
+def test_setup_wizard_saves_environment(client, env):
+    env.write_users([])
+    response = client.post("/setupadmin", data={"admin_username": "root", "admin_password": "pw",
+                                                "admin_email": "root@example.com", "full_name": "Root",
+                                                "birthday": "", "avatar": "icons/avatar1.png"})
+    assert is_redirect_to(response, "/setupenv")
+    assert client.get("/setupenv").status_code == 200
+    response = client.post("/setupenv", data={"DELETE_DAYS": "45", "SYSTEM_EMAIL": "noreply@example.com"})
+    assert is_redirect_to(response, "/")
+    assert "DELETE_DAYS='45'" in env.env_file.read_text()
+
+    # One-shot: the wizard cannot be replayed
+    assert is_redirect_to(client.post("/setupenv", data={"DELETE_DAYS": "1"}), "/login")
+    assert "DELETE_DAYS='45'" in env.env_file.read_text()
+
+
+def test_setupenv_refuses_spoofed_referer(client, env):
+    """/setupenv is unauthenticated; it used to trust any Referer containing '/setupadmin'."""
+    before = env.env_file.read_text()
+    response = client.post("/setupenv", data={"ENABLE_AUTO_REGISTRATION": "true", "PRIMARY_DB_FIELD": "full_name"},
+                           headers={"Referer": "http://evil.example/setupadmin"})
+    assert is_redirect_to(response, "/login")
+    assert env.env_file.read_text() == before
