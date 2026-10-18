@@ -467,6 +467,9 @@
             fetch(`/mark_as_bought/${ideaId}`, {
                 method: 'POST',
                 body: formData,
+                // Don't follow the redirect: rendering it would use up the flash messages
+                // (e.g. an invalid price) before the reload below can show them
+                redirect: 'manual',
             })
             .then(response => {
                 // Always reload the page, regardless of the response status

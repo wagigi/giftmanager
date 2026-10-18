@@ -484,6 +484,13 @@ def test_deleted_payer_keeps_their_credit_under_a_retired_name(client, env):
     budget = env.budgets()
     (payer,) = {e["paid_by"] for e in budget["recipients"]["bob"]["expenses"]}
     assert payer.startswith("deleted:admin:") and set(budget["recipients"]["bob"]["budgets"]) == {"alice", payer}
+    assert all(e["idea_id"] is None for e in budget["recipients"]["bob"]["expenses"])
     _en(client, "alice")
     page = client.get("/budget_overview").get_data(as_text=True)
     assert "To admin" in page and "$10.00" in page
+
+
+def test_bought_idea_without_recorded_price_shows_an_empty_field(client, env):
+    login(client, "bob")  # idea 2 was bought before the feature: no expense
+    page = client.get("/bought_items").get_data(as_text=True)
+    assert 'name="price" class="p-2 border rounded inputer"\n                                   value=""' in page.replace("\r\n", "\n")

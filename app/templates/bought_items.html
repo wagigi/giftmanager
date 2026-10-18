@@ -145,7 +145,7 @@
                         <label class="flex flex-col">
                             <span class="sec-text text-sm">{{ _('Price paid') }}</span>
                             <input type="text" inputmode="decimal" name="price" class="p-2 border rounded inputer"
-                                   value="{{ format_cents(to_cents(item.purchase.amount)) if item.purchase.amount is not none else '' }}">
+                                   value="{{ format_cents(to_cents(item.purchase.amount)) if item.purchase.get('amount') is not none else '' }}">
                         </label>
                         <label class="flex items-center gap-2">
                             <input type="checkbox" name="individual" {% if item.purchase.individual %}checked{% endif %}>

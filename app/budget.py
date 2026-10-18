@@ -310,6 +310,7 @@ def retire_user(budgets, user):
         for expense in entry['expenses']:
             if expense['paid_by'] == username:
                 expense['paid_by'] = retired
+                expense['idea_id'] = None  # a new account with the same name must not take it over
                 changed = True
     for settlement in budgets['settlements']:
         for side in ('from', 'to'):
