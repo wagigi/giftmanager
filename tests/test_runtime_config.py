@@ -10,7 +10,7 @@ from unittest import mock
 
 import pytest
 
-from smoke_helpers import is_redirect_to, login, session_username
+from smoke_helpers import flashes, is_redirect_to, login, session_username
 
 
 # Mailjet -----------------------------------------------------------------------
@@ -66,10 +66,10 @@ OIDC_USER_INFO = {
 }
 
 
-def oidc_login(make_client, app_module, user_info=OIDC_USER_INFO):
-    """Run /auth in a fresh client with the provider calls mocked.
+def oidc_login(make_client, app_module, user_info=OIDC_USER_INFO, client=None):
+    """Run /auth in a fresh client (or the given one) with the provider calls mocked.
     Returns (response, username logged in or None)."""
-    client = make_client()
+    client = client or make_client()
     with client.session_transaction() as sess:
         sess["state"] = "test-state"
         sess["nonce"] = "test-nonce"
@@ -206,10 +206,13 @@ def test_auto_registration_refuses_existing_username(env, app_module, make_clien
     env.set_env("SECONDARY_OIDC_FIELD", "nickname")
     env.set_env("SECONDARY_DB_FIELD", "username")
     before = env.users()
+    client = make_client()
     response, username = oidc_login(make_client, app_module,
-                                    {"email": "intruder@example.com", "preferred_username": preferred_username})
+                                    {"email": "intruder@example.com", "preferred_username": preferred_username},
+                                    client=client)
     assert is_redirect_to(response, "/login") and username is None
     assert env.users() == before
+    assert [category for category, _ in flashes(client)] == ["login_error"]  # shown on the login page
 
 
 @pytest.mark.parametrize("preferred_username", [None, "", "   "])
@@ -218,10 +221,13 @@ def test_auto_registration_refuses_missing_username(env, app_module, make_client
     env.set_env("PRIMARY_OIDC_FIELD", "email")
     env.set_env("PRIMARY_DB_FIELD", "email")
     before = env.users()
+    client = make_client()
     response, username = oidc_login(make_client, app_module,
-                                    {"email": "new@example.com", "preferred_username": preferred_username})
+                                    {"email": "new@example.com", "preferred_username": preferred_username},
+                                    client=client)
     assert is_redirect_to(response, "/login") and username is None
     assert env.users() == before
+    assert [category for category, _ in flashes(client)] == ["login_error"]  # shown on the login page
 
 
 OIDC_FORM = {

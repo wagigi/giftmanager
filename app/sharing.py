@@ -26,11 +26,14 @@ def link_sharing_enabled():
 
 def find_share_link(users, token):
     """Return (owner, link, usable) for a share token, or (None, None, False) if no link has it.
-    usable is False when the link was deactivated or has expired."""
+    usable is False when the link was deactivated or has expired (or its expiry date is unreadable)."""
     for user in users:
         for link in user.get('sharing', {}).get('public_links', []):
-            if link['token'] == token:
-                expires_at = datetime.strptime(link['expires_at'], '%Y-%m-%d %H:%M:%S')
+            if link.get('token') == token:
+                try:
+                    expires_at = datetime.strptime(link['expires_at'], '%Y-%m-%d %H:%M:%S')
+                except (KeyError, TypeError, ValueError):
+                    return user, link, False
                 usable = bool(link.get('is_active', True)) and datetime.now() <= expires_at
                 return user, link, usable
     return None, None, False

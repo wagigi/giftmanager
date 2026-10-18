@@ -278,12 +278,12 @@ def auth():
         # the session would then be logged in as the existing account.
         new_username = user_info.get("preferred_username")
         if not isinstance(new_username, str) or not new_username.strip():
-            flash(_("Cannot create your account: the identity provider did not send a username."), "danger")
+            flash(_("Cannot create your account: the identity provider did not send a username."), "login_error")
             return redirect(url_for("login"))
         new_username = new_username.strip()
         if any(lowered(user.get("username")) == new_username.lower() for user in users):
             flash(_('Cannot create your account: the username "%(username)s" is already taken. '
-                    'Contact an administrator.', username=new_username), "danger")
+                    'Contact an administrator.', username=new_username), "login_error")
             return redirect(url_for("login"))
 
         # Create a new user profile
@@ -979,7 +979,7 @@ def update_order():
     # Loop to update the priorities of ideas (only ideas the user added to their own list can be
     # reordered: the ones others added for them are hidden from them)
     for idea in gift_ideas_data:
-        if idea['user_id'] != session['username'] or idea['added_by'] != session['username']:
+        if idea['user_id'] != session['username'] or idea.get('added_by') != session['username']:
             continue
         for item in new_order:
             if int(idea['gift_idea_id']) == int(item['gift_idea_id']):

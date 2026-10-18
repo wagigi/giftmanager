@@ -60,7 +60,7 @@ def can_view_list(current_user, target_username, users):
 def can_modify_idea(username, idea, users):
     """True if username may edit or delete idea: they added it, or it is on a shared list they
     are a member of. Recipients may not touch ideas others added for them (surprise rule)."""
-    if idea['added_by'] == username:
+    if idea.get('added_by') == username:
         return True
     shared_list = next((user for user in users if user['username'] == idea['user_id'] and user.get('shared_list')), None)
     return bool(shared_list and username in shared_list.get('list_members', []))

@@ -621,6 +621,26 @@ def test_shared_link_expired_token(client):
     assert client.get(f"/shared/{EXPIRED_TOKEN}").status_code == 410
 
 
+@pytest.mark.parametrize("expires_at", [None, "2026-12-01 10:00", "soon"])
+def test_shared_link_with_unreadable_expiry_is_refused(client, env, expires_at):
+    """Used to crash with a 500 (strptime on a missing or malformed date)."""
+    env.update_share_link("alice", SHARE_TOKEN, expires_at=expires_at)
+    assert client.get(f"/shared/{SHARE_TOKEN}").status_code == 410
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_bought/1", json={"visitor_name": "Zoe"})
+    assert response.status_code == 404 and env.idea(1)["bought_by"] is None  # as for an expired link
+
+
+def test_update_order_tolerates_ideas_without_adder(client, env):
+    """Legacy ideas without added_by used to make /update_order fail with a 500."""
+    ideas = env.ideas()
+    del next(i for i in ideas if i["gift_idea_id"] == 5)["added_by"]
+    env.write_ideas(ideas)
+    login(client, "alice")
+    response = client.post("/update_order", json={"order": [{"gift_idea_id": 5, "priority": 1}]})
+    assert response.status_code == 200
+    assert "priority" not in env.idea(5)
+
+
 def test_shared_link_inactive_token(client, env):
     env.update_share_link("alice", SHARE_TOKEN, is_active=False)
     assert client.get(f"/shared/{SHARE_TOKEN}").status_code == 410
