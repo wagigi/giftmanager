@@ -169,10 +169,12 @@ def test_update_order_only_changes_own_ideas(client, env):
     response = client.post("/update_order", json={"order": [
         {"gift_idea_id": 1, "priority": 2},
         {"gift_idea_id": 4, "priority": 1},  # carol's idea
+        {"gift_idea_id": 2, "priority": 3},  # on alice's list but added by bob (hidden from her)
     ]})
     assert response.status_code == 200
     assert env.idea(1)["priority"] == 2
     assert "priority" not in env.idea(4)
+    assert "priority" not in env.idea(2)
 
 
 # 5. Mark as bought / not bought --------------------------------------------------
@@ -300,9 +302,19 @@ def test_delete_bought_idea_without_mailjet_keys(client, env, mailer_module):
 
 
 def test_delete_idea_of_someone_else_is_refused(client, env):
+    """Answered as for an unknown id, so ideas on lists one cannot see are not revealed."""
     login(client, "carol")
-    assert client.delete("/delete_idea/1").status_code == 403
+    assert client.delete("/delete_idea/1").status_code == 404
     assert 1 in [i["gift_idea_id"] for i in env.ideas()]
+
+
+def test_edit_idea_of_someone_else_is_refused(client, env):
+    login(client, "bob")  # can see alice's list, but did not add idea 1
+    client.get("/dashboard")  # consume the login flash message
+    response = client.post("/edit_idea/1", data={"description": "changed"})
+    assert is_redirect_to(response, "/dashboard")
+    assert env.idea(1)["description"] != "changed"
+    assert flashes(client) == [("danger", "Idée non trouvée")]
 
 
 def test_delete_unknown_idea(client, env):

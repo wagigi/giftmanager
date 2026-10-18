@@ -672,29 +672,24 @@ def delete_idea(idea_id):
 
     # Find the idea by its ID
     idea = find_idea_by_id(gift_ideas_data, idea_id)
-    current_user_username = session['username']  # Use 'username' from the session
-    # Ideas others added for the current user are hidden from them: answer as for an unknown id
-    if not idea or (idea['user_id'] == current_user_username and not can_modify_idea(current_user_username, idea, users)):
+    # Only the adder or a shared-list member may delete it; anyone else gets the same answer as for
+    # an unknown id, so ideas on lists they cannot see (or hidden from the recipient) are not revealed
+    if not idea or not can_modify_idea(session['username'], idea, users):
         flash(_('Idea not found'), 'danger')
         return '', 404
 
-    # Check if the idea was added by the current user OR if they're a member of the shared list
-    if can_modify_idea(current_user_username, idea, users):
-        # Check if the idea is bought
-        if idea['bought_by']:
-            # Send an email to the buyer using Mailjet
-            send_email_to_buyer_via_mailjet(idea['bought_by'], f'{idea["gift_name"]}', _('IDEAS DELETED'))
+    # Check if the idea is bought
+    if idea['bought_by']:
+        # Send an email to the buyer using Mailjet
+        send_email_to_buyer_via_mailjet(idea['bought_by'], f'{idea["gift_name"]}', _('IDEAS DELETED'))
 
-        # Delete the idea
-        gift_ideas_data.remove(idea)
+    # Delete the idea
+    gift_ideas_data.remove(idea)
 
-        # Save the updated list of gift ideas using the helper function
-        save_gift_ideas(gift_ideas_data)
+    # Save the updated list of gift ideas using the helper function
+    save_gift_ideas(gift_ideas_data)
 
-        return '', 204  # Return a response with HTTP status code 204 (no content)
-
-    flash(_('You are not authorized to delete this idea.'), 'danger')
-    return '', 403  # Return a response with HTTP status code 403 (forbidden)
+    return '', 204  # Return a response with HTTP status code 204 (no content)
 
 @app.route('/logout')
 def logout():
@@ -981,9 +976,10 @@ def update_order():
     # Load the gift ideas from the JSON file using load_gift_ideas()
     gift_ideas_data = load_gift_ideas()
 
-    # Loop to update the priorities of ideas (only ideas on the user's own list can be reordered)
+    # Loop to update the priorities of ideas (only ideas the user added to their own list can be
+    # reordered: the ones others added for them are hidden from them)
     for idea in gift_ideas_data:
-        if idea['user_id'] != session['username']:
+        if idea['user_id'] != session['username'] or idea['added_by'] != session['username']:
             continue
         for item in new_order:
             if int(idea['gift_idea_id']) == int(item['gift_idea_id']):
@@ -1056,51 +1052,45 @@ def add_user():
 @app.route('/edit_idea/<int:idea_id>', methods=['GET', 'POST'])
 @login_required
 def edit_idea(idea_id):
-    # Load the gift ideas from the JSON file
+    # Load the gift ideas and users from the JSON files
     gift_ideas_data = load_gift_ideas()
-# Check if the idea was added by the current user, if it's in their list, OR if they're a member of the shared list
     users = load_users()
-    
-    # Find the idea by its ID
+
+    # Find the idea by its ID. Only the adder or a shared-list member may edit it; anyone else gets
+    # the same answer as for an unknown id, so ideas on lists they cannot see (or hidden from the
+    # recipient) are not revealed
     idea = find_idea_by_id(gift_ideas_data, idea_id)
-    current_user_username = session['username']  # Use 'username' from the session
-    # Ideas others added for the current user are hidden from them: answer as for an unknown id
-    if not idea or (idea['user_id'] == current_user_username and not can_modify_idea(current_user_username, idea, users)):
+    if not idea or not can_modify_idea(session['username'], idea, users):
         flash(_('Idea not found'), 'danger')
         return redirect(url_for('dashboard'))
 
-    # Check if the idea was added by the current user OR if they're a member of the shared list
-    if can_modify_idea(current_user_username, idea, users):
-        if request.method == 'POST':
-            # Debug: print received form data
-            print(f"Received description: {request.form.get('description')}")
-            print(f"Received link: {request.form.get('link')}")
-            print(f"Received image_path: {request.form.get('image_path')}")  # This is the field for the image path
+    if request.method == 'POST':
+        # Debug: print received form data
+        print(f"Received description: {request.form.get('description')}")
+        print(f"Received link: {request.form.get('link')}")
+        print(f"Received image_path: {request.form.get('image_path')}")  # This is the field for the image path
 
-            # Update idea details with submitted form data
-            idea['description'] = request.form.get('description', '')
-            idea['link'] = request.form.get('link', '')
-            idea['value'] = request.form.get('value', None)
-            idea['image_path'] = request.form.get('image_path', '')  # Get the image path from the form
+        # Update idea details with submitted form data
+        idea['description'] = request.form.get('description', '')
+        idea['link'] = request.form.get('link', '')
+        idea['value'] = request.form.get('value', None)
+        idea['image_path'] = request.form.get('image_path', '')  # Get the image path from the form
 
-            # Check if the image path is correctly retrieved
-            if idea['image_path']:
-                print(f"Image path to save: {idea['image_path']}")
-            else:
-                print("No image path provided.")
+        # Check if the image path is correctly retrieved
+        if idea['image_path']:
+            print(f"Image path to save: {idea['image_path']}")
+        else:
+            print("No image path provided.")
 
-            # Save the updated gift ideas data back to the JSON file
-            save_gift_ideas(gift_ideas_data)
+        # Save the updated gift ideas data back to the JSON file
+        save_gift_ideas(gift_ideas_data)
 
-            flash(_('Idea updated successfully!'), 'success')
-            return redirect(url_for('user_gift_ideas', selected_user_id=idea['user_id']))
-        
-        imgenabled = read_env_variable('IMGENABLED', 'true').lower() == 'true'
-        # Render the edit idea form with pre-filled data
-        return render_template('edit_idea.html', idea=idea, imgenabled=imgenabled)
-
-    flash(_('You are not authorized to edit this idea.'), 'danger')
-    return redirect(url_for('dashboard'))
+        flash(_('Idea updated successfully!'), 'success')
+        return redirect(url_for('user_gift_ideas', selected_user_id=idea['user_id']))
+    
+    imgenabled = read_env_variable('IMGENABLED', 'true').lower() == 'true'
+    # Render the edit idea form with pre-filled data
+    return render_template('edit_idea.html', idea=idea, imgenabled=imgenabled)
 
 
 @app.route('/secret_santa', methods=['GET', 'POST'])

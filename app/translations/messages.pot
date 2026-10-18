@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-16 23:53+0200\n"
+"POT-Creation-Date: 2026-10-18 17:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -137,199 +137,191 @@ msgstr ""
 msgid "Registration successful! You can now log in."
 msgstr ""
 
-#: app/app.py:529 app/app.py:606
+#: app/app.py:529 app/app.py:607
 msgid "Current user not found."
 msgstr ""
 
-#: app/app.py:549 app/app.py:626
+#: app/app.py:550 app/app.py:628
 msgid "You are not allowed to add ideas to this list."
 msgstr ""
 
-#: app/app.py:656
+#: app/app.py:658
 #, python-format
 msgid "Idea \"%(name)s\" added for user %(user)s by %(added_by)s!"
 msgstr ""
 
-#: app/app.py:674 app/app.py:853 app/app.py:883 app/app.py:1060
+#: app/app.py:678 app/app.py:849 app/app.py:885 app/app.py:1064
 msgid "Idea not found"
 msgstr ""
 
-#: app/app.py:685
+#: app/app.py:684
 msgid "IDEAS DELETED"
 msgstr ""
 
-#: app/app.py:695
-msgid "You are not authorized to delete this idea."
-msgstr ""
-
-#: app/app.py:719
+#: app/app.py:715
 msgid "User data not found"
 msgstr ""
 
-#: app/app.py:792 app/app.py:1971
+#: app/app.py:788 app/app.py:1975
 msgid "User not found"
 msgstr ""
 
-#: app/app.py:797
+#: app/app.py:793
 msgid "Current password is incorrect"
 msgstr ""
 
-#: app/app.py:802
+#: app/app.py:798
 msgid "New password and confirmation do not match"
 msgstr ""
 
-#: app/app.py:811
+#: app/app.py:807
 msgid "Password successfully changed"
 msgstr ""
 
-#: app/app.py:832
+#: app/app.py:828
 msgid "You cannot mark your own gift ideas as bought."
 msgstr ""
 
-#: app/app.py:840
+#: app/app.py:836
 #, python-format
 msgid "Marked \"%(name)s\" as bought!"
 msgstr ""
 
-#: app/app.py:851
+#: app/app.py:847
 #, python-format
 msgid "\"%(name)s\" has already been bought by %(buyer)s."
 msgstr ""
 
-#: app/app.py:876
+#: app/app.py:878
 #, python-format
 msgid "Marked \"%(name)s\" as not bought."
 msgstr ""
 
-#: app/app.py:881
+#: app/app.py:883
 #, python-format
 msgid "You did not buy \"%(name)s\", so you cannot mark it as not bought."
 msgstr ""
 
-#: app/app.py:920
+#: app/app.py:922
 msgid "You are not allowed to view this list."
 msgstr ""
 
-#: app/app.py:932
+#: app/app.py:934
 msgid "No gift ideas for this user."
 msgstr ""
 
-#: app/app.py:962
+#: app/app.py:964
 msgid "You haven't added any gift ideas."
 msgstr ""
 
-#: app/app.py:1022
+#: app/app.py:1025
 msgid "Username already exists!"
 msgstr ""
 
-#: app/app.py:1043
+#: app/app.py:1046
 msgid "User added successfully!"
 msgstr ""
 
-#: app/app.py:1089
+#: app/app.py:1088
 msgid "Idea updated successfully!"
 msgstr ""
 
-#: app/app.py:1096
-msgid "You are not authorized to edit this idea."
-msgstr ""
-
-#: app/app.py:1125
+#: app/app.py:1121
 #, python-format
 msgid "Pool \"%(name)s\" does not exist."
 msgstr ""
 
-#: app/app.py:1135
+#: app/app.py:1131
 #, python-format
 msgid "Pool \"%(name)s\" has been deleted!"
 msgstr ""
 
-#: app/app.py:1146
+#: app/app.py:1142
 msgid "Pool name is required!"
 msgstr ""
 
-#: app/app.py:1150
+#: app/app.py:1146
 msgid "You need at least 2 participants for Secret Santa!"
 msgstr ""
 
-#: app/app.py:1176
+#: app/app.py:1172
 msgid "Secret Santa assignments have been made!"
 msgstr ""
 
-#: app/app.py:1197
+#: app/app.py:1193
 msgid "You don't have any Secret Santa assignments yet."
 msgstr ""
 
-#: app/app.py:1207
+#: app/app.py:1203
 msgid "No specific instructions provided."
 msgstr ""
 
-#: app/app.py:1245
+#: app/app.py:1241
 msgid "User deleted successfully!"
 msgstr ""
 
-#: app/app.py:1256
+#: app/app.py:1252
 msgid "Admin status updated successfully!"
 msgstr ""
 
-#: app/app.py:1279
+#: app/app.py:1275
 msgid "User updated successfully!"
 msgstr ""
 
-#: app/app.py:1320
+#: app/app.py:1316
 msgid "Email settings updated successfully!"
 msgstr ""
 
-#: app/app.py:1322
+#: app/app.py:1318
 #, python-format
 msgid "An error occurred: %(error)s"
 msgstr ""
 
-#: app/app.py:1342
+#: app/app.py:1338
 msgid "Login message updated successfully!"
 msgstr ""
 
-#: app/app.py:1344
+#: app/app.py:1340
 #, python-format
 msgid "Error updating login message: %(error)s"
 msgstr ""
 
-#: app/app.py:1346
+#: app/app.py:1342
 msgid "Message cannot be empty."
 msgstr ""
 
-#: app/app.py:1374 app/app.py:1410
+#: app/app.py:1370 app/app.py:1406
 msgid "Invalid number of days entered. Please enter a valid number."
 msgstr ""
 
-#: app/app.py:1378
+#: app/app.py:1374
 msgid "Select at least one filter."
 msgstr ""
 
-#: app/app.py:1383
+#: app/app.py:1379
 #, python-format
 msgid "%(count)s gift ideas have been deleted."
 msgstr ""
 
-#: app/app.py:1385
+#: app/app.py:1381
 #, python-format
 msgid "Error deleting old gift ideas: %(error)s"
 msgstr ""
 
-#: app/app.py:1406
+#: app/app.py:1402
 #, python-format
 msgid "The number of days to delete old gift ideas has been updated to %(days)s."
 msgstr ""
 
-#: app/app.py:1412
+#: app/app.py:1408
 msgid "Please provide a value for the number of days."
 msgstr ""
 
-#: app/app.py:1425
+#: app/app.py:1421
 msgid "Users are already configured. Setup page is unavailable."
 msgstr ""
 
-#: app/app.py:1457
+#: app/app.py:1456
 msgid ""
 "Admin account created successfully. Please configure the environment "
 "variables."
@@ -339,180 +331,180 @@ msgstr ""
 msgid "You must access this page from the setupadmin route."
 msgstr ""
 
-#: app/app.py:1493
+#: app/app.py:1494
 msgid "Environment variables saved successfully!"
 msgstr ""
 
-#: app/app.py:1520
-#, python-format
-msgid "Missing required fields: %(fields)s"
-msgstr ""
-
-#: app/app.py:1531
-msgid "OIDC settings saved successfully!"
-msgstr ""
-
-#: app/app.py:1533
+#: app/app.py:1497 app/app.py:1537
 msgid ""
 "Restart the application to apply the new client ID, client secret or "
 "server metadata URL."
 msgstr ""
 
-#: app/app.py:1536
+#: app/app.py:1524
+#, python-format
+msgid "Missing required fields: %(fields)s"
+msgstr ""
+
+#: app/app.py:1535
+msgid "OIDC settings saved successfully!"
+msgstr ""
+
+#: app/app.py:1540
 #, python-format
 msgid "Error saving OIDC settings: %(error)s"
 msgstr ""
 
-#: app/app.py:1583
+#: app/app.py:1587
 msgid "New group added successfully!"
 msgstr ""
 
-#: app/app.py:1610
+#: app/app.py:1614
 msgid "Group assignments updated successfully!"
 msgstr ""
 
-#: app/app.py:1659
+#: app/app.py:1663
 #, python-format
 msgid "Successfully removed %(count)s gift ideas."
 msgstr ""
 
-#: app/app.py:1665
+#: app/app.py:1669
 #, python-format
 msgid "Error occurred while running delete_old_gift_ideas: %(error)s"
 msgstr ""
 
-#: app/app.py:1675
+#: app/app.py:1679
 msgid "URL parameter is required"
 msgstr ""
 
-#: app/app.py:1681
+#: app/app.py:1685
 msgid "No OG image found"
 msgstr ""
 
-#: app/app.py:1723
+#: app/app.py:1727
 msgid "Guest user created successfully!"
 msgstr ""
 
-#: app/app.py:1772
+#: app/app.py:1776
 #, python-format
 msgid ""
 "Guest user %(username)s deleted successfully! %(count)s purchased gift "
 "ideas deleted."
 msgstr ""
 
-#: app/app.py:1774
+#: app/app.py:1778
 msgid "Guest user not found."
 msgstr ""
 
-#: app/app.py:1789
+#: app/app.py:1793
 msgid "Guest login successful!"
 msgstr ""
 
-#: app/app.py:1792
+#: app/app.py:1796
 msgid "Invalid guest password"
 msgstr ""
 
-#: app/app.py:1804
+#: app/app.py:1808
 msgid "Currency settings updated! Please restart to see changes"
 msgstr ""
 
-#: app/app.py:1817
+#: app/app.py:1821
 msgid "Self-registration settings updated successfully!"
 msgstr ""
 
-#: app/app.py:1860
+#: app/app.py:1864
 #, python-format
 msgid "Shared list \"%(name)s\" created successfully!"
 msgstr ""
 
-#: app/app.py:1897 app/app.py:1925
+#: app/app.py:1901 app/app.py:1929
 msgid "Shared list not found."
 msgstr ""
 
-#: app/app.py:1902
+#: app/app.py:1906
 msgid "Only the list owner can delete this shared list."
 msgstr ""
 
-#: app/app.py:1913
+#: app/app.py:1917
 #, python-format
 msgid "Shared list \"%(name)s\" deleted successfully!"
 msgstr ""
 
-#: app/app.py:1930
+#: app/app.py:1934
 msgid "Only the list owner can edit members."
 msgstr ""
 
-#: app/app.py:1942
+#: app/app.py:1946
 #, python-format
 msgid "Members updated for \"%(name)s\"!"
 msgstr ""
 
-#: app/app.py:1954
+#: app/app.py:1958
 msgid "Link sharing settings updated!"
 msgstr ""
 
-#: app/app.py:1963
+#: app/app.py:1967
 msgid "Link sharing feature is currently disabled by administrator."
 msgstr ""
 
-#: app/app.py:1979
+#: app/app.py:1983
 msgid "Target not found"
 msgstr ""
 
-#: app/app.py:1986
+#: app/app.py:1990
 msgid "You are not a member of this shared list"
 msgstr ""
 
-#: app/app.py:1991
+#: app/app.py:1995
 msgid "You can only manage your own sharing settings"
 msgstr ""
 
-#: app/app.py:2018
+#: app/app.py:2022
 msgid "New share link created!"
 msgstr ""
 
-#: app/app.py:2027
+#: app/app.py:2031
 msgid "Share link activated!"
 msgstr ""
 
-#: app/app.py:2027
+#: app/app.py:2031
 msgid "Share link deactivated!"
 msgstr ""
 
-#: app/app.py:2041
+#: app/app.py:2045
 #, python-format
 msgid "Share link extended by %(days)s days! New expiry: %(expiry)s"
 msgstr ""
 
-#: app/app.py:2052
+#: app/app.py:2056
 msgid "Share link deleted!"
 msgstr ""
 
-#: app/app.py:2117 app/app.py:2124 app/app.py:2175 app/app.py:2182
+#: app/app.py:2121 app/app.py:2128 app/app.py:2179 app/app.py:2186
 msgid "Share link not found or expired"
 msgstr ""
 
-#: app/app.py:2128
+#: app/app.py:2132
 msgid "Purchases not allowed for this share link"
 msgstr ""
 
-#: app/app.py:2133 app/app.py:2187
+#: app/app.py:2137 app/app.py:2191
 msgid "Gift idea not found"
 msgstr ""
 
-#: app/app.py:2138
+#: app/app.py:2142
 msgid "Visitor name is required"
 msgstr ""
 
-#: app/app.py:2168
+#: app/app.py:2172
 msgid "Item already purchased"
 msgstr ""
 
-#: app/app.py:2192
+#: app/app.py:2196
 msgid "Visitor ID required"
 msgstr ""
 
-#: app/app.py:2213
+#: app/app.py:2217
 msgid "You can only cancel your own purchases"
 msgstr ""
 
