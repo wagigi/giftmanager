@@ -222,6 +222,16 @@ def user_scopes(current_user, users, budgets):
     return scopes
 
 
+def can_close_scope(current_user, scope, budgets, users):
+    """Members of a family close it (not someone who once paid for one of its lists). Nobody is a
+    real member of the "no family" scope: there, the people involved in it close it."""
+    if scope != ALL_SCOPE:
+        return scope in member_scopes(current_user)
+    username = current_user['username']
+    return bool(scope_balances(budgets, scope, users).get(username)) or any(
+        username in (s['from'], s['to']) for s in budgets['settlements'] if s['scope'] == scope)
+
+
 def close_scope(budgets, scope, users):
     """Forget the budgets, expenses and reimbursements of every recipient of `scope`."""
     users_by_name = {user['username']: user for user in users}
@@ -268,8 +278,21 @@ def record_idea_purchase(budgets, recipient_user, idea, buyer, amount, individua
 
 
 def remove_idea_purchase(budgets, idea_id):
+    """Forget the price paid for an idea. True if there was one."""
+    removed = False
     for entry in budgets['recipients'].values():
-        entry['expenses'] = [e for e in entry['expenses'] if e.get('idea_id') != idea_id]
+        kept = [e for e in entry['expenses'] if e.get('idea_id') != idea_id]
+        removed = removed or len(kept) != len(entry['expenses'])
+        entry['expenses'] = kept
+    return removed
+
+
+def retire_recipient(budgets, username, now=None):
+    """A deleted account's entry keeps counting in its family (the money others paid is not lost),
+    under a key no new account can take, so a user later created with the same name starts empty."""
+    entry = budgets['recipients'].pop(username, None)
+    if entry is not None:
+        budgets['recipients'][f"deleted:{username}:{now or _now()}"] = entry
 
 
 def detach_ideas(budgets, idea_ids):

@@ -24,7 +24,7 @@ from idea_dates import migrate_ideas_file, idea_age
 from budget import (ALL_SCOPE, budget_enabled, can_see_budget, parse_amount, to_cents, format_cents, recipient_entry,
                     recipient_split, scope_transfers, user_scopes, close_scope, add_settlement, add_expense,
                     find_idea_expense, record_idea_purchase, remove_idea_purchase, detach_ideas, empty_budgets,
-                    member_scopes, entry_scope, scope_balances)
+                    member_scopes, entry_scope, can_close_scope, retire_recipient)
 
 app = Flask(__name__)
 
@@ -917,8 +917,7 @@ def mark_as_not_bought(idea_id):
 
             # The price paid no longer counts in the cost sharing
             budgets = load_budgets()
-            if find_idea_expense(budgets, idea_id)[1]:
-                remove_idea_purchase(budgets, idea_id)
+            if remove_idea_purchase(budgets, idea_id):
                 save_budgets(budgets)
         else:
             flash(_('You did not buy "%(name)s", so you cannot mark it as not bought.', name=idea["gift_name"]), 'danger')
@@ -987,6 +986,7 @@ def user_gift_ideas(selected_user_id):
             'split': recipient_split(entry),
             'expenses': entry['expenses'],
             'my_budget': entry['budgets'].get(connected_user),
+            'names': {user['username']: user.get('full_name') or user['username'] for user in users},
         }
 
     # Check if there are no ideas and redirect to the NOIDEA page (unless the budget block has to
@@ -1299,6 +1299,10 @@ def manage_users():
                 if user_obj.get('shared_list') and 'list_members' in user_obj:
                     if username in user_obj['list_members']:
                         user_obj['list_members'].remove(username)
+
+            budgets = load_budgets()
+            retire_recipient(budgets, username)
+            save_budgets(budgets)
             
             flash(_('User deleted successfully!'), 'success')
 
@@ -2496,6 +2500,7 @@ def budget_overview():
         owed_to_me=[t for t in transfers if t[1] == username],
         transfers=transfers,
         is_member=is_member,
+        can_close=can_close_scope(current_user, scope, budgets, users),
         settlements=[s for s in reversed(budgets['settlements'])
                      if s['scope'] == scope and (is_member or username in (s['from'], s['to']))],
     )
@@ -2524,14 +2529,7 @@ def budget_settle():
 @login_required
 def budget_close():
     users, current_user, budgets, scopes, scope = budget_scope_or_404(strict=True)
-    # Only the members of a family (not someone who once paid for one of its lists). Nobody is a
-    # real member of the "no family" scope: there, the people involved in it, and admins, close it.
-    if scope == ALL_SCOPE:
-        allowed = current_user.get('admin') or scope_balances(budgets, scope, users).get(current_user['username']) \
-            or any(current_user['username'] in (s['from'], s['to']) for s in budgets['settlements'] if s['scope'] == scope)
-    else:
-        allowed = current_user.get('admin') or scope in member_scopes(current_user)
-    if not allowed:
+    if not can_close_scope(current_user, scope, budgets, users):
         abort(404)
     close_scope(budgets, scope, users)
     save_budgets(budgets)

@@ -307,7 +307,9 @@ def test_deleted_recipient_keeps_counting_in_their_family(client, env):
     login(admin, "admin")
     admin.post("/users", data={"username": "bob", "delete_user": "1"})
     budget = env.budgets()
-    assert "bob" in budget["recipients"]
+    # Kept under a key a new account named bob cannot take
+    assert "bob" not in budget["recipients"]
+    assert [key.split(":")[:2] for key in budget["recipients"]] == [["deleted", "bob"]]
     users = env.users()
     assert env.module.scope_transfers(budget, "Smith", users) == []  # alice paid her own share
 

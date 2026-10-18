@@ -206,7 +206,7 @@
         </section>
         {% endif %}
 
-        {% if is_member %}
+        {% if can_close %}
         <form method="post" action="{{ url_for('budget_close') }}"
               onsubmit="return confirm({{ _('Close this family? Every budget, expense and reimbursement of its lists will be deleted.')|tojson|forceescape }});">
             <input type="hidden" name="scope" value="{{ scope }}">

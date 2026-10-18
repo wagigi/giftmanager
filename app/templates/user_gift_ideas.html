@@ -347,7 +347,7 @@
                     {% for person in split.people %}
                     {% set balance = split.balances[person] %}
                     <tr>
-                        <td>{{ get_full_name(person) }}</td>
+                        <td>{{ budget.names.get(person, person) }}</td>
                         <td>{{ format_money(split.budgets.get(person, 0)) }}</td>
                         <td>{{ format_money(split.paid.get(person, 0)) }}</td>
                         <td>{{ format_money(split.shares.get(person, 0)) }}</td>
@@ -368,7 +368,7 @@
                 {% for expense in budget.expenses %}
                 <li class="flex flex-wrap items-center gap-2">
                     <span>{{ expense.label or _('Other expense') }}</span>
-                    <span class="sec-text">— {{ get_full_name(expense.paid_by) }}</span>
+                    <span class="sec-text">— {{ budget.names.get(expense.paid_by, expense.paid_by) }}</span>
                     <strong>{% if expense.amount is not none %}{{ format_money(to_cents(expense.amount)) }}{% else %}{{ _('price not set') }}{% endif %}</strong>
                     {% if expense.individual %}<span class="sec-text text-sm">({{ _('individual gift, not shared') }})</span>{% endif %}
                     {% if expense.paid_by == session['username'] %}
@@ -532,10 +532,11 @@
                     markIdeaAsBought(ideaId, button);
                     return;
                 }
-                // Pre-fill with the estimated value when it holds a number ("25", "25 €", "20-30"...)
-                const estimate = (button.getAttribute('data-value') || '').match(/\d+(?:[.,]\d+)?/);
+                // Pre-fill with the estimated value when it is a single plain amount ("25", "25,50 €"),
+                // not a range or a number with thousands separators ("20-30", "1 234,50")
+                const estimate = (button.getAttribute('data-value') || '').match(/^\D*?(\d+(?:[.,]\d{1,2})?)\D*$/);
                 purchaseButton = button;
-                document.getElementById('purchasePrice').value = estimate ? estimate[0] : '';
+                document.getElementById('purchasePrice').value = estimate ? estimate[1] : '';
                 document.getElementById('purchaseIndividual').checked = false;
                 purchaseModal.classList.remove('hidden');
                 document.getElementById('purchasePrice').focus();
