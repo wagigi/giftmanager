@@ -17,7 +17,7 @@ from visibility import get_visible_users, get_visible_groups, can_view_list, can
 from mailer import send_email_to_buyer_via_mailjet
 from avatars import UPLOADED_AVATAR_PREFIX, AVATAR_SIZE, avatar_url, delete_uploaded_avatar
 from og_image import fetch_og_image
-from cleanup import MAX_DELETE_DAYS, delete_gift_ideas, delete_old_gift_ideas, get_delete_days
+from cleanup import DEFAULT_DELETE_DAYS, MAX_DELETE_DAYS, delete_gift_ideas, delete_old_gift_ideas, get_delete_days
 from currency import get_currency_symbol, get_currency_position, format_currency
 from sharing import generate_share_token, generate_share_url, link_sharing_enabled, find_share_link
 
@@ -269,6 +269,7 @@ def auth():
     if user_in_db:
         # Log in the user by setting the session
         session["username"] = user_in_db["username"]
+        session.pop('setupenv_allowed', None)  # logging in closes the setup wizard, as /login does
         flash(_("Login successful with OIDC!"), "login_success")
         return redirect(url_for("dashboard"))
     
@@ -1471,7 +1472,9 @@ def setupenv():
 
     if request.method == 'POST':
         # Collect form data
-        delete_days = request.form.get('DELETE_DAYS', '30')  # Default to 30 days
+        delete_days = request.form.get('DELETE_DAYS', '').strip()
+        if not delete_days.isdigit() or not 1 <= int(delete_days) <= MAX_DELETE_DAYS:
+            delete_days = str(DEFAULT_DELETE_DAYS)  # what get_delete_days() would use anyway
         env_variables = {
             "MAILJET_API_KEY": request.form.get('MAILJET_API_KEY', ''),
             "MAILJET_API_SECRET": request.form.get('MAILJET_API_SECRET', ''),

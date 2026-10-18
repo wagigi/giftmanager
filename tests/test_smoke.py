@@ -892,6 +892,16 @@ def test_setup_wizard_closes_when_leaving_for_login(client, env):
     assert "DELETE_DAYS='1'" not in env.env_file.read_text()
 
 
+@pytest.mark.parametrize("days", ["", "0", "abc", "1000000"])
+def test_setup_wizard_saves_default_for_invalid_delete_days(client, env, days):
+    env.write_users([])
+    client.post("/setupadmin", data={"admin_username": "root", "admin_password": "pw",
+                                     "admin_email": "root@example.com", "full_name": "Root",
+                                     "birthday": "", "avatar": "icons/avatar1.png"})
+    client.post("/setupenv", data={"DELETE_DAYS": days})
+    assert "DELETE_DAYS='30'" in env.env_file.read_text()
+
+
 def test_setupenv_refuses_spoofed_referer(client, env):
     """/setupenv is unauthenticated; it used to trust any Referer containing '/setupadmin'."""
     before = env.env_file.read_text()

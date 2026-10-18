@@ -405,3 +405,14 @@ def test_auth_with_invalid_state_shows_error_on_login_page(make_client):
     assert is_redirect_to(client.get("/auth?state=forged"), "/login")
     assert session_username(client) is None
     assert [category for category, _ in flashes(client)] == ["login_error"]
+
+
+def test_oidc_login_closes_the_setup_wizard(env, app_module, make_client):
+    env.set_env("PRIMARY_OIDC_FIELD", "email")
+    env.set_env("PRIMARY_DB_FIELD", "email")
+    client = make_client()
+    with client.session_transaction() as sess:
+        sess["setupenv_allowed"] = True
+    assert oidc_login(make_client, app_module, client=client)[1] == "bob"
+    with client.session_transaction() as sess:
+        assert "setupenv_allowed" not in sess
