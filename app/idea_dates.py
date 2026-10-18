@@ -46,6 +46,7 @@ def migrate_ideas_file(ideas_path):
             # Write a temporary file and swap it in: an interrupted write must not lose the ideas
             fd, tmp_path = tempfile.mkstemp(dir=path.parent, prefix='.ideas.')
             try:
+                os.chmod(tmp_path, os.stat(path).st_mode & 0o777)  # mkstemp creates it 0600
                 with os.fdopen(fd, 'w') as file:
                     json.dump(ideas, file, indent=4)  # same format as save_gift_ideas()
                 os.replace(tmp_path, path)

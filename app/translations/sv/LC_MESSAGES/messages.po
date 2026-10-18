@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 19:08+0200\n"
+"POT-Creation-Date: 2026-10-18 19:09+0200\n"
 "PO-Revision-Date: 2025-12-09 20:34+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -537,50 +537,50 @@ msgstr "Denna funktion är inte tillgänglig för gästanvändare."
 msgid "Admin access required."
 msgstr "Adminåtkomst krävs."
 
-#: app/idea_dates.py:77
+#: app/idea_dates.py:78
 msgid "Date unknown"
 msgstr "Okänt datum"
 
-#: app/idea_dates.py:77
+#: app/idea_dates.py:78
 msgid "Today"
 msgstr "I dag"
 
-#: app/idea_dates.py:79
+#: app/idea_dates.py:80
 #, python-format
 msgid "More than %(num)d day"
 msgid_plural "More than %(num)d days"
 msgstr[0] "Mer än %(num)d dag"
 msgstr[1] "Mer än %(num)d dagar"
 
-#: app/idea_dates.py:80
+#: app/idea_dates.py:81
 #, python-format
 msgid "%(num)d day"
 msgid_plural "%(num)d days"
 msgstr[0] "%(num)d dag"
 msgstr[1] "%(num)d dagar"
 
-#: app/idea_dates.py:82
+#: app/idea_dates.py:83
 #, python-format
 msgid "More than %(num)d month"
 msgid_plural "More than %(num)d months"
 msgstr[0] "Mer än %(num)d månad"
 msgstr[1] "Mer än %(num)d månader"
 
-#: app/idea_dates.py:83
+#: app/idea_dates.py:84
 #, python-format
 msgid "%(num)d month"
 msgid_plural "%(num)d months"
 msgstr[0] "%(num)d månad"
 msgstr[1] "%(num)d månader"
 
-#: app/idea_dates.py:86
+#: app/idea_dates.py:87
 #, python-format
 msgid "More than %(num)d year"
 msgid_plural "More than %(num)d years"
 msgstr[0] "Mer än %(num)d år"
 msgstr[1] "Mer än %(num)d år"
 
-#: app/idea_dates.py:87
+#: app/idea_dates.py:88
 #, python-format
 msgid "%(num)d year"
 msgid_plural "%(num)d years"
@@ -1201,11 +1201,12 @@ msgstr "dagar"
 #: app/templates/delete_old_gift_ideas.html:277
 msgid ""
 "Age is counted from the purchase date for bought ideas, and from the date"
-" the idea was added otherwise. Ideas without a known date are never "
-"considered old."
+" the idea was added otherwise. Ideas from before the app recorded dates "
+"count from the update that added them."
 msgstr ""
 "Åldern räknas från inköpsdatumet för köpta idéer, och annars från datumet"
-" då idén lades till. Idéer utan känt datum anses aldrig vara gamla."
+" då idén lades till. Idéer från innan appen sparade datum räknas från "
+"uppdateringen som gav dem ett datum."
 
 #: app/templates/delete_old_gift_ideas.html:279
 #: app/templates/manage_guest_users.html:444

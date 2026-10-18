@@ -45,6 +45,12 @@ def test_migration_fills_and_flags_missing_dates(env, idea_dates, undated):
     assert idea_dates.migrate_ideas_file(env.ideas_file) == 0  # idempotent
 
 
+def test_migration_keeps_the_file_permissions(env, idea_dates, undated):
+    env.ideas_file.chmod(0o644)
+    assert idea_dates.migrate_ideas_file(env.ideas_file) == 2
+    assert env.ideas_file.stat().st_mode & 0o777 == 0o644
+
+
 def test_migration_runs_when_the_app_starts(env, undated):
     importlib.reload(env.module)  # same DATA_DIR: runs app.py's startup code again on the undated ideas
     assert env.idea(1)["date_added_unknown"] is True
