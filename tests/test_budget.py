@@ -150,6 +150,9 @@ def test_set_and_remove_own_budget(client, env):
     client.post("/budget/bob", data={"amount": ""})
     assert env.budgets()["recipients"]["bob"]["budgets"] == {}
 
+    client.post("/budget/admin", data={"amount": ""})
+    assert "admin" not in env.budgets()["recipients"]
+
 
 def test_invalid_budget_is_refused(client, env):
     login(client, "alice")
@@ -454,21 +457,20 @@ def test_budget_block_is_reachable_on_a_list_without_ideas(client, env):
     assert is_redirect_to(client.get("/user_gift_ideas/bob"), "/noidea")
 
 
-def test_no_family_scope_is_closed_by_people_involved_or_admins(client, env):
+def test_no_family_scope_cannot_be_closed_from_the_overview(client, env):
     # dan has no family; alice (Smith) and admin share his gift
     users = env.users()
     users.append(dict(env.user("carol"), username="dan", full_name="Dan", groups=[]))
-    users.append(dict(env.user("carol"), username="erin", full_name="Erin", groups=[]))
     env.write_users(users)
     entry = dict(_entry({"alice": 10, "admin": 10}, _expense("alice", 20)), scope="__all__")
     env.write_budgets({"recipients": {"dan": entry}, "settlements": []})
 
-    login(client, "erin", PASSWORDS["carol"])  # no family either, but not involved (carol's password hash)
-    assert client.post("/budget_overview/close", data={"scope": "__all__"}).status_code == 404
-    other = env.module.app.test_client()
-    login(other, "alice")  # involved, although in family Smith
-    other.post("/budget_overview/close", data={"scope": "__all__"})
-    assert env.budgets()["recipients"] == {}
+    for username in ("alice", "admin"):  # involved; admin has no family either
+        other = env.module.app.test_client()
+        login(other, username)
+        assert "budget_overview/close" not in other.get("/budget_overview?scope=__all__").get_data(as_text=True)
+        assert other.post("/budget_overview/close", data={"scope": "__all__"}).status_code == 404
+    assert "dan" in env.budgets()["recipients"]
 
 
 def test_deleted_payer_keeps_their_credit_under_a_retired_name(client, env):

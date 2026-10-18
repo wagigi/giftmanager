@@ -2372,12 +2372,14 @@ def set_budget(recipient):
         return redirect(url_for('user_gift_ideas', selected_user_id=recipient))
 
     budgets = load_budgets()
-    entry = recipient_entry(budgets, recipient, create_for=recipient_user)
     if amount:
-        entry['budgets'][current_user['username']] = amount
+        recipient_entry(budgets, recipient, create_for=recipient_user)['budgets'][current_user['username']] = amount
         flash(_('Budget saved.'), 'success')
     else:
-        entry['budgets'].pop(current_user['username'], None)
+        # Removing creates no entry (it would fix the list's family before anything is recorded)
+        entry = recipient_entry(budgets, recipient)
+        if entry is not None:
+            entry['budgets'].pop(current_user['username'], None)
         flash(_('Budget removed.'), 'success')
     save_budgets(budgets)
     return redirect(url_for('user_gift_ideas', selected_user_id=recipient))
@@ -2500,7 +2502,7 @@ def budget_overview():
         owed_to_me=[t for t in transfers if t[1] == username],
         transfers=transfers,
         is_member=is_member,
-        can_close=can_close_scope(current_user, scope, budgets, users),
+        can_close=can_close_scope(current_user, scope),
         settlements=[s for s in reversed(budgets['settlements'])
                      if s['scope'] == scope and (is_member or username in (s['from'], s['to']))],
     )
@@ -2529,7 +2531,7 @@ def budget_settle():
 @login_required
 def budget_close():
     users, current_user, budgets, scopes, scope = budget_scope_or_404(strict=True)
-    if not can_close_scope(current_user, scope, budgets, users):
+    if not can_close_scope(current_user, scope):
         abort(404)
     close_scope(budgets, scope, users)
     save_budgets(budgets)

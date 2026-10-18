@@ -214,22 +214,20 @@ def user_scopes(current_user, users, budgets):
     candidates = {entry_scope(recipient, entry, users_by_name) for recipient, entry in budgets['recipients'].items()}
     candidates |= {settlement['scope'] for settlement in budgets['settlements']}
     candidates.discard(None)
-    for scope in sorted(candidates - set(scopes)):
-        involved = scope_balances(budgets, scope, users).get(username) or any(
-            username in (s['from'], s['to']) for s in budgets['settlements'] if s['scope'] == scope)
-        if involved:
-            scopes.append(scope)
+    scopes += [scope for scope in sorted(candidates - set(scopes)) if is_involved(budgets, scope, users, username)]
     return scopes
 
 
-def can_close_scope(current_user, scope, budgets, users):
-    """Members of a family close it (not someone who once paid for one of its lists). Nobody is a
-    real member of the "no family" scope: there, the people involved in it close it."""
-    if scope != ALL_SCOPE:
-        return scope in member_scopes(current_user)
-    username = current_user['username']
+def is_involved(budgets, scope, users, username):
+    """True if username owes or is owed money in scope, or recorded a reimbursement there."""
     return bool(scope_balances(budgets, scope, users).get(username)) or any(
         username in (s['from'], s['to']) for s in budgets['settlements'] if s['scope'] == scope)
+
+
+def can_close_scope(current_user, scope):
+    """Members of a family close it (not someone who once paid for one of its lists). The "no
+    family" scope has no real members: only an admin's global reset clears it."""
+    return scope != ALL_SCOPE and scope in member_scopes(current_user)
 
 
 def close_scope(budgets, scope, users):
@@ -301,6 +299,10 @@ def retire_user(budgets, user):
     entry = budgets['recipients'].pop(username, None)
     if entry is not None:
         entry.setdefault('scope', recipient_scope(user))
+        # The deleted user's ideas may remain: a new account with the same name must not take
+        # over the purchases recorded on them
+        for expense in entry['expenses']:
+            expense['idea_id'] = None
         budgets['recipients'][retired] = entry
         changed = True
     for entry in budgets['recipients'].values():
