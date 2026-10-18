@@ -17,9 +17,16 @@ def login_required(f):
         if 'username' not in session:
             flash(_('Please log in first.'), 'warning')
             return redirect(url_for('login'))
-        
+
+        # A session can outlive its account (user deleted by an admin): log it out
+        user = next((u for u in load_users() if u['username'] == session['username']), None)
+        if not user:
+            session.clear()
+            flash(_('Please log in first.'), 'login_warning')  # shown on the login page
+            return redirect(url_for('login'))
+
         # Check if user is a guest and route doesn't allow guests
-        if is_guest_user(session['username']):
+        if user.get('guest', False):
             # Check if the route has @guest_allowed decorator
             if not getattr(f, '_guest_allowed', False):
                 flash(_('This feature is not available for guest users.'), 'danger')
@@ -42,8 +49,14 @@ def admin_required(f):
         # Find the user based on the username stored in the session
         user = next((u for u in users if u['username'] == session['username']), None)
 
-        # Check if the user exists and is an admin
-        if not user or not user.get('admin'):
+        # A session can outlive its account (user deleted by an admin): log it out
+        if not user:
+            session.clear()
+            flash(_('Please log in first.'), 'login_warning')  # shown on the login page
+            return redirect(url_for('login'))
+
+        # Check if the user is an admin
+        if not user.get('admin'):
             flash(_('Admin access required.'), 'danger')
             return redirect(url_for('dashboard'))
 
