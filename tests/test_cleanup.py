@@ -76,7 +76,7 @@ def test_admin_pages_show_default_when_delete_days_is_invalid(client, env, path)
     assert 'value="30"' in response.get_data(as_text=True)
 
 
-@pytest.mark.parametrize("days", ["0", "-1", "abc", "1000000"])
+@pytest.mark.parametrize("days", ["0", "-1", "abc", "1000000", "²"])
 def test_change_delete_days_refuses_invalid_values(client, env, days):
     login(client, "admin")
     client.post("/change_delete_days", data={"days": days})

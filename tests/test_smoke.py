@@ -892,7 +892,7 @@ def test_setup_wizard_closes_when_leaving_for_login(client, env):
     assert "DELETE_DAYS='1'" not in env.env_file.read_text()
 
 
-@pytest.mark.parametrize("days", ["", "0", "abc", "1000000"])
+@pytest.mark.parametrize("days", ["", "0", "abc", "1000000", "²"])
 def test_setup_wizard_saves_default_for_invalid_delete_days(client, env, days):
     env.write_users([])
     client.post("/setupadmin", data={"admin_username": "root", "admin_password": "pw",

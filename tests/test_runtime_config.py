@@ -416,3 +416,16 @@ def test_oidc_login_closes_the_setup_wizard(env, app_module, make_client):
     assert oidc_login(make_client, app_module, client=client)[1] == "bob"
     with client.session_transaction() as sess:
         assert "setupenv_allowed" not in sess
+
+
+def test_oidc_auto_registration_closes_the_setup_wizard(env, app_module, make_client):
+    env.set_env("ENABLE_AUTO_REGISTRATION", "true")
+    env.set_env("PRIMARY_OIDC_FIELD", "email")
+    env.set_env("PRIMARY_DB_FIELD", "email")
+    client = make_client()
+    with client.session_transaction() as sess:
+        sess["setupenv_allowed"] = True
+    newcomer = {"email": "new@example.com", "preferred_username": "newcomer"}
+    assert oidc_login(make_client, app_module, newcomer, client=client)[1] == "newcomer"
+    with client.session_transaction() as sess:
+        assert "setupenv_allowed" not in sess

@@ -17,7 +17,7 @@ from visibility import get_visible_users, get_visible_groups, can_view_list, can
 from mailer import send_email_to_buyer_via_mailjet
 from avatars import UPLOADED_AVATAR_PREFIX, AVATAR_SIZE, avatar_url, delete_uploaded_avatar
 from og_image import fetch_og_image
-from cleanup import DEFAULT_DELETE_DAYS, MAX_DELETE_DAYS, delete_gift_ideas, delete_old_gift_ideas, get_delete_days
+from cleanup import DEFAULT_DELETE_DAYS, delete_gift_ideas, delete_old_gift_ideas, get_delete_days, parse_delete_days
 from currency import get_currency_symbol, get_currency_position, format_currency
 from sharing import generate_share_token, generate_share_url, link_sharing_enabled, find_share_link
 
@@ -297,6 +297,7 @@ def auth():
         users.append(new_user)
         save_users(users)  # Save the updated users list
         session["username"] = new_user["username"]
+        session.pop('setupenv_allowed', None)
         
         flash(_("New profile created. Please complete your profile setup."), "info")
         return redirect(url_for("setup_profile"))  # Redirect to profile setup page
@@ -1365,11 +1366,8 @@ def delete_old_gift_ideas_page():
 
         older_than_days = None
         if filters['age_filter']:
-            try:
-                older_than_days = int(filters['days'])
-                if not 1 <= older_than_days <= MAX_DELETE_DAYS:
-                    raise ValueError
-            except ValueError:
+            older_than_days = parse_delete_days(filters['days'])
+            if older_than_days is None:
                 flash(_("Invalid number of days entered. Please enter a valid number."), "danger")
                 return render_template('delete_old_gift_ideas.html', current_days=current_days, filters=filters)
 
@@ -1394,19 +1392,15 @@ def change_delete_days():
         new_days = request.form.get('days')
 
         if new_days:
-            try:
-                new_days = int(new_days)
-                if not 1 <= new_days <= MAX_DELETE_DAYS:
-                    raise ValueError
-
+            new_days = parse_delete_days(new_days)
+            if new_days is not None:
                 # Update the .env file with the new value
                 set_key(dotenv_path, "DELETE_DAYS", str(new_days))  # Update the DELETE_DAYS value
 
                 flash(_("The number of days to delete old gift ideas has been updated to %(days)s.", days=new_days), "success")
                 return redirect(url_for('change_delete_days'))
 
-            except ValueError:
-                flash(_("Invalid number of days entered. Please enter a valid number."), "danger")
+            flash(_("Invalid number of days entered. Please enter a valid number."), "danger")
         else:
             flash(_("Please provide a value for the number of days."), "danger")
 
@@ -1472,9 +1466,8 @@ def setupenv():
 
     if request.method == 'POST':
         # Collect form data
-        delete_days = request.form.get('DELETE_DAYS', '').strip()
-        if not delete_days.isdigit() or not 1 <= int(delete_days) <= MAX_DELETE_DAYS:
-            delete_days = str(DEFAULT_DELETE_DAYS)  # what get_delete_days() would use anyway
+        # An invalid value is saved as the default, which get_delete_days() would use anyway
+        delete_days = str(parse_delete_days(request.form.get('DELETE_DAYS')) or DEFAULT_DELETE_DAYS)
         env_variables = {
             "MAILJET_API_KEY": request.form.get('MAILJET_API_KEY', ''),
             "MAILJET_API_SECRET": request.form.get('MAILJET_API_SECRET', ''),
