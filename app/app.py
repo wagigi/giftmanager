@@ -2185,7 +2185,9 @@ def mark_shared_not_bought(token, idea_id):
     
     # Find the gift idea
     idea = find_idea_by_id(gift_ideas_data, idea_id)
-    if not idea or idea['user_id'] != share_owner['username']:
+    # Ideas others added are hidden from the logged-in list owner: answer as for an unknown idea
+    hidden_from_owner = session.get('username') == share_owner['username'] and idea and idea.get('added_by') != share_owner['username']
+    if not idea or idea['user_id'] != share_owner['username'] or hidden_from_owner:
         return jsonify({'error': _('Gift idea not found')}), 404
     
     # Get visitor ID from request

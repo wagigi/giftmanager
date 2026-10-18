@@ -620,6 +620,14 @@ def test_owner_opening_own_share_link_sees_no_surprise(client, env):
     assert env.idea(5)["bought_by"] is None
 
 
+def test_owner_cannot_probe_hidden_ideas_through_own_share_link(client, env):
+    """Cancelling a purchase on an idea others added answered 403, unlike an unknown idea (404)."""
+    login(client, "alice")
+    response = client.post(f"/shared/{SHARE_TOKEN}/mark_not_bought/2", json={"visitor_id": "x"})
+    assert response.status_code == 404
+    assert env.idea(2)["bought_by"] == "bob"
+
+
 def test_share_link_still_shows_purchases_to_visitors(client):
     login(client, "bob")  # logged in, but not the owner
     client.get("/set_language/en")
