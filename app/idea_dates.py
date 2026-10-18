@@ -1,5 +1,7 @@
 """Dates on gift ideas: startup backfill of missing dates and the age shown next to each idea."""
 import json
+import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from flask_babel import _, ngettext
@@ -11,10 +13,13 @@ DATE_FORMAT = '%Y-%m-%d %H:%M:%S'  # format of date_added and date_bought
 def backfill_missing_dates(ideas, now=None):
     """Give the current date to ideas without date_added, and to bought ideas without date_bought
     (bought with older versions of the app, they were never purged by /rundl), flagging each such date
-    with date_added_unknown / date_bought_unknown. Changes `ideas` in place and returns how many changed."""
+    with date_added_unknown / date_bought_unknown. Changes `ideas` in place and returns how many changed.
+    The seeded demo placeholder keeps no date, so that the age-based purge still never deletes it."""
     stamp = (now or datetime.now()).strftime(DATE_FORMAT)
     changed = 0
     for idea in ideas:
+        if idea.get('user_id') == 'demo':
+            continue
         touched = False
         if not idea.get('date_added'):
             idea['date_added'] = stamp
@@ -29,21 +34,29 @@ def backfill_missing_dates(ideas, now=None):
 
 
 def migrate_ideas_file(ideas_path):
-    """Run backfill_missing_dates() on the ideas file at startup, rewriting it only when a date was missing."""
+    """Run backfill_missing_dates() on the ideas file at startup, rewriting it only when a date was missing.
+    Runs outside any app context, so it does not use storage.py. Never raises: a failure is logged and
+    the app starts anyway (ideas without dates are shown without an age)."""
     path = Path(ideas_path)
     try:
         with open(path, 'r') as file:
             ideas = json.load(file)
-    except (OSError, ValueError) as e:
-        print(f"Could not check the dates of the gift ideas in {path}: {e}")
+        changed = backfill_missing_dates(ideas)
+        if changed:
+            # Write a temporary file and swap it in: an interrupted write must not lose the ideas
+            fd, tmp_path = tempfile.mkstemp(dir=path.parent, prefix='.ideas.')
+            try:
+                with os.fdopen(fd, 'w') as file:
+                    json.dump(ideas, file, indent=4)  # same format as save_gift_ideas()
+                os.replace(tmp_path, path)
+            except BaseException:
+                os.unlink(tmp_path)
+                raise
+            print(f"Added missing dates to {changed} gift ideas")
+        return changed
+    except Exception as e:
+        print(f"Could not add the missing dates of the gift ideas in {path}: {e}")
         return 0
-
-    changed = backfill_missing_dates(ideas)
-    if changed:
-        with open(path, 'w') as file:
-            json.dump(ideas, file, indent=4)  # same format as save_gift_ideas()
-        print(f"Added missing dates to {changed} gift ideas")
-    return changed
 
 
 def idea_age(idea, today=None):
@@ -62,7 +75,7 @@ def idea_age(idea, today=None):
 
     if days == 0:
         label = _('Date unknown') if unknown else _('Today')
-    elif months < 1:
+    elif days < 30 or months < 1:  # months alone would say "1 month" after 28 days (from Feb 28 or Jan 31)
         label = (ngettext('More than %(num)d day', 'More than %(num)d days', days) if unknown
                  else ngettext('%(num)d day', '%(num)d days', days))
     elif months < 12:

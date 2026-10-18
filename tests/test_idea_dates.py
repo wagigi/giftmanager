@@ -2,6 +2,7 @@
 import importlib
 import sys
 from datetime import date, datetime, timedelta
+from unittest import mock
 
 import pytest
 
@@ -51,8 +52,8 @@ def test_migration_runs_when_the_app_starts(env, undated):
 
 
 def test_empty_bought_by_gets_no_purchase_date(env, idea_dates):
-    """The demo idea written on first start has bought_by "": it is not a purchase."""
-    ideas = [{"gift_idea_id": 1, "user_id": "demo", "added_by": "demo", "bought_by": ""}]
+    """bought_by "" (as on the idea written on first start) is not a purchase."""
+    ideas = [{"gift_idea_id": 1, "user_id": "alice", "added_by": "alice", "bought_by": ""}]
     assert idea_dates.backfill_missing_dates(ideas) == 1
     assert ideas[0]["date_added_unknown"] is True and "date_bought" not in ideas[0]
 
@@ -82,6 +83,8 @@ def test_new_purchase_date_replaces_the_unknown_flag(client, env, idea_dates, un
     (date(2026, 10, 17), False, "1 day"),
     (date(2026, 9, 19), False, "29 days"),
     (date(2026, 9, 18), False, "1 month"),
+    (date(2026, 9, 30), False, "18 days"),
+    (date(2026, 9, 20), False, "28 days"),
     (date(2025, 10, 19), False, "11 months"),
     (date(2024, 10, 18), False, "2 years"),
     (date(2026, 10, 18), True, "Date unknown"),
@@ -102,6 +105,16 @@ def test_idea_age_is_translated(app_module, idea_dates):
         assert idea_dates.idea_age({"date_added": "2026-10-01 12:00:00", "date_added_unknown": True},
                                    today=date(2026, 10, 18))["label"] == "Plus de 17 jours"
         assert idea_dates.idea_age({"date_added": "2026-10-18 12:00:00"}, today=date(2026, 10, 18))["label"] == "Aujourd'hui"
+
+
+@pytest.mark.parametrize("added, today, label", [
+    (date(2026, 1, 31), date(2026, 3, 1), "29 days"),  # a calendar month, but only 29 days
+    (date(2026, 2, 28), date(2026, 3, 28), "28 days"),
+    (date(2026, 1, 31), date(2026, 3, 2), "1 month"),
+])
+def test_idea_age_around_month_ends(app_module, idea_dates, added, today, label):
+    with app_module.app.test_request_context(headers={"Accept-Language": "en"}):
+        assert idea_dates.idea_age({"date_added": f"{added:%Y-%m-%d} 12:00:00"}, today=today)["label"] == label
 
 
 @pytest.mark.parametrize("value", [None, "", "18/10/2026"])
@@ -135,3 +148,25 @@ def test_unknown_date_is_explained_on_hover(client, env):
     page = client.get("/user_gift_ideas/alice").get_data(as_text=True)
     assert "More than 12 days" in page
     assert "before the app started recording dates" in page
+
+
+def test_demo_placeholder_stays_undated(env, idea_dates):
+    """The seeded "dont delete" idea has no date, which keeps the age-based admin purge from deleting it."""
+    ideas = [{"gift_idea_id": 1, "user_id": "demo", "added_by": "demo", "bought_by": ""}]
+    assert idea_dates.backfill_missing_dates(ideas) == 0
+    assert "date_added" not in ideas[0]
+
+
+@pytest.mark.parametrize("content", ["not json", '{"a": 1}', "[null]"])
+def test_migration_never_stops_the_app(env, idea_dates, content):
+    env.ideas_file.write_text(content)
+    assert idea_dates.migrate_ideas_file(env.ideas_file) == 0
+    assert env.ideas_file.read_text() == content
+
+
+def test_migration_keeps_the_file_when_the_write_fails(env, idea_dates, undated, monkeypatch):
+    before = env.ideas_file.read_text()
+    monkeypatch.setattr(idea_dates.json, "dump", mock.Mock(side_effect=OSError("disk full")))
+    assert idea_dates.migrate_ideas_file(env.ideas_file) == 0
+    assert env.ideas_file.read_text() == before
+    assert [p.name for p in env.data_dir.iterdir() if p.name.startswith(".ideas.")] == []

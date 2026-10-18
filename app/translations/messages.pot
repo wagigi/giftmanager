@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 19:00+0200\n"
+"POT-Creation-Date: 2026-10-18 19:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -520,50 +520,50 @@ msgstr ""
 msgid "Admin access required."
 msgstr ""
 
-#: app/idea_dates.py:64
+#: app/idea_dates.py:77
 msgid "Date unknown"
 msgstr ""
 
-#: app/idea_dates.py:64
+#: app/idea_dates.py:77
 msgid "Today"
 msgstr ""
 
-#: app/idea_dates.py:66
+#: app/idea_dates.py:79
 #, python-format
 msgid "More than %(num)d day"
 msgid_plural "More than %(num)d days"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/idea_dates.py:67
+#: app/idea_dates.py:80
 #, python-format
 msgid "%(num)d day"
 msgid_plural "%(num)d days"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/idea_dates.py:69
+#: app/idea_dates.py:82
 #, python-format
 msgid "More than %(num)d month"
 msgid_plural "More than %(num)d months"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/idea_dates.py:70
+#: app/idea_dates.py:83
 #, python-format
 msgid "%(num)d month"
 msgid_plural "%(num)d months"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/idea_dates.py:73
+#: app/idea_dates.py:86
 #, python-format
 msgid "More than %(num)d year"
 msgid_plural "More than %(num)d years"
 msgstr[0] ""
 msgstr[1] ""
 
-#: app/idea_dates.py:74
+#: app/idea_dates.py:87
 #, python-format
 msgid "%(num)d year"
 msgid_plural "%(num)d years"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 19:00+0200\n"
+"POT-Creation-Date: 2026-10-18 19:08+0200\n"
 "PO-Revision-Date: 2025-12-09 20:34+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -543,50 +543,50 @@ msgstr "Cette fonctionnalité n'est pas disponible pour les utilisateurs invité
 msgid "Admin access required."
 msgstr "Accès administrateur requis."
 
-#: app/idea_dates.py:64
+#: app/idea_dates.py:77
 msgid "Date unknown"
 msgstr "Date inconnue"
 
-#: app/idea_dates.py:64
+#: app/idea_dates.py:77
 msgid "Today"
 msgstr "Aujourd'hui"
 
-#: app/idea_dates.py:66
+#: app/idea_dates.py:79
 #, python-format
 msgid "More than %(num)d day"
 msgid_plural "More than %(num)d days"
 msgstr[0] "Plus de %(num)d jour"
 msgstr[1] "Plus de %(num)d jours"
 
-#: app/idea_dates.py:67
+#: app/idea_dates.py:80
 #, python-format
 msgid "%(num)d day"
 msgid_plural "%(num)d days"
 msgstr[0] "%(num)d jour"
 msgstr[1] "%(num)d jours"
 
-#: app/idea_dates.py:69
+#: app/idea_dates.py:82
 #, python-format
 msgid "More than %(num)d month"
 msgid_plural "More than %(num)d months"
 msgstr[0] "Plus de %(num)d mois"
 msgstr[1] "Plus de %(num)d mois"
 
-#: app/idea_dates.py:70
+#: app/idea_dates.py:83
 #, python-format
 msgid "%(num)d month"
 msgid_plural "%(num)d months"
 msgstr[0] "%(num)d mois"
 msgstr[1] "%(num)d mois"
 
-#: app/idea_dates.py:73
+#: app/idea_dates.py:86
 #, python-format
 msgid "More than %(num)d year"
 msgid_plural "More than %(num)d years"
 msgstr[0] "Plus de %(num)d an"
 msgstr[1] "Plus de %(num)d ans"
 
-#: app/idea_dates.py:74
+#: app/idea_dates.py:87
 #, python-format
 msgid "%(num)d year"
 msgid_plural "%(num)d years"
