@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% from '_idea_age.html' import idea_age_badge with context %}
 <html lang="{{ current_locale }}">
 <head>
     <meta charset="UTF-8">
@@ -115,6 +116,7 @@
                                             <i class="fas fa-shopping-cart" style="color: blue;"></i>
                                         {% endif %}
                                     {% endif %}
+                                    <div>{{ idea_age_badge(gift) }}</div>
                                 {% endif %}
                             </td>
                         {% endfor %}

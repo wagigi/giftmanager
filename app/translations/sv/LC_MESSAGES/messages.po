@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 17:25+0200\n"
+"POT-Creation-Date: 2026-10-18 19:00+0200\n"
 "PO-Revision-Date: 2025-12-09 20:34+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: sv\n"
@@ -18,57 +18,57 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/app.py:83 app/app.py:123 app/app.py:320
+#: app/app.py:85 app/app.py:125 app/app.py:326
 msgid "User not found."
 msgstr "Användaren hittades inte."
 
-#: app/app.py:89
+#: app/app.py:91
 msgid "Email updated successfully."
 msgstr "E-post uppdaterades framgångsrikt."
 
-#: app/app.py:132
+#: app/app.py:134
 msgid "Profile picture removed."
 msgstr "Profilbilden har tagits bort."
 
-#: app/app.py:137
+#: app/app.py:139
 msgid "Please choose an image."
 msgstr "Välj en bild."
 
-#: app/app.py:147
+#: app/app.py:149
 msgid "Invalid image file."
 msgstr "Ogiltig bildfil."
 
-#: app/app.py:158
+#: app/app.py:160
 msgid "Profile picture updated."
 msgstr "Profilbilden har uppdaterats."
 
-#: app/app.py:163
+#: app/app.py:165
 msgid "File is too large (max 10 MB)."
 msgstr "Filen är för stor (max 10 MB)."
 
-#: app/app.py:218
+#: app/app.py:221
 msgid "Authorization failed: invalid state."
 msgstr "Auktorisering misslyckades: ogiltigt tillstånd."
 
-#: app/app.py:225
+#: app/app.py:228
 msgid "OIDC authorization failed."
 msgstr "OIDC-auktorisering misslyckades."
 
-#: app/app.py:235
+#: app/app.py:238
 msgid "Failed to parse user information."
 msgstr "Kunde inte tolka användarinformation."
 
-#: app/app.py:272
+#: app/app.py:277
 msgid "Login successful with OIDC!"
 msgstr "Inloggning lyckades med OIDC!"
 
-#: app/app.py:281
+#: app/app.py:286
 msgid "Cannot create your account: the identity provider did not send a username."
 msgstr ""
 "Det gick inte att skapa ditt konto: identitetsleverantören skickade inget"
 " användarnamn."
 
-#: app/app.py:285
+#: app/app.py:290
 #, python-format
 msgid ""
 "Cannot create your account: the username \"%(username)s\" is already "
@@ -77,260 +77,260 @@ msgstr ""
 "Det gick inte att skapa ditt konto: användarnamnet \"%(username)s\" är "
 "redan upptaget. Kontakta en administratör."
 
-#: app/app.py:300
+#: app/app.py:306
 msgid "New profile created. Please complete your profile setup."
 msgstr "Ny profil skapad. Vänligen slutför din profilinställning."
 
-#: app/app.py:303
+#: app/app.py:309
 msgid "User not found and auto-registration is disabled."
 msgstr "Användaren hittades inte och automatisk registrering är inaktiverad."
 
-#: app/app.py:325
+#: app/app.py:331
 msgid "Profile setup not required. Avatar already set."
 msgstr "Profilinställning krävs ej. Avatar är redan inställd."
 
-#: app/app.py:346
+#: app/app.py:352
 msgid "Profile setup complete!"
 msgstr "Profilinställning slutförd!"
 
-#: app/app.py:377 app/app.py:432
+#: app/app.py:383 app/app.py:440
 #, python-format
 msgid "Error reading users.json: %(error)s"
 msgstr "Fel vid läsning av users.json: %(error)s"
 
-#: app/app.py:395
+#: app/app.py:403
 msgid "No account? Contact a family member to create an account."
 msgstr "Inget konto? Kontakta en familjemedlem för att skapa ett konto."
 
-#: app/app.py:412 app/app.py:430
+#: app/app.py:420 app/app.py:438
 msgid "User does not exist"
 msgstr "Användaren existerar inte"
 
-#: app/app.py:423
+#: app/app.py:431
 msgid "Login successful!"
 msgstr "Inloggning lyckades!"
 
-#: app/app.py:426
+#: app/app.py:434
 msgid "Wrong password"
 msgstr "Fel lösenord"
 
-#: app/app.py:447
+#: app/app.py:455
 msgid "Self-registration is not enabled. Please contact an administrator."
 msgstr "Självregistrering är inte aktiverat. Vänligen kontakta en administratör."
 
-#: app/app.py:466
+#: app/app.py:474
 msgid "Invalid joining code. Please check with your family."
 msgstr "Ogiltig anslutningskod. Vänligen kontrollera med din familj."
 
-#: app/app.py:471
+#: app/app.py:479
 msgid "Please fill in all required fields."
 msgstr "Vänligen fyll i alla obligatoriska fält."
 
-#: app/app.py:475
+#: app/app.py:483
 msgid "Passwords do not match."
 msgstr "Lösenorden stämmer inte överens."
 
-#: app/app.py:485
+#: app/app.py:493
 msgid "Username already exists. Please choose a different one."
 msgstr "Användarnamnet finns redan. Vänligen välj ett annat."
 
-#: app/app.py:490
+#: app/app.py:498
 msgid "Email already registered. Please use a different email or contact support."
 msgstr ""
 "E-postadressen är redan registrerad. Vänligen använd en annan "
 "e-postadress eller kontakta supporten."
 
-#: app/app.py:510
+#: app/app.py:518
 msgid "Registration successful! You can now log in."
 msgstr "Registrering lyckades! Du kan nu logga in."
 
-#: app/app.py:529 app/app.py:607
+#: app/app.py:537 app/app.py:615
 msgid "Current user not found."
 msgstr "Aktuell användare hittades inte."
 
-#: app/app.py:550 app/app.py:628
+#: app/app.py:558 app/app.py:636
 msgid "You are not allowed to add ideas to this list."
 msgstr "Du får inte lägga till idéer i den här listan."
 
-#: app/app.py:658
+#: app/app.py:666
 #, python-format
 msgid "Idea \"%(name)s\" added for user %(user)s by %(added_by)s!"
 msgstr "Idén \"%(name)s\" lades till för %(user)s av %(added_by)s!"
 
-#: app/app.py:678 app/app.py:849 app/app.py:885 app/app.py:1064
-msgid "Idea not found"
-msgstr "Idén hittades inte"
-
-#: app/app.py:684
+#: app/app.py:692
 msgid "IDEAS DELETED"
 msgstr "IDÉER RADERADE"
 
-#: app/app.py:715
+#: app/app.py:723
 msgid "User data not found"
 msgstr "Användardata hittades inte"
 
-#: app/app.py:788 app/app.py:1975
+#: app/app.py:796 app/app.py:1979
 msgid "User not found"
 msgstr "Användaren hittades inte"
 
-#: app/app.py:793
+#: app/app.py:801
 msgid "Current password is incorrect"
 msgstr "Nuvarande lösenord är felaktigt"
 
-#: app/app.py:798
+#: app/app.py:806
 msgid "New password and confirmation do not match"
 msgstr "Nytt lösenord och bekräftelse stämmer inte överens"
 
-#: app/app.py:807
+#: app/app.py:815
 msgid "Password successfully changed"
 msgstr "Lösenordet ändrades framgångsrikt"
 
-#: app/app.py:828
+#: app/app.py:836
 msgid "You cannot mark your own gift ideas as bought."
 msgstr "Du kan inte markera dina egna presentidéer som köpta."
 
-#: app/app.py:836
+#: app/app.py:845
 #, python-format
 msgid "Marked \"%(name)s\" as bought!"
 msgstr "\"%(name)s\" markerad som köpt!"
 
-#: app/app.py:847
+#: app/app.py:856
 #, python-format
 msgid "\"%(name)s\" has already been bought by %(buyer)s."
 msgstr "\"%(name)s\" har redan köpts av %(buyer)s."
 
-#: app/app.py:878
+#: app/app.py:858 app/app.py:895 app/app.py:1074
+msgid "Idea not found"
+msgstr "Idén hittades inte"
+
+#: app/app.py:888
 #, python-format
 msgid "Marked \"%(name)s\" as not bought."
 msgstr "\"%(name)s\" markerad som inte köpt."
 
-#: app/app.py:883
+#: app/app.py:893
 #, python-format
 msgid "You did not buy \"%(name)s\", so you cannot mark it as not bought."
 msgstr "Du köpte inte \"%(name)s\", så du kan inte markera den som inte köpt."
 
-#: app/app.py:922
+#: app/app.py:932
 msgid "You are not allowed to view this list."
 msgstr "Du får inte visa den här listan."
 
-#: app/app.py:934
+#: app/app.py:944
 msgid "No gift ideas for this user."
 msgstr "Inga presentidéer för denna användare."
 
-#: app/app.py:964
+#: app/app.py:974
 msgid "You haven't added any gift ideas."
 msgstr "Du har inte lagt till några presentidéer."
 
-#: app/app.py:1025
+#: app/app.py:1035
 msgid "Username already exists!"
 msgstr "Användarnamnet finns redan!"
 
-#: app/app.py:1046
+#: app/app.py:1056
 msgid "User added successfully!"
 msgstr "Användare lades till framgångsrikt!"
 
-#: app/app.py:1088
+#: app/app.py:1098
 msgid "Idea updated successfully!"
 msgstr "Idén uppdaterades framgångsrikt!"
 
-#: app/app.py:1121
+#: app/app.py:1131
 #, python-format
 msgid "Pool \"%(name)s\" does not exist."
 msgstr "Poolen \"%(name)s\" finns inte."
 
-#: app/app.py:1131
+#: app/app.py:1141
 #, python-format
 msgid "Pool \"%(name)s\" has been deleted!"
 msgstr "Poolen \"%(name)s\" har raderats!"
 
-#: app/app.py:1142
+#: app/app.py:1152
 msgid "Pool name is required!"
 msgstr "Poolnamn krävs!"
 
-#: app/app.py:1146
+#: app/app.py:1156
 msgid "You need at least 2 participants for Secret Santa!"
 msgstr "Du behöver minst 2 deltagare för Secret Santa!"
 
-#: app/app.py:1172
+#: app/app.py:1182
 msgid "Secret Santa assignments have been made!"
 msgstr "Secret Santa-tilldelningar har gjorts!"
 
-#: app/app.py:1193
+#: app/app.py:1203
 msgid "You don't have any Secret Santa assignments yet."
 msgstr "Du har inga Secret Santa-tilldelningar än."
 
-#: app/app.py:1203
+#: app/app.py:1213
 msgid "No specific instructions provided."
 msgstr "Inga specifika instruktioner tillhandahållna."
 
-#: app/app.py:1241
+#: app/app.py:1251
 msgid "User deleted successfully!"
 msgstr "Användare raderades framgångsrikt!"
 
-#: app/app.py:1252
+#: app/app.py:1262
 msgid "Admin status updated successfully!"
 msgstr "Adminstatus uppdaterades framgångsrikt!"
 
-#: app/app.py:1275
+#: app/app.py:1285
 msgid "User updated successfully!"
 msgstr "Användare uppdaterades framgångsrikt!"
 
-#: app/app.py:1316
+#: app/app.py:1326
 msgid "Email settings updated successfully!"
 msgstr "E-postinställningarna uppdaterades!"
 
-#: app/app.py:1318
+#: app/app.py:1328
 #, python-format
 msgid "An error occurred: %(error)s"
 msgstr "Ett fel uppstod: %(error)s"
 
-#: app/app.py:1338
+#: app/app.py:1348
 msgid "Login message updated successfully!"
 msgstr "Inloggningsmeddelandet uppdaterades framgångsrikt!"
 
-#: app/app.py:1340
+#: app/app.py:1350
 #, python-format
 msgid "Error updating login message: %(error)s"
 msgstr "Fel vid uppdatering av inloggningsmeddelandet: %(error)s"
 
-#: app/app.py:1342
+#: app/app.py:1352
 msgid "Message cannot be empty."
 msgstr "Meddelandet kan inte vara tomt."
 
-#: app/app.py:1370 app/app.py:1406
+#: app/app.py:1377 app/app.py:1409
 msgid "Invalid number of days entered. Please enter a valid number."
 msgstr "Ogiltigt antal dagar angivet. Vänligen ange ett giltigt nummer."
 
-#: app/app.py:1374
+#: app/app.py:1381
 msgid "Select at least one filter."
 msgstr "Välj minst ett filter."
 
-#: app/app.py:1379
+#: app/app.py:1386
 #, python-format
 msgid "%(count)s gift ideas have been deleted."
 msgstr "%(count)s presentidéer har raderats."
 
-#: app/app.py:1381
+#: app/app.py:1388
 #, python-format
 msgid "Error deleting old gift ideas: %(error)s"
 msgstr "Fel vid radering av gamla presentidéer: %(error)s"
 
-#: app/app.py:1402
+#: app/app.py:1406
 #, python-format
 msgid "The number of days to delete old gift ideas has been updated to %(days)s."
 msgstr ""
 "Antalet dagar innan gamla presentidéer raderas har uppdaterats till "
 "%(days)s."
 
-#: app/app.py:1408
+#: app/app.py:1411
 msgid "Please provide a value for the number of days."
 msgstr "Vänligen ange ett värde för antalet dagar."
 
-#: app/app.py:1421
+#: app/app.py:1424
 msgid "Users are already configured. Setup page is unavailable."
 msgstr "Användare är redan konfigurerade. Inställningssidan är otillgänglig."
 
-#: app/app.py:1456
+#: app/app.py:1459
 msgid ""
 "Admin account created successfully. Please configure the environment "
 "variables."
@@ -338,15 +338,15 @@ msgstr ""
 "Administratörskonto skapat framgångsrikt. Vänligen konfigurera "
 "miljövariablerna."
 
-#: app/app.py:1467
+#: app/app.py:1470
 msgid "You must access this page from the setupadmin route."
 msgstr "Du måste komma åt denna sida från setupadmin-vägen."
 
-#: app/app.py:1494
+#: app/app.py:1498
 msgid "Environment variables saved successfully!"
 msgstr "Miljövariabler sparades framgångsrikt!"
 
-#: app/app.py:1497 app/app.py:1537
+#: app/app.py:1501 app/app.py:1541
 msgid ""
 "Restart the application to apply the new client ID, client secret or "
 "server metadata URL."
@@ -354,51 +354,51 @@ msgstr ""
 "Starta om programmet för att tillämpa det nya klient-ID:t, "
 "klienthemligheten eller URL:en för servermetadata."
 
-#: app/app.py:1524
+#: app/app.py:1528
 #, python-format
 msgid "Missing required fields: %(fields)s"
 msgstr "Obligatoriska fält saknas: %(fields)s"
 
-#: app/app.py:1535
+#: app/app.py:1539
 msgid "OIDC settings saved successfully!"
 msgstr "OIDC-inställningar sparades framgångsrikt!"
 
-#: app/app.py:1540
+#: app/app.py:1544
 #, python-format
 msgid "Error saving OIDC settings: %(error)s"
 msgstr "Fel vid sparande av OIDC-inställningar: %(error)s"
 
-#: app/app.py:1587
+#: app/app.py:1591
 msgid "New group added successfully!"
 msgstr "Ny grupp lades till framgångsrikt!"
 
-#: app/app.py:1614
+#: app/app.py:1618
 msgid "Group assignments updated successfully!"
 msgstr "Grupptilldelningar uppdaterades framgångsrikt!"
 
-#: app/app.py:1663
+#: app/app.py:1667
 #, python-format
 msgid "Successfully removed %(count)s gift ideas."
 msgstr "%(count)s presentidéer har raderats."
 
-#: app/app.py:1669
+#: app/app.py:1673
 #, python-format
 msgid "Error occurred while running delete_old_gift_ideas: %(error)s"
 msgstr "Fel vid körning av delete_old_gift_ideas: %(error)s"
 
-#: app/app.py:1679
+#: app/app.py:1683
 msgid "URL parameter is required"
 msgstr "URL-parameter krävs"
 
-#: app/app.py:1685
+#: app/app.py:1689
 msgid "No OG image found"
 msgstr "Ingen OG-bild hittades"
 
-#: app/app.py:1727
+#: app/app.py:1731
 msgid "Guest user created successfully!"
 msgstr "Gästanvändare skapades framgångsrikt!"
 
-#: app/app.py:1776
+#: app/app.py:1780
 #, python-format
 msgid ""
 "Guest user %(username)s deleted successfully! %(count)s purchased gift "
@@ -407,121 +407,121 @@ msgstr ""
 "Gästanvändaren %(username)s raderades! %(count)s köpta presentidéer "
 "raderades."
 
-#: app/app.py:1778
+#: app/app.py:1782
 msgid "Guest user not found."
 msgstr "Gästanvändaren hittades inte."
 
-#: app/app.py:1793
+#: app/app.py:1797
 msgid "Guest login successful!"
 msgstr "Gästinloggning lyckades!"
 
-#: app/app.py:1796
+#: app/app.py:1800
 msgid "Invalid guest password"
 msgstr "Ogiltigt gästlösenord"
 
-#: app/app.py:1808
+#: app/app.py:1812
 msgid "Currency settings updated! Please restart to see changes"
 msgstr "Valutainställningarna uppdaterades! Starta om för att se ändringarna"
 
-#: app/app.py:1821
+#: app/app.py:1825
 msgid "Self-registration settings updated successfully!"
 msgstr "Inställningarna för självregistrering uppdaterades!"
 
-#: app/app.py:1864
+#: app/app.py:1868
 #, python-format
 msgid "Shared list \"%(name)s\" created successfully!"
 msgstr "Den delade listan \"%(name)s\" skapades!"
 
-#: app/app.py:1901 app/app.py:1929
+#: app/app.py:1905 app/app.py:1933
 msgid "Shared list not found."
 msgstr "Den delade listan hittades inte."
 
-#: app/app.py:1906
+#: app/app.py:1910
 msgid "Only the list owner can delete this shared list."
 msgstr "Endast listans ägare kan radera den här delade listan."
 
-#: app/app.py:1917
+#: app/app.py:1921
 #, python-format
 msgid "Shared list \"%(name)s\" deleted successfully!"
 msgstr "Den delade listan \"%(name)s\" raderades!"
 
-#: app/app.py:1934
+#: app/app.py:1938
 msgid "Only the list owner can edit members."
 msgstr "Endast listans ägare kan redigera medlemmar."
 
-#: app/app.py:1946
+#: app/app.py:1950
 #, python-format
 msgid "Members updated for \"%(name)s\"!"
 msgstr "Medlemmarna uppdaterades för \"%(name)s\"!"
 
-#: app/app.py:1958
+#: app/app.py:1962
 msgid "Link sharing settings updated!"
 msgstr "Inställningarna för länkdelning uppdaterades!"
 
-#: app/app.py:1967
+#: app/app.py:1971
 msgid "Link sharing feature is currently disabled by administrator."
 msgstr "Länkdelning är för närvarande inaktiverad av administratören."
 
-#: app/app.py:1983
+#: app/app.py:1987
 msgid "Target not found"
 msgstr "Målet hittades inte"
 
-#: app/app.py:1990
+#: app/app.py:1994
 msgid "You are not a member of this shared list"
 msgstr "Du är inte medlem i den här delade listan"
 
-#: app/app.py:1995
+#: app/app.py:1999
 msgid "You can only manage your own sharing settings"
 msgstr "Du kan bara hantera dina egna delningsinställningar"
 
-#: app/app.py:2022
+#: app/app.py:2026
 msgid "New share link created!"
 msgstr "Ny delningslänk skapad!"
 
-#: app/app.py:2031
+#: app/app.py:2035
 msgid "Share link activated!"
 msgstr "Delningslänken aktiverades!"
 
-#: app/app.py:2031
+#: app/app.py:2035
 msgid "Share link deactivated!"
 msgstr "Delningslänken inaktiverades!"
 
-#: app/app.py:2045
+#: app/app.py:2049
 #, python-format
 msgid "Share link extended by %(days)s days! New expiry: %(expiry)s"
 msgstr ""
 "Delningslänken förlängdes med %(days)s dagar! Nytt utgångsdatum: "
 "%(expiry)s"
 
-#: app/app.py:2056
+#: app/app.py:2060
 msgid "Share link deleted!"
 msgstr "Delningslänken raderades!"
 
-#: app/app.py:2121 app/app.py:2128 app/app.py:2179 app/app.py:2186
+#: app/app.py:2125 app/app.py:2132 app/app.py:2184 app/app.py:2191
 msgid "Share link not found or expired"
 msgstr "Delningslänken hittades inte eller har gått ut"
 
-#: app/app.py:2132
+#: app/app.py:2136
 msgid "Purchases not allowed for this share link"
 msgstr "Köp är inte tillåtna för den här delningslänken"
 
-#: app/app.py:2137 app/app.py:2191
+#: app/app.py:2141 app/app.py:2198
 msgid "Gift idea not found"
 msgstr "Presentidén hittades inte"
 
-#: app/app.py:2142
+#: app/app.py:2146
 msgid "Visitor name is required"
 msgstr "Besökarens namn krävs"
 
-#: app/app.py:2172
+#: app/app.py:2177
 msgid "Item already purchased"
 msgstr "Artikeln är redan köpt"
 
-#: app/app.py:2196
+#: app/app.py:2203
 msgid "Visitor ID required"
 msgstr "Besökar-ID krävs"
 
-#: app/app.py:2217
+#: app/app.py:2225
 msgid "You can only cancel your own purchases"
 msgstr "Du kan bara avbryta dina egna köp"
 
@@ -537,6 +537,56 @@ msgstr "Denna funktion är inte tillgänglig för gästanvändare."
 msgid "Admin access required."
 msgstr "Adminåtkomst krävs."
 
+#: app/idea_dates.py:64
+msgid "Date unknown"
+msgstr "Okänt datum"
+
+#: app/idea_dates.py:64
+msgid "Today"
+msgstr "I dag"
+
+#: app/idea_dates.py:66
+#, python-format
+msgid "More than %(num)d day"
+msgid_plural "More than %(num)d days"
+msgstr[0] "Mer än %(num)d dag"
+msgstr[1] "Mer än %(num)d dagar"
+
+#: app/idea_dates.py:67
+#, python-format
+msgid "%(num)d day"
+msgid_plural "%(num)d days"
+msgstr[0] "%(num)d dag"
+msgstr[1] "%(num)d dagar"
+
+#: app/idea_dates.py:69
+#, python-format
+msgid "More than %(num)d month"
+msgid_plural "More than %(num)d months"
+msgstr[0] "Mer än %(num)d månad"
+msgstr[1] "Mer än %(num)d månader"
+
+#: app/idea_dates.py:70
+#, python-format
+msgid "%(num)d month"
+msgid_plural "%(num)d months"
+msgstr[0] "%(num)d månad"
+msgstr[1] "%(num)d månader"
+
+#: app/idea_dates.py:73
+#, python-format
+msgid "More than %(num)d year"
+msgid_plural "More than %(num)d years"
+msgstr[0] "Mer än %(num)d år"
+msgstr[1] "Mer än %(num)d år"
+
+#: app/idea_dates.py:74
+#, python-format
+msgid "%(num)d year"
+msgid_plural "%(num)d years"
+msgstr[0] "%(num)d år"
+msgstr[1] "%(num)d år"
+
 #: app/mailer.py:29
 #, python-format
 msgid "This idea, '%(name)s', has been deleted but you already BOUGHT IT."
@@ -549,6 +599,14 @@ msgstr "Presenthanterare"
 #: app/mailer.py:42
 msgid "Buyer Name"
 msgstr "Köparens namn"
+
+#: app/templates/_idea_age.html:7
+msgid ""
+"This idea was already here before the app started recording dates: it is "
+"at least this old."
+msgstr ""
+"Den här idén fanns redan innan appen började spara datum: den är minst så"
+" här gammal."
 
 #: app/templates/add2.html:6 app/templates/add_idea.html:6
 msgid "New Ideas"
@@ -570,16 +628,16 @@ msgid "Invalid image URL. Please enter a valid URL."
 msgstr "Ogiltig bild-URL. Ange en giltig URL."
 
 #: app/templates/add2.html:203 app/templates/add_idea.html:203
-#: app/templates/add_user.html:120 app/templates/bought_items.html:121
+#: app/templates/add_user.html:120 app/templates/bought_items.html:122
 #: app/templates/manage_shared_lists.html:134
-#: app/templates/manage_sharing.html:109 app/templates/my_ideas.html:190
+#: app/templates/manage_sharing.html:109 app/templates/my_ideas.html:191
 #: app/templates/noideas.html:158 app/templates/register.html:120
-#: app/templates/user_gift_ideas.html:175
+#: app/templates/user_gift_ideas.html:176
 msgid "Back"
 msgstr "Tillbaka"
 
 #: app/templates/add2.html:209 app/templates/add_idea.html:209
-#: app/templates/user_gift_ideas.html:176
+#: app/templates/user_gift_ideas.html:177
 msgid "Add Ideas"
 msgstr "Lägg till idéer"
 
@@ -1006,23 +1064,23 @@ msgstr ""
 msgid "Save Link Sharing Settings"
 msgstr "Spara delningsinställningar"
 
-#: app/templates/bought_items.html:7
+#: app/templates/bought_items.html:8
 msgid "Bought Items"
 msgstr "Köpta artiklar"
 
-#: app/templates/bought_items.html:126
+#: app/templates/bought_items.html:127
 msgid "Object bought by me:"
 msgstr "Saker köpta av mig:"
 
-#: app/templates/bought_items.html:131
+#: app/templates/bought_items.html:132
 msgid "For:"
 msgstr "Till:"
 
-#: app/templates/bought_items.html:132
+#: app/templates/bought_items.html:134
 msgid "Description:"
 msgstr "Beskrivning:"
 
-#: app/templates/bought_items.html:134
+#: app/templates/bought_items.html:136
 msgid "Link:"
 msgstr "Länk:"
 
@@ -1115,7 +1173,7 @@ msgstr "Visa din Secret Santa-tilldelning"
 msgid "Secret Santa Icon"
 msgstr "Secret Santa-ikon"
 
-#: app/templates/dashboard.html:472 app/templates/my_ideas.html:192
+#: app/templates/dashboard.html:472 app/templates/my_ideas.html:193
 #: app/templates/noideas.html:166
 msgid "Add ideas"
 msgstr "Lägg till idéer"
@@ -1205,9 +1263,9 @@ msgstr "Spara ändringar"
 msgid "Edit an idea"
 msgstr "Redigera en idé"
 
-#: app/templates/edit_idea.html:233 app/templates/my_ideas.html:221
-#: app/templates/shared_list_public.html:216
-#: app/templates/user_gift_ideas.html:199
+#: app/templates/edit_idea.html:233 app/templates/my_ideas.html:223
+#: app/templates/shared_list_public.html:218
+#: app/templates/user_gift_ideas.html:201
 msgid "OG Image"
 msgstr "OG-bild"
 
@@ -1217,7 +1275,7 @@ msgstr "Ange uppskattat värde"
 
 #: app/templates/edit_idea.html:255 app/templates/manage_shared_lists.html:276
 #: app/templates/manage_sharing.html:304 app/templates/manage_users.html:316
-#: app/templates/shared_list_public.html:275
+#: app/templates/shared_list_public.html:277
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -1511,7 +1569,7 @@ msgstr "Inga delade listor än."
 #: app/templates/manage_shared_lists.html:292
 #: app/templates/manage_sharing.html:319
 #: app/templates/secret_santa_assignment.html:144
-#: app/templates/table_view.html:86
+#: app/templates/table_view.html:87
 msgid "Back to Dashboard"
 msgstr "Tillbaka till översikten"
 
@@ -1694,42 +1752,42 @@ msgstr "Fullständigt namn"
 msgid "Current Avatar"
 msgstr "Nuvarande avatar"
 
-#: app/templates/my_ideas.html:6
+#: app/templates/my_ideas.html:7
 msgid "My Ideas"
 msgstr "Mina idéer"
 
-#: app/templates/my_ideas.html:197
+#: app/templates/my_ideas.html:198
 msgid "My List of Ideas"
 msgstr "Min idélista"
 
-#: app/templates/my_ideas.html:199
+#: app/templates/my_ideas.html:200
 msgid "Reorder"
 msgstr "Sortera om"
 
-#: app/templates/my_ideas.html:200
+#: app/templates/my_ideas.html:201
 msgid "Save Order"
 msgstr "Spara ordning"
 
-#: app/templates/my_ideas.html:212 app/templates/shared_list_public.html:208
-#: app/templates/user_gift_ideas.html:190
+#: app/templates/my_ideas.html:213 app/templates/shared_list_public.html:209
+#: app/templates/user_gift_ideas.html:191
 msgid "Estimated Value:"
 msgstr "Uppskattat värde:"
 
-#: app/templates/my_ideas.html:214 app/templates/shared_list_public.html:210
-#: app/templates/user_gift_ideas.html:192
+#: app/templates/my_ideas.html:215 app/templates/shared_list_public.html:211
+#: app/templates/user_gift_ideas.html:193
 msgid "Added By:"
 msgstr "Tillagd av:"
 
-#: app/templates/my_ideas.html:229 app/templates/user_gift_ideas.html:207
+#: app/templates/my_ideas.html:231 app/templates/user_gift_ideas.html:209
 msgid "Delete Icon"
 msgstr "Raderingsikon"
 
-#: app/templates/my_ideas.html:232 app/templates/user_gift_ideas.html:210
+#: app/templates/my_ideas.html:234 app/templates/user_gift_ideas.html:212
 msgid "Edit Icon"
 msgstr "Redigeringsikon"
 
-#: app/templates/my_ideas.html:241 app/templates/shared_list_public.html:228
-#: app/templates/user_gift_ideas.html:219
+#: app/templates/my_ideas.html:243 app/templates/shared_list_public.html:230
+#: app/templates/user_gift_ideas.html:221
 msgid "Open Link Icon"
 msgstr "Ikon för att öppna länk"
 
@@ -2045,106 +2103,106 @@ msgstr "Den här delningslänken har gått ut eller inaktiverats av listans äga
 msgid "Please contact the list owner if you need access to this gift list."
 msgstr "Kontakta listans ägare om du behöver åtkomst till den här presentlistan."
 
-#: app/templates/shared_list_public.html:6
-#: app/templates/shared_list_public.html:193
+#: app/templates/shared_list_public.html:7
+#: app/templates/shared_list_public.html:194
 #, python-format
 msgid "%(name)s's Gift List"
 msgstr "%(name)ss presentlista"
 
-#: app/templates/shared_list_public.html:194
+#: app/templates/shared_list_public.html:195
 msgid "Shared via GiftManager"
 msgstr "Delad via Presenthanterare"
 
-#: app/templates/shared_list_public.html:199
+#: app/templates/shared_list_public.html:200
 #, python-format
 msgid "Gift Ideas for %(name)s"
 msgstr "Presentidéer för %(name)s"
 
-#: app/templates/shared_list_public.html:236
-#: app/templates/shared_list_public.html:245
-#: app/templates/user_gift_ideas.html:226
-#: app/templates/user_gift_ideas.html:287
+#: app/templates/shared_list_public.html:238
+#: app/templates/shared_list_public.html:247
+#: app/templates/user_gift_ideas.html:228
+#: app/templates/user_gift_ideas.html:289
 msgid "Purchased by:"
 msgstr "Köpt av:"
 
-#: app/templates/shared_list_public.html:241
+#: app/templates/shared_list_public.html:243
 msgid "Cancel Purchase"
 msgstr "Avbryt köp"
 
-#: app/templates/shared_list_public.html:248
-#: app/templates/user_gift_ideas.html:231
+#: app/templates/shared_list_public.html:250
+#: app/templates/user_gift_ideas.html:233
 msgid "Available idea"
 msgstr "Tillgänglig idé"
 
-#: app/templates/shared_list_public.html:250
+#: app/templates/shared_list_public.html:252
 msgid "I Purchased This"
 msgstr "Jag har köpt den här"
 
-#: app/templates/shared_list_public.html:259
+#: app/templates/shared_list_public.html:261
 #, python-format
 msgid "Shared on %(created)s • Expires on %(expires)s"
 msgstr "Delad %(created)s • Går ut %(expires)s"
 
-#: app/templates/shared_list_public.html:260
+#: app/templates/shared_list_public.html:262
 msgid "Powered by GiftManager"
 msgstr "Drivs av Presenthanterare"
 
-#: app/templates/shared_list_public.html:266
+#: app/templates/shared_list_public.html:268
 msgid "Enter Your Name"
 msgstr "Ange ditt namn"
 
-#: app/templates/shared_list_public.html:267
+#: app/templates/shared_list_public.html:269
 msgid "Please enter your name to mark this item as purchased:"
 msgstr "Ange ditt namn för att markera den här saken som köpt:"
 
-#: app/templates/shared_list_public.html:268
+#: app/templates/shared_list_public.html:270
 msgid "Your name"
 msgstr "Ditt namn"
 
-#: app/templates/shared_list_public.html:272
+#: app/templates/shared_list_public.html:274
 msgid "Confirm Purchase"
 msgstr "Bekräfta köp"
 
-#: app/templates/shared_list_public.html:338
+#: app/templates/shared_list_public.html:340
 msgid "Are you sure you want to cancel this purchase?"
 msgstr "Är du säker på att du vill avbryta det här köpet?"
 
-#: app/templates/shared_list_public.html:348
+#: app/templates/shared_list_public.html:350
 msgid "Please enter your name"
 msgstr "Ange ditt namn"
 
-#: app/templates/shared_list_public.html:386
-#: app/templates/shared_list_public.html:411
+#: app/templates/shared_list_public.html:388
+#: app/templates/shared_list_public.html:413
 msgid "Error:"
 msgstr "Fel:"
 
-#: app/templates/shared_list_public.html:391
-#: app/templates/shared_list_public.html:416
+#: app/templates/shared_list_public.html:393
+#: app/templates/shared_list_public.html:418
 msgid "An error occurred"
 msgstr "Ett fel uppstod"
 
-#: app/templates/table_view.html:6
+#: app/templates/table_view.html:7
 msgid "Gift Summary Table"
 msgstr "Sammanställningstabell för presenter"
 
-#: app/templates/table_view.html:93
+#: app/templates/table_view.html:94
 msgid "Gift Summary"
 msgstr "Presentöversikt"
 
-#: app/templates/user_gift_ideas.html:6
+#: app/templates/user_gift_ideas.html:7
 msgid "Ideas List"
 msgstr "Idélista"
 
-#: app/templates/user_gift_ideas.html:181
+#: app/templates/user_gift_ideas.html:182
 #, python-format
 msgid "Ideas list for %(name)s"
 msgstr "Idélista för %(name)s"
 
-#: app/templates/user_gift_ideas.html:228
+#: app/templates/user_gift_ideas.html:230
 msgid "Cancel the purchase"
 msgstr "Avbryt köpet"
 
-#: app/templates/user_gift_ideas.html:232
+#: app/templates/user_gift_ideas.html:234
 msgid "Purchase completed"
 msgstr "Köp genomfört"
 

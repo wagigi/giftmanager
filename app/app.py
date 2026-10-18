@@ -20,6 +20,7 @@ from og_image import fetch_og_image
 from cleanup import DEFAULT_DELETE_DAYS, delete_gift_ideas, delete_old_gift_ideas, get_delete_days, parse_delete_days
 from currency import get_currency_symbol, get_currency_position, format_currency
 from sharing import generate_share_token, generate_share_url, link_sharing_enabled, find_share_link
+from idea_dates import migrate_ideas_file, idea_age
 
 app = Flask(__name__)
 
@@ -37,6 +38,7 @@ app.config['USERS_FILE'] = Path(DATA_DIR, 'users.json')
 app.config['AVATARS_DIR'] = Path(DATA_DIR, 'avatars')  # Uploaded profile pictures
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # Reject request bodies (uploads) over 10 MB
 babel = Babel(app, locale_selector=get_locale) # Initialize Flask-Babel
+migrate_ideas_file(app.config['IDEAS_FILE'])  # Fill in the dates older versions did not record
 
 @app.context_processor
 def inject_languages():
@@ -172,7 +174,8 @@ def utility_processor():
         get_currency_symbol=get_currency_symbol,
         get_currency_position=get_currency_position,
         generate_share_url=generate_share_url,
-        avatar_url=avatar_url
+        avatar_url=avatar_url,
+        idea_age=idea_age
     )
 
 
@@ -838,6 +841,7 @@ def mark_as_bought(idea_id):
             # Mark the idea as bought by the current user
             idea['bought_by'] = session['username']
             idea['date_bought'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Record the current date and time
+            idea.pop('date_bought_unknown', None)
             flash(_('Marked "%(name)s" as bought!', name=idea["gift_name"]), 'success')
 
             # Save the updated gift ideas back to the JSON file
@@ -880,6 +884,7 @@ def mark_as_not_bought(idea_id):
             # Mark the idea as not bought by setting 'bought_by' to None (or '' if preferred)
             idea['bought_by'] = None  # Using None is semantically clearer than ''
             idea.pop('date_bought', None)  # Remove the date_bought field if it exists
+            idea.pop('date_bought_unknown', None)
             flash(_('Marked "%(name)s" as not bought.', name=idea["gift_name"]), 'success')
 
             # Save the updated gift ideas back to the JSON file
@@ -2147,6 +2152,7 @@ def mark_shared_bought(token, idea_id):
     if not idea.get('bought_by'):
         idea['bought_by'] = f"visitor:{visitor_name}"
         idea['date_bought'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        idea.pop('date_bought_unknown', None)
         idea['visitor_id'] = visitor_id
         
         # Track visitor purchase
@@ -2201,6 +2207,7 @@ def mark_shared_not_bought(token, idea_id):
     if (idea.get('bought_by') or '').startswith('visitor:') and idea.get('visitor_id') == visitor_id:
         idea['bought_by'] = None
         idea.pop('date_bought', None)
+        idea.pop('date_bought_unknown', None)
         idea.pop('visitor_id', None)
         
         # Remove from visitor purchases tracking

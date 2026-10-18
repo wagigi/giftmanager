@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% from '_idea_age.html' import idea_age_badge with context %}
 <html lang="{{ current_locale }}">
 
 <head>
@@ -129,6 +130,7 @@
                 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-300 section">
                     <h3 class="text-xl font-semibold mb-4">{{ item.gift_name }}</h3>
                     <p><strong>{{ _('For:') }}</strong> {{ item.recipient_name }}</p>
+                    <p>{{ idea_age_badge(item) }}</p>
                     <p><strong>{{ _('Description:') }}</strong> {{ item.description }}</p>
                     {% if item.link %}
                         <p><strong>{{ _('Link:') }}</strong> <a href="{{ item.link }}" target="_blank">{{ item.link }}</a></p>
