@@ -365,7 +365,7 @@
             <ul class="mb-4 space-y-1">
                 {% for expense in budget.expenses %}
                 <li class="flex flex-wrap items-center gap-2">
-                    <span>{{ expense.label }}</span>
+                    <span>{{ expense.label or _('Other expense') }}</span>
                     <span class="sec-text">— {{ get_full_name(expense.paid_by) }}</span>
                     <strong>{% if expense.amount is not none %}{{ format_money(to_cents(expense.amount)) }}{% else %}{{ _('price not set') }}{% endif %}</strong>
                     {% if expense.individual %}<span class="sec-text text-sm">({{ _('individual gift, not shared') }})</span>{% endif %}

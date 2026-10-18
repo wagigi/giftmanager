@@ -174,6 +174,7 @@
         </section>
 
         <section class="section">
+            {% if is_member %}
             <h2 class="text-xl font-semibold mb-1">{{ _('All reimbursements in the family') }}</h2>
             <p class="sec-text text-sm mb-4">{{ _('The debts on every list of the family are offset against each other: these are the only transfers left to make.') }}</p>
             {% if transfers %}
@@ -187,6 +188,7 @@
             </ul>
             {% else %}
             <p class="sec-text">{{ _('Everyone is even.') }}</p>
+            {% endif %}
             {% endif %}
         </section>
 
@@ -204,11 +206,13 @@
         </section>
         {% endif %}
 
+        {% if is_member %}
         <form method="post" action="{{ url_for('budget_close') }}"
               onsubmit="return confirm({{ _('Close this family? Every budget, expense and reimbursement of its lists will be deleted.')|tojson|forceescape }});">
             <input type="hidden" name="scope" value="{{ scope }}">
             <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded">{{ _('Close the family (reset)') }}</button>
         </form>
+        {% endif %}
     </main>
 </body>
 </html>

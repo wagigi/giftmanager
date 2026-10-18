@@ -84,7 +84,7 @@ def test_split_counts_a_missing_price_as_zero(budget_module):
 
 
 @pytest.mark.parametrize("text, expected", [
-    ("12,50", 12.5), (" 8 ", 8.0), ("3.333", 3.33), ("", None), ("abc", None), ("-1", None), ("nan", None), ("inf", None),
+    ("12,50", 12.5), (" 8 ", 8.0), ("1\u202f234,50", 1234.5), ("1\u00a0234", 1234.0), ("3.333", 3.33), ("", None), ("abc", None), ("-1", None), ("nan", None), ("inf", None),
 ])
 def test_parse_amount(budget_module, text, expected):
     assert budget_module.parse_amount(text) == expected
@@ -222,6 +222,17 @@ def test_reset_one_recipient(client, env):
     assert env.budgets()["recipients"] == {}
 
 
+def test_reset_one_recipient_is_refused_once_reimbursements_exist(client, env):
+    _sharing(env, {"alice": 10}, [_expense("admin", 10)])
+    budget = env.budgets()
+    budget["settlements"].append({"id": 1, "scope": "Smith", "from": "alice", "to": "admin", "amount": 5, "date": ""})
+    env.write_budgets(budget)
+    login(client, "alice")
+    client.post("/budget/bob/reset")
+    assert "bob" in env.budgets()["recipients"]
+    assert any(category == "warning" for category, _ in flashes(client))
+
+
 # --- purchases ---------------------------------------------------------------------------------
 
 def test_purchase_records_price_and_cancel_removes_it(client, env):
@@ -286,11 +297,62 @@ def test_purged_idea_keeps_its_price(client, env):
     assert env.budgets()["recipients"]["alice"]["expenses"][0]["amount"] == 30.0
 
 
-def test_deleted_user_is_no_longer_a_recipient(client, env):
-    env.write_budgets({"recipients": {"bob": _entry({"alice": 10}), "alice": _entry({"bob": 10})}, "settlements": []})
-    login(client, "admin")
-    client.post("/users", data={"username": "bob", "delete_user": "1"})
-    assert set(env.budgets()["recipients"]) == {"alice"}
+def test_deleted_recipient_keeps_counting_in_their_family(client, env):
+    login(client, "alice")
+    client.post("/budget/bob", data={"amount": "20"})
+    client.post("/budget/bob/expense", data={"amount": "40"})
+    assert env.budgets()["recipients"]["bob"]["scope"] == "Smith"
+
+    admin = env.module.app.test_client()
+    login(admin, "admin")
+    admin.post("/users", data={"username": "bob", "delete_user": "1"})
+    budget = env.budgets()
+    assert "bob" in budget["recipients"]
+    users = env.users()
+    assert env.module.scope_transfers(budget, "Smith", users) == []  # alice paid her own share
+
+
+def test_scope_is_frozen_at_creation(client, env):
+    login(client, "alice")
+    client.post("/budget/bob", data={"amount": "10"})
+    env.update_user("bob", groups=["Adams", "Smith"])  # Adams now sorts first
+    assert env.budgets()["recipients"]["bob"]["scope"] == "Smith"
+    budget_module = env.module
+    budget = env.budgets()
+    budget["recipients"]["bob"]["expenses"].append(_expense("admin", 10))
+    assert budget_module.scope_transfers(budget, "Smith", env.users()) == [("alice", "admin", 1000)]
+    assert budget_module.scope_transfers(budget, "Adams", env.users()) == []
+
+
+def test_free_expense_without_label_is_translated_when_shown(client, env):
+    login(client, "alice")
+    client.post("/budget/bob/expense", data={"amount": "5"})
+    assert env.budgets()["recipients"]["bob"]["expenses"][0]["label"] == ""
+    client.get("/set_language/en")
+    assert "Other expense" in client.get("/user_gift_ideas/bob").get_data(as_text=True)
+
+
+@pytest.mark.parametrize("remove", ["rundl", "delete"])
+def test_removed_idea_id_reused_by_a_new_idea_does_not_take_its_price(client, env, remove):
+    login(client, "bob")
+    client.post("/update_purchase/2", data={"price": "30"})  # bob bought idea 2 (for alice)
+    if remove == "rundl":
+        env.update_idea(2, date_bought=(datetime.now() - timedelta(days=40)).strftime("%Y-%m-%d %H:%M:%S"))
+        client.get("/rundl")
+    else:
+        assert client.delete("/delete_idea/2").status_code == 204  # bob added it
+    (expense,) = env.budgets()["recipients"]["alice"]["expenses"]
+    assert (expense["amount"], expense["idea_id"]) == (30.0, None)
+
+    # A new idea gets id 2 again; buying and cancelling it leaves the old price alone
+    ideas = env.ideas()
+    ideas.append(dict(env.idea(3), gift_idea_id=2, gift_name="New idea", bought_by=None))
+    env.write_ideas(ideas)
+    other = env.module.app.test_client()
+    login(other, "alice")
+    other.post("/mark_as_bought/2", data={"price": "5"})
+    other.post("/mark_as_not_bought/2")
+    assert env.budgets()["recipients"]["alice"]["expenses"] == [expense]
 
 
 # --- family overview ---------------------------------------------------------------------------
@@ -331,6 +393,20 @@ def test_only_the_two_people_concerned_settle(client, env):
     other = env.module.app.test_client()
     login(other, "carol")  # not in Smith and not involved
     assert other.post("/budget_overview/settle", data={"scope": "Smith", "from": "admin", "to": "alice"}).status_code == 404
+
+
+def test_outsider_only_sees_own_transfers_and_cannot_close(client, env):
+    # carol (Jones) paid for bob (Smith); alice and admin owe her and each other
+    env.write_budgets({"recipients": {
+        "bob": _entry({"alice": 10, "carol": 10, "admin": 10}, _expense("carol", 15), _expense("admin", 15, id=2))},
+        "settlements": []})
+    _en(client, "carol")
+    page = client.get("/budget_overview?scope=Smith").get_data(as_text=True)
+    assert "From Alice Smith" in page
+    assert "Admin User →" not in page and "Alice Smith →" not in page  # the family-wide list is hidden
+    assert "Close the family" not in page
+    assert client.post("/budget_overview/close", data={"scope": "Smith"}).status_code == 404
+    assert "bob" in env.budgets()["recipients"]
 
 
 def test_close_family(client, env):

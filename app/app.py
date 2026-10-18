@@ -23,7 +23,8 @@ from sharing import generate_share_token, generate_share_url, link_sharing_enabl
 from idea_dates import migrate_ideas_file, idea_age
 from budget import (ALL_SCOPE, budget_enabled, can_see_budget, parse_amount, to_cents, format_cents, recipient_entry,
                     recipient_split, scope_transfers, user_scopes, close_scope, add_settlement, add_expense,
-                    find_idea_expense, record_idea_purchase, remove_idea_purchase, forget_user, empty_budgets)
+                    find_idea_expense, record_idea_purchase, remove_idea_purchase, detach_ideas, empty_budgets,
+                    member_scopes, entry_scope)
 
 app = Flask(__name__)
 
@@ -704,6 +705,11 @@ def delete_idea(idea_id):
     # Save the updated list of gift ideas using the helper function
     save_gift_ideas(gift_ideas_data)
 
+    # Its price paid stays in the cost sharing, no longer tied to its id (a new idea may reuse it)
+    budgets = load_budgets()
+    detach_ideas(budgets, {idea_id})
+    save_budgets(budgets)
+
     return '', 204  # Return a response with HTTP status code 204 (no content)
 
 @app.route('/logout')
@@ -862,7 +868,8 @@ def mark_as_bought(idea_id):
                 if price_text.strip() and price is None:
                     flash(_('Invalid amount: the price paid was not recorded.'), 'warning')
                 budgets = load_budgets()
-                record_idea_purchase(budgets, idea, session['username'], price, request.form.get('individual') == 'on')
+                recipient_user = next(user for user in users if user['username'] == idea['user_id'])
+                record_idea_purchase(budgets, recipient_user, idea, session['username'], price, request.form.get('individual') == 'on')
                 save_budgets(budgets)
         else:
             # If already bought, display a warning
@@ -1291,10 +1298,6 @@ def manage_users():
                 if user_obj.get('shared_list') and 'list_members' in user_obj:
                     if username in user_obj['list_members']:
                         user_obj['list_members'].remove(username)
-
-            budgets = load_budgets()
-            forget_user(budgets, username)
-            save_budgets(budgets)
             
             flash(_('User deleted successfully!'), 'success')
 
@@ -2343,19 +2346,20 @@ def table_view():
 
 # BUDGETS AND COST SHARING
 def budget_recipient_or_404(recipient):
-    """Current user record, if they may see the budget of recipient's list; 404 otherwise
-    (also for the recipient themselves, so they cannot tell whether an entry exists)."""
+    """(current user, recipient user) records, if the current user may see the budget of
+    recipient's list; 404 otherwise (also for the recipient themselves, so they cannot tell
+    whether an entry exists)."""
     users = load_users()
     current_user = next((user for user in users if user['username'] == session['username']), None)
     if not budget_enabled() or not can_see_budget(current_user, recipient, users):
         abort(404)
-    return current_user
+    return current_user, next(user for user in users if user['username'] == recipient)
 
 
 @app.route('/budget/<path:recipient>', methods=['POST'])
 @login_required
 def set_budget(recipient):
-    current_user = budget_recipient_or_404(recipient)
+    current_user, recipient_user = budget_recipient_or_404(recipient)
     amount_text = request.form.get('amount', '')
     amount = parse_amount(amount_text)
     if amount_text.strip() and amount is None:
@@ -2363,7 +2367,7 @@ def set_budget(recipient):
         return redirect(url_for('user_gift_ideas', selected_user_id=recipient))
 
     budgets = load_budgets()
-    entry = recipient_entry(budgets, recipient, create=True)
+    entry = recipient_entry(budgets, recipient, create_for=recipient_user)
     if amount:
         entry['budgets'][current_user['username']] = amount
         flash(_('Budget saved.'), 'success')
@@ -2377,7 +2381,7 @@ def set_budget(recipient):
 @app.route('/budget/<path:recipient>/expense', methods=['POST'])
 @login_required
 def add_budget_expense(recipient):
-    current_user = budget_recipient_or_404(recipient)
+    current_user, recipient_user = budget_recipient_or_404(recipient)
     amount = parse_amount(request.form.get('amount', ''))
     label = request.form.get('label', '').strip()[:100]
     if not amount:
@@ -2385,7 +2389,7 @@ def add_budget_expense(recipient):
         return redirect(url_for('user_gift_ideas', selected_user_id=recipient))
 
     budgets = load_budgets()
-    add_expense(budgets, recipient, current_user['username'], amount, label or _('Other expense'))
+    add_expense(budgets, recipient_user, current_user['username'], amount, label)
     save_budgets(budgets)
     flash(_('Expense added.'), 'success')
     return redirect(url_for('user_gift_ideas', selected_user_id=recipient))
@@ -2394,7 +2398,7 @@ def add_budget_expense(recipient):
 @app.route('/budget/<path:recipient>/expense/<int:expense_id>/delete', methods=['POST'])
 @login_required
 def delete_budget_expense(recipient, expense_id):
-    current_user = budget_recipient_or_404(recipient)
+    current_user, _recipient_user = budget_recipient_or_404(recipient)
     budgets = load_budgets()
     entry = recipient_entry(budgets, recipient) or {'expenses': []}
     # Only one's own free expenses: the price of a bought idea is changed on /bought_items
@@ -2414,6 +2418,13 @@ def delete_budget_expense(recipient, expense_id):
 def reset_budget(recipient):
     budget_recipient_or_404(recipient)
     budgets = load_budgets()
+    entry = recipient_entry(budgets, recipient)
+    # Reimbursements were made against this list's debts: dropping it alone would reverse them
+    if entry is not None:
+        scope = entry_scope(recipient, entry, {user['username']: user for user in load_users()})
+        if any(settlement['scope'] == scope for settlement in budgets['settlements']):
+            flash(_('Reimbursements are recorded in this family: close the family on the "Who owes whom" page instead.'), 'warning')
+            return redirect(url_for('user_gift_ideas', selected_user_id=recipient))
     budgets['recipients'].pop(recipient, None)
     save_budgets(budgets)
     flash(_('Budgets and expenses for %(name)s have been reset.', name=get_full_name(recipient)), 'success')
@@ -2439,7 +2450,8 @@ def update_purchase(idea_id):
         return redirect(url_for('bought_items'))
 
     budgets = load_budgets()
-    record_idea_purchase(budgets, idea, session['username'], price, request.form.get('individual') == 'on')
+    recipient_user = next(user for user in users if user['username'] == idea['user_id'])
+    record_idea_purchase(budgets, recipient_user, idea, session['username'], price, request.form.get('individual') == 'on')
     save_budgets(budgets)
     flash(_('Purchase of "%(name)s" updated.', name=idea['gift_name']), 'success')
     return redirect(url_for('bought_items'))
@@ -2468,6 +2480,10 @@ def budget_overview():
     users, current_user, budgets, scopes, scope = budget_scope_or_404()
     username = current_user['username']
     transfers = scope_transfers(budgets, scope, users)
+    is_member = scope in member_scopes(current_user)
+    if not is_member:
+        # Outside their own families, people only see what concerns them
+        transfers = [t for t in transfers if username in t[:2]]
     names = {user['username']: user.get('full_name') or user['username'] for user in users}
     return render_template(
         'budget_overview.html',
@@ -2478,7 +2494,9 @@ def budget_overview():
         my_debts=[t for t in transfers if t[0] == username],
         owed_to_me=[t for t in transfers if t[1] == username],
         transfers=transfers,
-        settlements=[s for s in reversed(budgets['settlements']) if s['scope'] == scope],
+        is_member=is_member,
+        settlements=[s for s in reversed(budgets['settlements'])
+                     if s['scope'] == scope and (is_member or username in (s['from'], s['to']))],
     )
 
 
@@ -2505,6 +2523,9 @@ def budget_settle():
 @login_required
 def budget_close():
     users, current_user, budgets, scopes, scope = budget_scope_or_404(strict=True)
+    # Only the members of the family (not someone who once paid for one of its lists)
+    if scope not in member_scopes(current_user):
+        abort(404)
     close_scope(budgets, scope, users)
     save_budgets(budgets)
     flash(_('Budgets, expenses and reimbursements of this family have been reset.'), 'success')

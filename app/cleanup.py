@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from flask import current_app
 from config import read_env_variable
-from storage import load_gift_ideas, save_gift_ideas
+from storage import load_gift_ideas, save_gift_ideas, load_budgets, save_budgets
+from budget import detach_ideas
 
 
 DEFAULT_DELETE_DAYS = 30  # same default as the .env written by prepopulate_file()
@@ -62,6 +63,11 @@ def delete_gift_ideas(bought_only, older_than_days):
 
     ids_to_delete = {idea['gift_idea_id'] for idea in find_gift_ideas_to_delete(gift_ideas_data, bought_only, older_than_days)}
     save_gift_ideas([idea for idea in gift_ideas_data if idea['gift_idea_id'] not in ids_to_delete])
+
+    # Prices paid stay in the cost sharing, no longer tied to the ids (new ideas may reuse them)
+    budgets = load_budgets()
+    detach_ideas(budgets, ids_to_delete)
+    save_budgets(budgets)
 
     # Record the last execution time
     last_execution_time = datetime.now().isoformat()

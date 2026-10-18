@@ -1,6 +1,6 @@
 """Budgets per giver and recipient, cost sharing and family settlement (budgets.json).
 
-budgets.json holds {"recipients": {username: {"budgets": {giver: amount}, "expenses": [...]}},
+budgets.json holds {"recipients": {username: {"scope": family, "budgets": {giver: amount}, "expenses": [...]}},
 "settlements": [...]}. Amounts are stored as floats with 2 decimals and computed in integer cents.
 The recipient of a list never sees its entry (surprise rule); the family overview only shows net
 transfers between people, never gifts or recipients.
@@ -38,7 +38,9 @@ def can_see_budget(current_user, recipient_username, users):
 
 def parse_amount(text):
     """Amount typed in a form ('12,50', '12.5', ' 8 ') as a float with 2 decimals, or None if blank or invalid."""
-    text = (text or '').strip().replace(' ', '').replace(' ', '').replace(',', '.')
+    text = (text or '').strip().replace(',', '.')
+    for space in (' ', '\u00a0', '\u202f'):  # thousands separators ('1 234,50')
+        text = text.replace(space, '')
     if not text:
         return None
     try:
@@ -61,10 +63,13 @@ def format_cents(cents):
     return f"{sign}{cents // 100}.{cents % 100:02d}"
 
 
-def recipient_entry(budgets, recipient, create=False):
+def recipient_entry(budgets, recipient, create_for=None):
+    """The entry of a recipient's list, created when missing if create_for (the recipient's user
+    record) is given. Its family is set at creation and never changes, so the reimbursements
+    recorded in that family stay consistent when the recipient's families change later."""
     entry = budgets['recipients'].get(recipient)
-    if entry is None and create:
-        entry = budgets['recipients'][recipient] = {'budgets': {}, 'expenses': []}
+    if entry is None and create_for is not None:
+        entry = budgets['recipients'][recipient] = {'scope': recipient_scope(create_for), 'budgets': {}, 'expenses': []}
     return entry
 
 
@@ -142,14 +147,22 @@ def recipient_scope(user):
     return groups[0] if groups else ALL_SCOPE
 
 
+def entry_scope(recipient, entry, users_by_name):
+    """Family an entry counts in: the one stored at creation, else (older entries) the recipient's
+    current one. Entries of deleted users keep counting, so the money others paid is not lost."""
+    if entry.get('scope'):
+        return entry['scope']
+    user = users_by_name.get(recipient)
+    return recipient_scope(user) if user else None
+
+
 def scope_balances(budgets, scope, users):
     """Net balance (cents) of every person over the recipients of `scope`, minus the
     reimbursements already recorded in that scope."""
     users_by_name = {user['username']: user for user in users}
     balances = {}
     for recipient, entry in budgets['recipients'].items():
-        user = users_by_name.get(recipient)
-        if not is_budget_user(user) or recipient_scope(user) != scope:
+        if entry_scope(recipient, entry, users_by_name) != scope:
             continue
         for person, balance in recipient_split(entry)['balances'].items():
             balances[person] = balances.get(person, 0) + balance
@@ -187,14 +200,21 @@ def scope_transfers(budgets, scope, users):
     return settle(scope_balances(budgets, scope, users))
 
 
+def member_scopes(current_user):
+    """The families current_user belongs to, or ALL_SCOPE when they have none."""
+    return sorted(group for group in current_user.get('groups', []) if not group.startswith('guest_')) or [ALL_SCOPE]
+
+
 def user_scopes(current_user, users, budgets):
     """Scopes current_user may open on the overview: their families (or ALL_SCOPE without one),
-    plus any scope where they owe or are owed money or recorded a reimbursement."""
-    own = sorted(group for group in current_user.get('groups', []) if not group.startswith('guest_'))
-    scopes = own or [ALL_SCOPE]
+    plus any scope where they owe or are owed money or recorded a reimbursement (there they only
+    see their own transfers)."""
+    scopes = member_scopes(current_user)
     username = current_user['username']
-    candidates = {recipient_scope(user) for user in users if user['username'] in budgets['recipients'] and is_budget_user(user)}
+    users_by_name = {user['username']: user for user in users}
+    candidates = {entry_scope(recipient, entry, users_by_name) for recipient, entry in budgets['recipients'].items()}
     candidates |= {settlement['scope'] for settlement in budgets['settlements']}
+    candidates.discard(None)
     for scope in sorted(candidates - set(scopes)):
         involved = scope_balances(budgets, scope, users).get(username) or any(
             username in (s['from'], s['to']) for s in budgets['settlements'] if s['scope'] == scope)
@@ -208,7 +228,7 @@ def close_scope(budgets, scope, users):
     users_by_name = {user['username']: user for user in users}
     budgets['recipients'] = {
         recipient: entry for recipient, entry in budgets['recipients'].items()
-        if not (recipient in users_by_name and recipient_scope(users_by_name[recipient]) == scope)
+        if entry_scope(recipient, entry, users_by_name) != scope
     }
     budgets['settlements'] = [s for s in budgets['settlements'] if s['scope'] != scope]
 
@@ -222,8 +242,9 @@ def add_settlement(budgets, scope, payer, payee, amount):
 
 # --- Expenses ---------------------------------------------------------------------------------
 
-def add_expense(budgets, recipient, paid_by, amount, label, idea_id=None, individual=False):
-    entry = recipient_entry(budgets, recipient, create=True)
+def add_expense(budgets, recipient_user, paid_by, amount, label, idea_id=None, individual=False):
+    """Record an expense. An empty label is shown as "Other expense", in the reader's language."""
+    entry = recipient_entry(budgets, recipient_user['username'], create_for=recipient_user)
     entry['expenses'].append({
         'id': _next_id(entry['expenses']), 'paid_by': paid_by, 'amount': amount, 'label': label,
         'idea_id': idea_id, 'individual': bool(individual), 'date': _now(),
@@ -239,11 +260,11 @@ def find_idea_expense(budgets, idea_id):
     return None, None
 
 
-def record_idea_purchase(budgets, idea, buyer, amount, individual):
+def record_idea_purchase(budgets, recipient_user, idea, buyer, amount, individual):
     """Record (or replace) the price paid for a bought idea. The amount is kept here, so the
     shared cost does not change when /rundl later purges the idea."""
     remove_idea_purchase(budgets, idea['gift_idea_id'])
-    add_expense(budgets, idea['user_id'], buyer, amount, idea.get('gift_name', ''),
+    add_expense(budgets, recipient_user, buyer, amount, idea.get('gift_name', ''),
                 idea_id=idea['gift_idea_id'], individual=individual)
 
 
@@ -252,7 +273,11 @@ def remove_idea_purchase(budgets, idea_id):
         entry['expenses'] = [e for e in entry['expenses'] if e.get('idea_id') != idea_id]
 
 
-def forget_user(budgets, username):
-    """A deleted account is no longer a recipient. Their budgets, the money they paid and their
-    reimbursements on other lists stay recorded, so the other balances do not change."""
-    budgets['recipients'].pop(username, None)
+def detach_ideas(budgets, idea_ids):
+    """Ideas deleted or purged: their expenses stay (the money was spent) but no longer point to
+    the idea, whose id a new idea may reuse (ids are max + 1). They become free expenses."""
+    for entry in budgets['recipients'].values():
+        for expense in entry['expenses']:
+            if expense.get('idea_id') in idea_ids:
+                expense['idea_id'] = None
+
