@@ -198,6 +198,14 @@ def test_oidc_cannot_log_in_as_shared_list(env, app_module, make_client):
     assert is_redirect_to(response, "/login") and username is None
 
 
+def test_oidc_cannot_log_in_as_guest(env, app_module, make_client):
+    """Guests sign in through /guest_login only."""
+    env.set_env("SECONDARY_OIDC_FIELD", "preferred_username")
+    env.set_env("SECONDARY_DB_FIELD", "username")
+    response, username = oidc_login(make_client, app_module, {"preferred_username": "guest_smith"})
+    assert is_redirect_to(response, "/login") and username is None
+
+
 @pytest.mark.parametrize("preferred_username", ["alice", "ALICE", " alice ", "shared_smith"])
 def test_auto_registration_refuses_existing_username(env, app_module, make_client, preferred_username):
     """An unmatched identity whose preferred_username belongs to an existing

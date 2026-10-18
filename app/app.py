@@ -252,8 +252,9 @@ def auth():
         # Fields may be missing, null or not strings (on either side)
         return str(value).lower() if value is not None else ""
 
-    # Find user in the database based on OIDC fields (shared lists cannot log in, as on /login)
-    accounts = [user for user in users if not user.get("shared_list")]
+    # Find user in the database based on OIDC fields (shared lists cannot log in, as on /login, and
+    # guests only through /guest_login)
+    accounts = [user for user in users if not user.get("shared_list") and not user.get("guest")]
     user_in_db = None
     if primary_oidc_value:
         user_in_db = next(
