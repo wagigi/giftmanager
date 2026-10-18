@@ -124,6 +124,9 @@ def set_env_variable(key, value):
     kept = [binding.original.string for binding in bindings
             if not (binding.error and binding.original.string.split('=', 1)[0].strip() == key)]
     if len(kept) != len(bindings):
-        with open(dotenv_path, 'w') as file:
+        # Write a temporary file and swap it in, like set_key(): other threads keep reading .env
+        tmp_path = f'{dotenv_path}.tmp'
+        with open(tmp_path, 'w') as file:
             file.write(''.join(kept))
+        os.replace(tmp_path, dotenv_path)
     set_key(dotenv_path, key, value)

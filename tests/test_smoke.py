@@ -866,6 +866,16 @@ def test_setup_wizard_saves_environment(client, env):
     assert "DELETE_DAYS='45'" in env.env_file.read_text()
 
 
+def test_setup_wizard_closes_when_leaving_for_login(client, env):
+    env.write_users([])
+    client.post("/setupadmin", data={"admin_username": "root", "admin_password": "pw",
+                                     "admin_email": "root@example.com", "full_name": "Root",
+                                     "birthday": "", "avatar": "icons/avatar1.png"})
+    client.get("/login")
+    assert is_redirect_to(client.post("/setupenv", data={"DELETE_DAYS": "1"}), "/login")
+    assert "DELETE_DAYS='1'" not in env.env_file.read_text()
+
+
 def test_setupenv_refuses_spoofed_referer(client, env):
     """/setupenv is unauthenticated; it used to trust any Referer containing '/setupadmin'."""
     before = env.env_file.read_text()

@@ -383,6 +383,8 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # Leaving the setup wizard without submitting /setupenv closes it (it is unauthenticated)
+    session.pop('setupenv_allowed', None)
     guests_exist_flag = guests_exist()
     enable_default_login = read_env_variable('ENABLE_DEFAULT_LOGIN', 'true').lower() == 'true'
     enable_self_registration = read_env_variable('ENABLE_SELF_REGISTRATION', 'false').lower() == 'true'
