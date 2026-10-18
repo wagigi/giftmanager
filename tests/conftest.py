@@ -1,9 +1,9 @@
 """Shared fixtures for the smoke tests.
 
-app/app.py reads DATA_DIR, loads .env and creates its data files at import
-time, so every test gets a fresh temporary DATA_DIR and a freshly (re)imported
-`app` module. The tracked fixtures in app/ (users.json, ideas.json, .env) are
-never read or written.
+app/config.py (imported by app/app.py) reads DATA_DIR, loads .env and creates
+the data files at import time, so every test gets a fresh temporary DATA_DIR
+and freshly (re)imported `app`, `config`, `storage`... modules. The tracked
+fixtures in app/ (users.json, ideas.json, .env) are never read or written.
 """
 import importlib
 import json
@@ -47,7 +47,7 @@ def cached_password_hash(password):
     return sys.modules["app"].password_hash(password)
 
 
-# Every setting app.py reads. They are removed from os.environ before import,
+# Every setting the app reads. They are removed from os.environ before import,
 # because read_env_variable() and os.getenv() fall back to the process
 # environment for keys missing from the test .env.
 ENV_KEYS = [
@@ -217,8 +217,9 @@ def env(tmp_path):
             os.environ.pop(key, None)
         os.environ["DATA_DIR"] = str(data_dir)
 
-        # Fresh import of app and of any module it loaded from app/, so no
-        # import-time state (e.g. DATA_DIR) is left over from a previous test.
+        # Fresh import of app and of every module it loaded from app/ (config,
+        # storage, auth...), so no import-time state (e.g. config.DATA_DIR) is
+        # left over from a previous test.
         app_files = set(os.listdir(APP_DIR))
         for name, mod in list(sys.modules.items()):
             path = getattr(mod, "__file__", None) or ""
@@ -226,6 +227,7 @@ def env(tmp_path):
                 del sys.modules[name]
         module = importlib.import_module("app")
         assert module.DATA_DIR == str(data_dir), "app was not imported against the temporary DATA_DIR"
+        assert sys.modules["config"].dotenv_path == str(data_dir / ".env"), "config was not reloaded"
 
         module.app.config["TESTING"] = True
         handle = Env(module, data_dir)
@@ -238,6 +240,18 @@ def env(tmp_path):
 @pytest.fixture
 def app_module(env):
     return env.module
+
+
+@pytest.fixture
+def mailer_module(env):
+    """The mailer module loaded by this test's app (patch Client here)."""
+    return sys.modules["mailer"]
+
+
+@pytest.fixture
+def og_image_module(env):
+    """The og_image module loaded by this test's app (patch requests here)."""
+    return sys.modules["og_image"]
 
 
 @pytest.fixture

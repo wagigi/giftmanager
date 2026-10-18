@@ -1,31 +1,28 @@
 from flask import Flask, abort, render_template, request, redirect, url_for, session, flash, make_response, get_flashed_messages, request, jsonify, send_from_directory
-import requests
-from functools import wraps
-from mailjet_rest import Client
 from datetime import datetime, timedelta
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
 from authlib.integrations.flask_client import OAuth
 import json, secrets
 import os
 import uuid
 import random
 from pathlib import Path
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from dotenv import load_dotenv, set_key, dotenv_values
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from PIL import Image, ImageOps, UnidentifiedImageError
 from flask_babel import Babel, _, lazy_gettext as _l, get_locale as current_babel_locale
 
-# Directory holding .env, users.json, ideas.json and Secret Santa files (set to /app/data in Docker)
-DATA_DIR = os.getenv("DATA_DIR", os.path.dirname(os.path.abspath(__file__)))
-dotenv_path = os.path.join(DATA_DIR, '.env') # Load the .env file from the data directory
-load_dotenv(dotenv_path)
+from config import DATA_DIR, dotenv_path, read_env_variable, set_env_variable, SUPPORTED_LANGUAGES
+from storage import load_users, save_users, load_gift_ideas, save_gift_ideas, find_idea_by_id, get_full_name
+from auth import ph, password_hash, verify_password, login_required, admin_required, guest_allowed
+from visibility import get_visible_users, get_visible_groups, can_view_list, can_modify_idea
+from mailer import send_email_to_buyer_via_mailjet
+from avatars import UPLOADED_AVATAR_PREFIX, AVATAR_SIZE, avatar_url, delete_uploaded_avatar
+from og_image import fetch_og_image
+from cleanup import DEFAULT_DELETE_DAYS, delete_gift_ideas, delete_old_gift_ideas, get_delete_days, parse_delete_days
+from currency import get_currency_symbol, get_currency_position, format_currency
+from sharing import generate_share_token, generate_share_url, link_sharing_enabled, find_share_link
+from idea_dates import migrate_ideas_file, idea_age
 
 app = Flask(__name__)
-
-SUPPORTED_LANGUAGES = {'en': 'English', 'fr': 'Français', 'nl': 'Nederlands', 'sv': 'Svenska'}
 
 def get_locale():
     if session.get('lang') in SUPPORTED_LANGUAGES:
@@ -41,70 +38,11 @@ app.config['USERS_FILE'] = Path(DATA_DIR, 'users.json')
 app.config['AVATARS_DIR'] = Path(DATA_DIR, 'avatars')  # Uploaded profile pictures
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # Reject request bodies (uploads) over 10 MB
 babel = Babel(app, locale_selector=get_locale) # Initialize Flask-Babel
+migrate_ideas_file(app.config['IDEAS_FILE'])  # Fill in the dates older versions did not record
 
 @app.context_processor
 def inject_languages():
     return {'supported_languages': SUPPORTED_LANGUAGES, 'current_locale': str(current_babel_locale())}
-
-def get_mailjet_client():
-    """Return a Mailjet client, or None if the API keys are not configured.
-    Read at call time so keys saved from the email settings page apply without restart."""
-    api_key = os.getenv("MAILJET_API_KEY")
-    api_secret = os.getenv("MAILJET_API_SECRET")
-    if not api_key or not api_secret:
-        return None
-    return Client(auth=(api_key, api_secret), version='v3.1')
-
-ph = PasswordHasher()
-
-def prepopulate_file(filename, data):
-    """Create a data file with default content on first start (e.g. an empty Docker volume)."""
-    if Path(filename).exists():
-        return
-    Path(filename).parent.mkdir(exist_ok=True, parents=True)
-    with open(filename, 'w') as file:
-        file.write(data)
-
-prepopulate_file(app.config['IDEAS_FILE'], """
-        [
-            {
-                "user_id": "demo",
-                "gift_idea_id": 1,
-                "gift_name": "Default",
-                "description": "dont delete",
-                "link": "icbest.ca",
-                "added_by": "demo",
-                "bought_by": ""
-            }
-        ]""")
-
-prepopulate_file(app.config['USERS_FILE'], """
-        [
-        ]""")
-
-prepopulate_file(dotenv_path, """
-MAILJET_API_KEY=''
-MAILJET_API_SECRET=''
-SECRET_KEY='changethis'
-SYSTEM_EMAIL=''
-DELETE_DAYS='30'
-OIDC_CLIENT_ID=''
-OIDC_CLIENT_SECRET=''
-OIDC_SERVER_METADATA_URL=''
-OIDC_LOGOUT_URL=''
-PRIMARY_OIDC_FIELD='email'
-SECONDARY_OIDC_FIELD='preferred_username'
-PRIMARY_DB_FIELD='email'
-SECONDARY_DB_FIELD='username'
-ENABLE_AUTO_REGISTRATION='false'
-LOGIN_PAGE_MESSAGE='No account? Contact a family member to create an account!'
-ENABLE_DEFAULT_LOGIN='true'
-REORDERING='true'
-IMGENABLED='false'
-""")
-
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
 
 @app.route('/set_language/<lang_code>')
 def set_language(lang_code):
@@ -112,116 +50,6 @@ def set_language(lang_code):
         session['lang'] = lang_code
     return redirect(request.referrer or url_for('index'))
 
-
-def read_env_variable(key, default=None):
-    """Read environment variable from .env file with proper defaults"""
-    # Define the path here to avoid the default parameter issue
-    env_path = dotenv_path
-    
-    try:
-        with open(env_path, 'r') as file:
-            for line in file:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    current_key, value = line.split('=', 1)
-                    if current_key.strip() == key:
-                        value = value.strip()
-                        # Remove quotes
-                        if value and ((value[0] == '"' and value[-1] == '"') or (value[0] == "'" and value[-1] == "'")):
-                            value = value[1:-1]
-                        return value if value else default
-    except FileNotFoundError:
-        pass  # .env file doesn't exist, that's okay
-    except Exception as e:
-        print(f"Error reading .env file: {e}")
-    
-    # Fallback to system environment
-    return os.getenv(key, default)
-
-
-def load_gift_ideas():
-    with open(app.config['IDEAS_FILE'], 'r') as file:
-        return json.load(file)
-
-def save_gift_ideas(gift_ideas):
-    with open(app.config['IDEAS_FILE'], 'w') as file:
-        json.dump(gift_ideas, file, indent=4)
-
-def load_users():
-    with open(app.config['USERS_FILE'], 'r') as file:
-        return json.load(file)
-
-def save_users(users):
-    with open(app.config['USERS_FILE'], 'w') as file:
-        json.dump(users, file, indent=4)
-
-
-# Define a decorator for requiring authentication
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'username' not in session:
-            flash(_('Please log in first.'), 'warning')
-            return redirect(url_for('login'))
-        
-        # Check if user is a guest and route doesn't allow guests
-        if is_guest_user(session['username']):
-            # Check if the route has @guest_allowed decorator
-            if not getattr(f, '_guest_allowed', False):
-                flash(_('This feature is not available for guest users.'), 'danger')
-                return redirect(url_for('dashboard'))
-        
-        return f(*args, **kwargs)
-    return decorated_function
-
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Check if the user is logged in
-        if 'username' not in session:
-            flash(_('Please log in first.'), 'warning')
-            return redirect(url_for('login'))
-
-        # Load users from the JSON file
-        users = load_users()
-
-        # Find the user based on the username stored in the session
-        user = next((u for u in users if u['username'] == session['username']), None)
-
-        # Check if the user exists and is an admin
-        if not user or not user.get('admin'):
-            flash(_('Admin access required.'), 'danger')
-            return redirect(url_for('dashboard'))
-
-        # Continue to the original function if the user is an admin
-        return f(*args, **kwargs)
-    
-    return decorated_function
-
-def is_guest_user(username):
-    """Check if a user is a guest"""
-    users = load_users()
-    user = next((u for u in users if u['username'] == username), None)
-    return user and user.get('guest', False)
-
-def guest_allowed(f):
-    """Decorator to allow guest users access to specific routes"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'username' not in session:
-            flash(_('Please log in first.'), 'warning')
-            return redirect(url_for('login'))
-        
-        # Check if user is a guest
-        if is_guest_user(session['username']):
-            return f(*args, **kwargs)
-        else:
-            # Regular users can always access guest-allowed routes
-            return f(*args, **kwargs)
-    
-    # Mark this function as guest allowed
-    decorated_function._guest_allowed = True
-    return decorated_function
 
 @app.route('/manifest.json')
 def manifest():
@@ -263,24 +91,6 @@ def change_email():
     flash(_('Email updated successfully.'), 'success')
     return redirect(url_for('dashboard'))
 
-
-UPLOADED_AVATAR_PREFIX = 'avatars/'
-AVATAR_SIZE = 256  # Uploaded pictures are cropped to a square of this size
-
-def avatar_url(avatar):
-    """Return the URL of a user's avatar, whether built-in (static) or uploaded."""
-    if avatar and avatar.startswith(UPLOADED_AVATAR_PREFIX):
-        return url_for('uploaded_avatar', filename=avatar[len(UPLOADED_AVATAR_PREFIX):])
-    return url_for('static', filename=avatar or 'icons/avatar1.png')
-
-def delete_uploaded_avatar(avatar):
-    """Remove an uploaded avatar file from disk (built-in avatars are left alone)."""
-    if avatar and avatar.startswith(UPLOADED_AVATAR_PREFIX):
-        filename = os.path.basename(avatar)
-        try:
-            Path(app.config['AVATARS_DIR'], filename).unlink(missing_ok=True)
-        except OSError:
-            pass
 
 @app.route('/avatars/<filename>')
 @login_required
@@ -356,22 +166,6 @@ def request_too_large(error):
     return redirect(request.referrer or url_for('dashboard'))
 
 
-def get_currency_symbol():
-    return read_env_variable("CURRENCY_SYMBOL", "$")
-
-def get_currency_position():
-    return read_env_variable("CURRENCY_POSITION", "before")
-
-def format_currency(amount):
-    symbol = get_currency_symbol()
-    position = get_currency_position()
-    
-    if position == 'after':
-        return f"{amount}{symbol}"
-    else:  # before (default)
-        return f"{symbol}{amount}"
-
-
 @app.context_processor
 def utility_processor():
     return dict(
@@ -380,11 +174,14 @@ def utility_processor():
         get_currency_symbol=get_currency_symbol,
         get_currency_position=get_currency_position,
         generate_share_url=generate_share_url,
-        avatar_url=avatar_url
+        avatar_url=avatar_url,
+        idea_age=idea_age
     )
 
 
 #OIDC SUPPORT
+# The OAuth client is registered once, at startup: changing these keys needs a restart
+OIDC_STARTUP_SETTINGS = {key: os.getenv(key) or '' for key in ("OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_SERVER_METADATA_URL")}
 oauth = OAuth(app)
 oauth.register(
     name="keycloak",
@@ -421,14 +218,14 @@ def auth():
     state = request.args.get("state")
     saved_state = session.pop("state", None)
     if state != saved_state:
-        flash(_("Authorization failed: invalid state."), "danger")
+        flash(_("Authorization failed: invalid state."), "login_error")
         return redirect(url_for("login"))
     
     try:
         # Retrieve the access token from OIDC provider
         token = oauth.keycloak.authorize_access_token()
     except Exception as e:
-        flash(_("OIDC authorization failed."), "danger")
+        flash(_("OIDC authorization failed."), "login_error")
         return redirect(url_for("login"))
     
     # Pop nonce from session after use
@@ -438,14 +235,14 @@ def auth():
         # Parse ID token and retrieve user info
         user_info = oauth.keycloak.parse_id_token(token, nonce=nonce)
     except Exception as e:
-        flash(_("Failed to parse user information."), "danger")
+        flash(_("Failed to parse user information."), "login_error")
         return redirect(url_for("login"))
     
     # Retrieve fields dynamically from the environment
-    primary_oidc_field = os.getenv("PRIMARY_OIDC_FIELD", "").lower()
-    secondary_oidc_field = os.getenv("SECONDARY_OIDC_FIELD", "").lower()
-    primary_db_field = os.getenv("PRIMARY_DB_FIELD", "").lower()
-    secondary_db_field = os.getenv("SECONDARY_DB_FIELD", "").lower()
+    primary_oidc_field = read_env_variable("PRIMARY_OIDC_FIELD", "").lower()
+    secondary_oidc_field = read_env_variable("SECONDARY_OIDC_FIELD", "").lower()
+    primary_db_field = read_env_variable("PRIMARY_DB_FIELD", "").lower()
+    secondary_db_field = read_env_variable("SECONDARY_DB_FIELD", "").lower()
 
     # Get field values from OIDC user info
     primary_oidc_value = user_info.get(primary_oidc_field)
@@ -454,30 +251,49 @@ def auth():
     # Load users from the JSON file
     users = load_users()
 
-    # Find user in the database based on OIDC fields
+    def lowered(value):
+        # Fields may be missing, null or not strings (on either side)
+        return str(value).lower() if value is not None else ""
+
+    # Find user in the database based on OIDC fields (shared lists cannot log in, as on /login, and
+    # guests only through /guest_login)
+    accounts = [user for user in users if not user.get("shared_list") and not user.get("guest")]
     user_in_db = None
     if primary_oidc_value:
         user_in_db = next(
-            (user for user in users if user.get(primary_db_field, "").lower() == primary_oidc_value.lower()), 
+            (user for user in accounts if lowered(user.get(primary_db_field)) == lowered(primary_oidc_value)),
             None
         )
     if not user_in_db and secondary_oidc_value:
         user_in_db = next(
-            (user for user in users if user.get(secondary_db_field, "").lower() == secondary_oidc_value.lower()), 
+            (user for user in accounts if lowered(user.get(secondary_db_field)) == lowered(secondary_oidc_value)),
             None
         )
 
     if user_in_db:
         # Log in the user by setting the session
         session["username"] = user_in_db["username"]
+        session.pop('setupenv_allowed', None)  # logging in closes the setup wizard, as /login does
         flash(_("Login successful with OIDC!"), "login_success")
         return redirect(url_for("dashboard"))
     
     # Handle auto-registration if enabled
     if read_env_variable("ENABLE_AUTO_REGISTRATION", "false").lower() == "true":
+        # The new account is named after preferred_username. Never create a duplicate username:
+        # the session would then be logged in as the existing account.
+        new_username = user_info.get("preferred_username")
+        if not isinstance(new_username, str) or not new_username.strip():
+            flash(_("Cannot create your account: the identity provider did not send a username."), "login_error")
+            return redirect(url_for("login"))
+        new_username = new_username.strip()
+        if any(lowered(user.get("username")) == new_username.lower() for user in users):
+            flash(_('Cannot create your account: the username "%(username)s" is already taken. '
+                    'Contact an administrator.', username=new_username), "login_error")
+            return redirect(url_for("login"))
+
         # Create a new user profile
         new_user = {
-            "username": user_info.get("preferred_username"),
+            "username": new_username,
             "email": user_info.get("email"),
             "full_name": user_info.get("name"),
             "admin": False,
@@ -485,11 +301,12 @@ def auth():
         users.append(new_user)
         save_users(users)  # Save the updated users list
         session["username"] = new_user["username"]
+        session.pop('setupenv_allowed', None)
         
         flash(_("New profile created. Please complete your profile setup."), "info")
         return redirect(url_for("setup_profile"))  # Redirect to profile setup page
 
-    flash(_("User not found and auto-registration is disabled."), "danger")
+    flash(_("User not found and auto-registration is disabled."), "login_error")
     return redirect(url_for("login"))
     
 
@@ -572,14 +389,17 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # Leaving the setup wizard without submitting /setupenv closes it (it is unauthenticated)
+    session.pop('setupenv_allowed', None)
     guests_exist_flag = guests_exist()
     enable_default_login = read_env_variable('ENABLE_DEFAULT_LOGIN', 'true').lower() == 'true'
     enable_self_registration = read_env_variable('ENABLE_SELF_REGISTRATION', 'false').lower() == 'true'
 
 
     # For GET requests, render the login page
-    oidc_client_id = os.getenv("OIDC_CLIENT_ID")  # Get OIDC Client ID
-    oidc_enabled = bool(oidc_client_id)  # Check if OIDC is enabled
+    # OIDC is enabled when the OAuth client was registered with a client ID at startup
+    # (changing OIDC_CLIENT_ID in .env needs a restart)
+    oidc_enabled = bool(OIDC_STARTUP_SETTINGS["OIDC_CLIENT_ID"])
     login_message = read_env_variable("LOGIN_PAGE_MESSAGE") or _l("No account? Contact a family member to create an account.")
     # If default login is disabled, render an OIDC-only login page
     if not enable_default_login:
@@ -605,8 +425,8 @@ def login():
                             guests_exist=guests_exist_flag,
                             enable_self_registration=enable_self_registration
                         )
-                    # Verify the password hash
-                    if verify_password(user['password'], password):
+                    # Verify the password hash (OIDC accounts may have no password)
+                    if user.get('password') and verify_password(user['password'], password):
                         session['username'] = user['username']
                         flash(_('Login successful!'), 'login_success')
                         return redirect(url_for('dashboard'))
@@ -717,25 +537,12 @@ def add2():
         flash(_("Current user not found."), "danger")
         return redirect(url_for('dashboard'))
 
-    # Get the current user's groups (default to empty list if not present)
-    current_user_groups = current_user_data.get("groups", [])
-
-    # Filter the user list based on groups
-    if not current_user_groups:
-        # If the current user has no groups, allow them to see all users
-        user_list = [
-            {"full_name": user["full_name"], "username": user["username"]}
-            for user in users
-            if not user.get('guest')
-        ]
-    else:
-        # Filter the user list to include only those in the current user's groups
-        user_list = [
-            {"full_name": user["full_name"], "username": user["username"]}
-            for user in users
-            if not user.get("groups") or any(group in user.get("groups", []) for group in current_user_groups)
-            and not user.get('guest')
-        ]
+    # Recipients offered in the form: the same rule as the POST check
+    user_list = [
+        {"full_name": user["full_name"], "username": user["username"]}
+        for user in users
+        if can_view_list(current_user_data, user["username"], users)
+    ]
 
     if request.method == 'POST':
         # Handle the form submission, process the data, and add the idea
@@ -745,6 +552,11 @@ def add2():
         link = request.form.get('link', '')
         value = request.form.get('value', None)  # Optional field
         image_path = request.form.get('imagePath', '')  # Get the image path from the form
+
+        # Ideas can only be added to the user's own list or to lists shown on their dashboard
+        if not can_view_list(current_user_data, user, users):
+            flash(_('You are not allowed to add ideas to this list.'), 'danger')
+            return redirect(url_for('dashboard'))
 
         # Retrieve the logged-in user's username
         added_by = session.get('username')
@@ -803,25 +615,12 @@ def add_idea(selected_user_id):
         flash(_("Current user not found."), "danger")
         return redirect(url_for('dashboard'))
 
-    # Get the current user's groups (default to empty list if not present)
-    current_user_groups = current_user_data.get("groups", [])
-
-    # Filter the user list based on groups
-    if not current_user_groups:
-        # If the current user has no groups, allow them to see all users
-        user_list = [
-            {"full_name": user["full_name"], "username": user["username"]}
-            for user in users
-            if not user.get('guest')
-        ]
-    else:
-        # Filter the user list to include only those in the current user's groups
-        user_list = [
-            {"full_name": user["full_name"], "username": user["username"]}
-            for user in users
-            if not user.get("groups") or any(group in user.get("groups", []) for group in current_user_groups)
-            and not user.get('guest')
-        ]
+    # Recipients offered in the form: the same rule as the POST check
+    user_list = [
+        {"full_name": user["full_name"], "username": user["username"]}
+        for user in users
+        if can_view_list(current_user_data, user["username"], users)
+    ]
 
     if request.method == 'POST':
         # Handle the form submission
@@ -832,6 +631,11 @@ def add_idea(selected_user_id):
         value = request.form.get('value', None)  # Optional field
         image_path = request.form.get('imagePath', '')  # Get the image path from the form
         
+        # Ideas can only be added to the user's own list or to lists shown on their dashboard
+        if not can_view_list(current_user_data, user, users):
+            flash(_('You are not allowed to add ideas to this list.'), 'danger')
+            return redirect(url_for('dashboard'))
+
         # Retrieve the currently logged-in user
         added_by = session.get('username')
 
@@ -876,84 +680,24 @@ def delete_idea(idea_id):
 
     # Find the idea by its ID
     idea = find_idea_by_id(gift_ideas_data, idea_id)
-    shared_list = next((user for user in users if user['username'] == idea['user_id'] and user.get('shared_list')), None)
+    # Only the adder or a shared-list member may delete it; anyone else gets the same answer as for
+    # an unknown id, so ideas on lists they cannot see (or hidden from the recipient) are not revealed
+    # (no flash: the page calls this route with fetch(), the message would show up on a later page)
+    if not idea or not can_modify_idea(session['username'], idea, users):
+        return '', 404
 
-    if idea:
-        current_user_username = session['username']  # Use 'username' from the session
+    # Check if the idea is bought
+    if idea['bought_by']:
+        # Send an email to the buyer using Mailjet
+        send_email_to_buyer_via_mailjet(idea['bought_by'], f'{idea["gift_name"]}', _('IDEAS DELETED'))
 
-# Check if the idea was added by the current user, if it's in their list, OR if they're a member of the shared list
+    # Delete the idea
+    gift_ideas_data.remove(idea)
 
-        # Check if the idea was added by the current user or if it's in their list
-        if idea['added_by'] == current_user_username or idea['user_id'] == current_user_username or (shared_list and current_user_username in shared_list.get('list_members', [])):
-            # Check if the idea is bought
-            if idea['bought_by']:
-                # Send an email to the buyer using Mailjet
-                send_email_to_buyer_via_mailjet(idea['bought_by'], f'{idea["gift_name"]}', _('IDEAS DELETED'))
+    # Save the updated list of gift ideas using the helper function
+    save_gift_ideas(gift_ideas_data)
 
-            # Delete the idea
-            gift_ideas_data.remove(idea)
-
-            # Save the updated list of gift ideas using the helper function
-            save_gift_ideas(gift_ideas_data)
-
-            return '', 204  # Return a response with HTTP status code 204 (no content)
-        else:
-            flash(_('You are not authorized to delete this idea.'), 'danger')
-    else:
-        flash(_('Idea not found'), 'danger')
-
-    return '', 403  # Return a response with HTTP status code 403 (forbidden)
-
-def get_user_email_by_username(username):
-    # Use the helper function to load users
-    users = load_users()
-
-    # Find the user by username
-    user = next((u for u in users if u['username'] == username), None)
-    return user.get('email') if user else None
-
-def send_email_to_buyer_via_mailjet(buyer_username, idea_name, message_subject):
-    # Find the idea bought by the buyer
-    gift_ideas_data = load_gift_ideas()
-    for idea in gift_ideas_data:
-        if idea.get('bought_by') == buyer_username:
-            buyer_email = get_user_email_by_username(buyer_username)
-            mailjet = get_mailjet_client()
-
-            if not mailjet:
-                print('Mailjet API keys not configured, email not sent')
-            elif buyer_email:
-                text_part = _("This idea, '%(name)s', has been deleted but you already BOUGHT IT.", name=idea_name)
-
-                # Send an email to the buyer using Mailjet
-                data = {
-                    'Messages': [
-                        {
-                            'From': {
-                                'Email': os.getenv("SYSTEM_EMAIL"),  # Your sender email address
-                                'Name': _('GiftManager'),
-                            },
-                            'To': [
-                                {
-                                    'Email': buyer_email,  # Buyer's email
-                                    'Name': _('Buyer Name'),
-                                },
-                            ],
-                            'Subject': message_subject,
-                            'TextPart': text_part,
-                        }
-                    ]
-                }
-
-                response = mailjet.send.create(data=data)
-
-                if response.status_code == 200:
-                    print('Email sent to buyer successfully')
-                else:
-                    print('Failed to send email to buyer')
-            else:
-                print(f'Buyer email not found for username: {buyer_username}')
-            break
+    return '', 204  # Return a response with HTTP status code 204 (no content)
 
 @app.route('/logout')
 def logout():
@@ -962,48 +706,6 @@ def logout():
     expires = datetime.utcnow() + timedelta(seconds=5)
     response.set_cookie('session', '', expires=expires)  # Set the session cookie to expire in 5 seconds
     return response
-
-
-def get_visible_users(current_user, users):
-    """Return the users whose lists (and profile pictures) current_user is allowed to see, based on groups."""
-    is_guest = current_user.get('guest', False)
-    visible_users = []
-    
-    if is_guest:
-        # Handle guest user access
-        access_type = current_user.get('access_type', 'family')
-        
-        if access_type == 'family':
-            # Show users in guest's assigned groups (including guest groups)
-            guest_groups = current_user.get('groups', [])
-            visible_users = [
-                user for user in users
-                if user.get('groups') and any(group in guest_groups for group in user['groups'])
-                and not user.get('guest')  # Don't show other guests
-            ]
-        else:  # people access
-            # Show specific users assigned to guest
-            access_users = current_user.get('access_users', [])
-            visible_users = [
-                user for user in users
-                if user['username'] in access_users and not user.get('guest')
-            ]
-    else:
-        # Regular user logic - SIMPLE VERSION
-        current_user_groups = current_user.get('groups', [])
-        
-        # If current user has no groups, show all non-guest users
-        if not current_user_groups:
-            visible_users = [user for user in users if not user.get('guest')]
-        else:
-            # If current user has groups, show users who share groups OR have no groups
-            visible_users = [
-                user for user in users
-                if (not user.get('groups') or any(group in current_user_groups for group in user.get('groups', [])))
-                and not user.get('guest')
-            ]
-
-    return visible_users
 
 
 @app.route('/dashboard')
@@ -1034,7 +736,7 @@ def dashboard():
     # Sort the users alphabetically by full name
     sorted_users = sorted(
             visible_users,
-            key=lambda x: (x['username'] != current_user['username'], x['full_name'].lower())
+            key=lambda x: (x['username'] != current_user['username'], (x.get('full_name') or x['username']).lower())
         )
 
 
@@ -1113,16 +815,6 @@ def change_password():
     flash(_('Password successfully changed'), 'success')
     return redirect(url_for('dashboard'))
 
-def find_idea_by_id(ideas, idea_id):
-    # Iterate through the list of ideas
-    for idea in ideas:
-        # If the gift_idea_id matches, return the idea
-        if idea['gift_idea_id'] == idea_id:
-            return idea
-    # Return None if no matching idea is found
-    return None
-
-
 @app.route('/mark_as_bought/<int:idea_id>', methods=['POST'])
 @login_required
 @guest_allowed
@@ -1130,26 +822,44 @@ def mark_as_bought(idea_id):
     # Load the current gift ideas from the JSON file
     gift_ideas_data = load_gift_ideas()
 
-    # Find the idea by its ID
+    users = load_users()
+    current_user = next((user for user in users if user['username'] == session['username']), None)
+
+    # Find the idea by its ID (ideas on lists the user cannot see are treated as not found)
     idea = find_idea_by_id(gift_ideas_data, idea_id)
+    if idea and not can_view_list(current_user, idea['user_id'], users):
+        idea = None
+
+    if idea and idea['user_id'] == session['username']:
+        # Surprise rule: the recipient must not learn whether (or by whom) their own idea was bought,
+        # so the answer is the same in both cases. (The UI offers no button for this.)
+        flash(_('You cannot mark your own gift ideas as bought.'), 'warning')
+        return redirect(url_for('my_ideas'))
 
     if idea:
         if not idea['bought_by']:
             # Mark the idea as bought by the current user
             idea['bought_by'] = session['username']
             idea['date_bought'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Record the current date and time
+            idea.pop('date_bought_unknown', None)
             flash(_('Marked "%(name)s" as bought!', name=idea["gift_name"]), 'success')
 
             # Save the updated gift ideas back to the JSON file
             save_gift_ideas(gift_ideas_data)  # Save the updated list
         else:
             # If already bought, display a warning
-            flash(_('"%(name)s" has already been bought by %(buyer)s.', name=idea["gift_name"], buyer=idea["bought_by"]), 'warning')
+            buyer = idea["bought_by"]
+            if buyer.startswith('visitor:'):
+                buyer = buyer[len('visitor:'):]
+            else:
+                buyer = next((user.get('full_name') or buyer for user in users if user['username'] == buyer), buyer)
+            flash(_('"%(name)s" has already been bought by %(buyer)s.', name=idea["gift_name"], buyer=buyer), 'warning')
     else:
         flash(_('Idea not found'), 'danger')
+        return redirect(url_for('dashboard'))
 
-    # Redirect to the user's gift ideas page
-    return redirect(url_for('user_gift_ideas', selected_user_id=session['username']))
+    # Redirect to the recipient's gift ideas page (the UI calls this route with fetch() and ignores it)
+    return redirect(url_for('user_gift_ideas', selected_user_id=idea['user_id']))
 
 
 @app.route('/mark_as_not_bought/<int:idea_id>', methods=['POST'])
@@ -1159,8 +869,14 @@ def mark_as_not_bought(idea_id):
     # Load the current gift ideas from the JSON file
     gift_ideas_data = load_gift_ideas()
 
-    # Find the idea by its ID
+    # Find the idea by its ID. Unless the user bought it, ideas on lists they cannot see and ideas on
+    # their own list are treated as not found (the refusal message would name hidden ideas)
     idea = find_idea_by_id(gift_ideas_data, idea_id)
+    if idea and idea['bought_by'] != session['username']:
+        users = load_users()
+        current_user = next((user for user in users if user['username'] == session['username']), None)
+        if idea['user_id'] == session['username'] or not can_view_list(current_user, idea['user_id'], users):
+            idea = None
 
     if idea:
         # Check if the idea has already been bought and if the current user is the buyer
@@ -1168,6 +884,7 @@ def mark_as_not_bought(idea_id):
             # Mark the idea as not bought by setting 'bought_by' to None (or '' if preferred)
             idea['bought_by'] = None  # Using None is semantically clearer than ''
             idea.pop('date_bought', None)  # Remove the date_bought field if it exists
+            idea.pop('date_bought_unknown', None)
             flash(_('Marked "%(name)s" as not bought.', name=idea["gift_name"]), 'success')
 
             # Save the updated gift ideas back to the JSON file
@@ -1198,14 +915,6 @@ def bought_items():
     return render_template('bought_items.html', bought_items=bought_items)
 
 
-def get_full_name(username):
-    users = load_users()  # Load the users from the JSON file
-    for user in users:
-        if user['username'] == username:
-            return user.get('full_name', username)  # Return the full name or fallback to username
-    return username  # If no match found, return the username itself
-
-
 @app.route('/user_gift_ideas/<path:selected_user_id>')
 @login_required
 @guest_allowed
@@ -1215,6 +924,13 @@ def user_gift_ideas(selected_user_id):
     if selected_user_id == connected_user:
         # Redirect to a different page, e.g., 'my_ideas'
         return redirect(url_for('my_ideas'))
+
+    # Only lists shown on the dashboard can be opened (families, guest access rules)
+    users = load_users()
+    current_user = next((user for user in users if user['username'] == connected_user), None)
+    if not can_view_list(current_user, selected_user_id, users):
+        flash(_('You are not allowed to view this list.'), 'danger')
+        return redirect(url_for('dashboard'))
 
     # Filter the gift ideas for the selected user
     gift_ideas_data = load_gift_ideas()  # Load the gift ideas from the JSON file
@@ -1227,8 +943,7 @@ def user_gift_ideas(selected_user_id):
     if not user_gift_ideas:
         flash(_('No gift ideas for this user.'), 'info')
         return redirect(url_for('noidea'))
-    
-    users = load_users()
+
     shared_list = next((user for user in users if user['username'] == selected_user_id and user.get('shared_list')), None)
     is_shared_list_member = shared_list and connected_user in shared_list.get('list_members', [])
     # Call get_full_name function to fetch the user's full name directly in the route
@@ -1271,8 +986,11 @@ def update_order():
     # Load the gift ideas from the JSON file using load_gift_ideas()
     gift_ideas_data = load_gift_ideas()
 
-    # Loop to update the priorities of ideas
+    # Loop to update the priorities of ideas (only ideas the user added to their own list can be
+    # reordered: the ones others added for them are hidden from them)
     for idea in gift_ideas_data:
+        if idea['user_id'] != session['username'] or idea.get('added_by') != session['username']:
+            continue
         for item in new_order:
             if int(idea['gift_idea_id']) == int(item['gift_idea_id']):
                 priority = item.get('priority')
@@ -1344,66 +1062,45 @@ def add_user():
 @app.route('/edit_idea/<int:idea_id>', methods=['GET', 'POST'])
 @login_required
 def edit_idea(idea_id):
-    # Load the gift ideas from the JSON file
+    # Load the gift ideas and users from the JSON files
     gift_ideas_data = load_gift_ideas()
-# Check if the idea was added by the current user, if it's in their list, OR if they're a member of the shared list
     users = load_users()
-    
-    # Find the idea by its ID
+
+    # Find the idea by its ID. Only the adder or a shared-list member may edit it; anyone else gets
+    # the same answer as for an unknown id, so ideas on lists they cannot see (or hidden from the
+    # recipient) are not revealed
     idea = find_idea_by_id(gift_ideas_data, idea_id)
-
-    shared_list = next((user for user in users if user['username'] == idea['user_id'] and user.get('shared_list')), None)
-
-    if idea:
-        current_user_username = session['username']  # Use 'username' from the session
-
-        # Check if the idea was added by the current user or if it's in their list
-        if idea['added_by'] == current_user_username or idea['user_id'] == current_user_username or (shared_list and current_user_username in shared_list.get('list_members', [])):
-            if request.method == 'POST':
-                # Debug: print received form data
-                print(f"Received description: {request.form.get('description')}")
-                print(f"Received link: {request.form.get('link')}")
-                print(f"Received image_path: {request.form.get('image_path')}")  # This is the field for the image path
-
-                # Update idea details with submitted form data
-                idea['description'] = request.form.get('description', '')
-                idea['link'] = request.form.get('link', '')
-                idea['value'] = request.form.get('value', None)
-                idea['image_path'] = request.form.get('image_path', '')  # Get the image path from the form
-
-                # Check if the image path is correctly retrieved
-                if idea['image_path']:
-                    print(f"Image path to save: {idea['image_path']}")
-                else:
-                    print("No image path provided.")
-
-                # Save the updated gift ideas data back to the JSON file
-                save_gift_ideas(gift_ideas_data)
-
-                flash(_('Idea updated successfully!'), 'success')
-                return redirect(url_for('user_gift_ideas', selected_user_id=idea['user_id']))
-            
-            imgenabled = read_env_variable('IMGENABLED', 'true').lower() == 'true'
-            # Render the edit idea form with pre-filled data
-            return render_template('edit_idea.html', idea=idea, imgenabled=imgenabled)
-        else:
-            flash(_('You are not authorized to edit this idea.'), 'danger')
-    else:
+    if not idea or not can_modify_idea(session['username'], idea, users):
         flash(_('Idea not found'), 'danger')
+        return redirect(url_for('dashboard'))
 
-    return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        # Debug: print received form data
+        print(f"Received description: {request.form.get('description')}")
+        print(f"Received link: {request.form.get('link')}")
+        print(f"Received image_path: {request.form.get('image_path')}")  # This is the field for the image path
 
+        # Update idea details with submitted form data
+        idea['description'] = request.form.get('description', '')
+        idea['link'] = request.form.get('link', '')
+        idea['value'] = request.form.get('value', None)
+        idea['image_path'] = request.form.get('image_path', '')  # Get the image path from the form
 
-# Hash the password using Argon2
-def password_hash(password):
-    return ph.hash(password)
+        # Check if the image path is correctly retrieved
+        if idea['image_path']:
+            print(f"Image path to save: {idea['image_path']}")
+        else:
+            print("No image path provided.")
 
-# Verify the hashed password
-def verify_password(hash, password):
-    try:
-        return ph.verify(hash, password)
-    except VerifyMismatchError:
-        return False
+        # Save the updated gift ideas data back to the JSON file
+        save_gift_ideas(gift_ideas_data)
+
+        flash(_('Idea updated successfully!'), 'success')
+        return redirect(url_for('user_gift_ideas', selected_user_id=idea['user_id']))
+    
+    imgenabled = read_env_variable('IMGENABLED', 'true').lower() == 'true'
+    # Render the edit idea form with pre-filled data
+    return render_template('edit_idea.html', idea=idea, imgenabled=imgenabled)
 
 
 @app.route('/secret_santa', methods=['GET', 'POST'])
@@ -1619,42 +1316,22 @@ def edit_email_settings():
         system_email = request.form.get('SYSTEM_EMAIL', None)
 
         try:
-            # Read current .env content
-            with open(dotenv_path, 'r') as file:
-                env_content = file.readlines()
-
-            # Update the variables in the .env file
-            new_env_content = []
-            for line in env_content:
-                key, _sep, value = line.partition('=')
-                key = key.strip()
-                if key == 'MAILJET_API_KEY' and mailjet_api_key:
-                    new_env_content.append(f"MAILJET_API_KEY='{mailjet_api_key}'\n")
-                elif key == 'MAILJET_API_SECRET' and mailjet_api_secret:
-                    new_env_content.append(f"MAILJET_API_SECRET='{mailjet_api_secret}'\n")
-                elif key == 'SYSTEM_EMAIL' and system_email:
-                    new_env_content.append(f"SYSTEM_EMAIL='{system_email}'\n")
-                else:
-                    new_env_content.append(line)
-
-            # Write updated content back to .env
-            with open(dotenv_path, 'w') as file:
-                file.writelines(new_env_content)
-
-            # Reload the .env file to reflect changes
-            load_dotenv(dotenv_path, override=True)
+            # Blank fields keep the current value
+            for key, value in (('MAILJET_API_KEY', mailjet_api_key),
+                               ('MAILJET_API_SECRET', mailjet_api_secret),
+                               ('SYSTEM_EMAIL', system_email)):
+                if value:
+                    set_env_variable(key, value)
 
             flash(_("Email settings updated successfully!"), "success")
         except Exception as e:
             flash(_("An error occurred: %(error)s", error=e), "danger")
         return redirect(url_for('edit_email_settings'))
 
-    # Reload the .env file before fetching current settings
-    load_dotenv(dotenv_path, override=True)  # Ensure we override old values
     current_settings = {
         'MAILJET_API_KEY': '******',  # Mask sensitive values
         'MAILJET_API_SECRET': '******',  # Mask sensitive values
-        'SYSTEM_EMAIL': os.getenv('SYSTEM_EMAIL', ''),
+        'SYSTEM_EMAIL': read_env_variable('SYSTEM_EMAIL', ''),
     }
     return render_template('edit_email_settings.html', settings=current_settings)
 
@@ -1666,15 +1343,7 @@ def edit_login_message():
         if new_message:
             try:
                 # Update the .env file
-                with open(dotenv_path, 'r') as file:
-                    lines = file.readlines()
-
-                with open(dotenv_path, 'w') as file:
-                    for line in lines:
-                        if line.strip().startswith("LOGIN_PAGE_MESSAGE="):
-                            file.write(f"LOGIN_PAGE_MESSAGE='{new_message}'\n")
-                        else:
-                            file.write(line)
+                set_env_variable("LOGIN_PAGE_MESSAGE", new_message)
 
                 flash(_("Login message updated successfully!"), "success")
             except Exception as e:
@@ -1688,51 +1357,10 @@ def edit_login_message():
     current_message = read_env_variable("LOGIN_PAGE_MESSAGE") or "No account? Contact a family member to create an account."
     return render_template('edit_login_message.html', current_message=current_message)
 
-def find_gift_ideas_to_delete(gift_ideas_data, bought_only, older_than_days):
-    threshold_time = datetime.now() - timedelta(days=older_than_days) if older_than_days else None
-
-    matches = []
-    for idea in gift_ideas_data:
-        if bought_only and not idea.get('bought_by'):
-            continue
-
-        if threshold_time:
-            # Age counts from the purchase date for bought ideas, otherwise from when the idea was added.
-            # Ideas without a known date are never considered old.
-            date_str = idea.get('date_bought') if idea.get('bought_by') else idea.get('date_added')
-            if not date_str or datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S') >= threshold_time:
-                continue
-
-        matches.append(idea)
-    return matches
-
-def delete_gift_ideas(bought_only, older_than_days):
-    gift_ideas_data = load_gift_ideas()
-
-    ids_to_delete = {idea['gift_idea_id'] for idea in find_gift_ideas_to_delete(gift_ideas_data, bought_only, older_than_days)}
-    save_gift_ideas([idea for idea in gift_ideas_data if idea['gift_idea_id'] not in ids_to_delete])
-
-    # Record the last execution time
-    last_execution_time = datetime.now().isoformat()
-    with open(Path(app.config['DATA'], 'last_execution_time.txt'), 'w') as time_file:
-        time_file.write(last_execution_time)
-
-    return len(ids_to_delete)
-
-def delete_old_gift_ideas():
-    # Read the number of days from the environment variable
-    threshold_days = int(read_env_variable("DELETE_DAYS", dotenv_path) or 30)
-
-    try:
-        return delete_gift_ideas(bought_only=True, older_than_days=threshold_days)
-    except Exception as e:
-        print(f"Error: {e}")
-        return 0  # Return 0 if an error occurs
-
 @app.route('/delete_old_gift_ideas', methods=['GET', 'POST'])
 @admin_required
 def delete_old_gift_ideas_page():
-    current_days = read_env_variable("DELETE_DAYS", dotenv_path) or 30
+    current_days = get_delete_days()
     filters = {'bought_only': True, 'age_filter': True, 'days': current_days}
 
     if request.method == 'POST':
@@ -1744,11 +1372,8 @@ def delete_old_gift_ideas_page():
 
         older_than_days = None
         if filters['age_filter']:
-            try:
-                older_than_days = int(filters['days'])
-                if older_than_days < 1:
-                    raise ValueError
-            except ValueError:
+            older_than_days = parse_delete_days(filters['days'])
+            if older_than_days is None:
                 flash(_("Invalid number of days entered. Please enter a valid number."), "danger")
                 return render_template('delete_old_gift_ideas.html', current_days=current_days, filters=filters)
 
@@ -1773,22 +1398,20 @@ def change_delete_days():
         new_days = request.form.get('days')
 
         if new_days:
-            try:
-                new_days = int(new_days)
-
+            new_days = parse_delete_days(new_days)
+            if new_days is not None:
                 # Update the .env file with the new value
                 set_key(dotenv_path, "DELETE_DAYS", str(new_days))  # Update the DELETE_DAYS value
 
                 flash(_("The number of days to delete old gift ideas has been updated to %(days)s.", days=new_days), "success")
                 return redirect(url_for('change_delete_days'))
 
-            except ValueError:
-                flash(_("Invalid number of days entered. Please enter a valid number."), "danger")
+            flash(_("Invalid number of days entered. Please enter a valid number."), "danger")
         else:
             flash(_("Please provide a value for the number of days."), "danger")
 
     # Get the current value of the DELETE_OLD_GIFTS_DAYS from the .env file
-    current_days = read_env_variable("DELETE_DAYS", dotenv_path) or 30
+    current_days = get_delete_days()
     return render_template('delete_old_gift_ideas.html', current_days=current_days)
 
 @app.route('/setupadmin', methods=['GET', 'POST'])
@@ -1830,6 +1453,9 @@ def setup():
         # Save the updated users list
         save_users(users_data)
 
+        # Only this browser, right after creating the first admin, may then open /setupenv
+        session['setupenv_allowed'] = True
+
         flash(_('Admin account created successfully. Please configure the environment variables.'), 'success')
         return redirect(url_for('setupenv'))  # Redirect to the setupenv route
 
@@ -1838,14 +1464,16 @@ def setup():
 
 @app.route('/setupenv', methods=['GET', 'POST'])
 def setupenv():
-    referer = request.headers.get('Referer')
-    if not referer or '/setupadmin' not in referer:
+    # Unauthenticated page: only reachable right after /setupadmin created the first admin, in the
+    # same session (a Referer check was spoofable and also refused the form's own POST)
+    if not session.get('setupenv_allowed'):
         flash(_('You must access this page from the setupadmin route.'), 'error')
         return redirect(url_for('login'))  # Redirect to login if not accessed correctly
 
     if request.method == 'POST':
         # Collect form data
-        delete_days = request.form.get('DELETE_DAYS', '30')  # Default to 30 days
+        # An invalid value is saved as the default, which get_delete_days() would use anyway
+        delete_days = str(parse_delete_days(request.form.get('DELETE_DAYS')) or DEFAULT_DELETE_DAYS)
         env_variables = {
             "MAILJET_API_KEY": request.form.get('MAILJET_API_KEY', ''),
             "MAILJET_API_SECRET": request.form.get('MAILJET_API_SECRET', ''),
@@ -1865,8 +1493,12 @@ def setupenv():
         # Save each variable to .env file
         for key, value in env_variables.items():
             set_key(dotenv_path, key, value)
+        session.pop('setupenv_allowed', None)
 
         flash(_('Environment variables saved successfully!'), 'success')
+        # The OIDC client was registered at startup (shown on the login page, hence the category)
+        if any(env_variables[key] != value for key, value in OIDC_STARTUP_SETTINGS.items()):
+            flash(_('Restart the application to apply the new client ID, client secret or server metadata URL.'), 'login_warning')
         return redirect(url_for('index'))
 
     # Render the setup environment page
@@ -1897,34 +1529,33 @@ def setup_oidc():
             return render_template('setup_oidc.html', current_values=oidc_env_variables)
 
         try:
+            # The OIDC client was registered at startup: warn while the saved values differ from it
+            needs_restart = any(oidc_env_variables[key] != value for key, value in OIDC_STARTUP_SETTINGS.items())
+
             # Save each variable to the .env file
             for key, value in oidc_env_variables.items():
                 set_key(dotenv_path, key, value)
 
             flash(_('OIDC settings saved successfully!'), 'success')
+            if needs_restart:
+                flash(_('Restart the application to apply the new client ID, client secret or server metadata URL.'), 'warning')
             return redirect(url_for('setup_oidc'))  # Redirect to home page after saving
         except Exception as e:
             flash(_("Error saving OIDC settings: %(error)s", error=e), "danger")
             return render_template('setup_oidc.html', current_values=oidc_env_variables)
 
     # For GET requests, load the current values of OIDC-related environment variables
-    try:
-        # Load the .env file directly using the path
-        load_dotenv(dotenv_path, override=True)
-    except FileNotFoundError:
-        flash(_("Environment file not found. Creating a new one."), "warning")
-    
     current_values = {
-        "OIDC_CLIENT_ID": os.getenv("OIDC_CLIENT_ID", ''),
-        "OIDC_CLIENT_SECRET": os.getenv("OIDC_CLIENT_SECRET", ''),
-        "OIDC_SERVER_METADATA_URL": os.getenv("OIDC_SERVER_METADATA_URL", ''),
-        "OIDC_LOGOUT_URL": os.getenv("OIDC_LOGOUT_URL", ''),
-        "PRIMARY_OIDC_FIELD": os.getenv("PRIMARY_OIDC_FIELD", 'email'),
-        "SECONDARY_OIDC_FIELD": os.getenv("SECONDARY_OIDC_FIELD", 'preferred_username'),
-        "PRIMARY_DB_FIELD": os.getenv("PRIMARY_DB_FIELD", 'email'),
-        "SECONDARY_DB_FIELD": os.getenv("SECONDARY_DB_FIELD", 'username'),
-        "ENABLE_AUTO_REGISTRATION": os.getenv("ENABLE_AUTO_REGISTRATION", 'false'),
-        "ENABLE_DEFAULT_LOGIN": os.getenv("ENABLE_DEFAULT_LOGIN", 'true'),
+        "OIDC_CLIENT_ID": read_env_variable("OIDC_CLIENT_ID", ''),
+        "OIDC_CLIENT_SECRET": read_env_variable("OIDC_CLIENT_SECRET", ''),
+        "OIDC_SERVER_METADATA_URL": read_env_variable("OIDC_SERVER_METADATA_URL", ''),
+        "OIDC_LOGOUT_URL": read_env_variable("OIDC_LOGOUT_URL", ''),
+        "PRIMARY_OIDC_FIELD": read_env_variable("PRIMARY_OIDC_FIELD", 'email'),
+        "SECONDARY_OIDC_FIELD": read_env_variable("SECONDARY_OIDC_FIELD", 'preferred_username'),
+        "PRIMARY_DB_FIELD": read_env_variable("PRIMARY_DB_FIELD", 'email'),
+        "SECONDARY_DB_FIELD": read_env_variable("SECONDARY_DB_FIELD", 'username'),
+        "ENABLE_AUTO_REGISTRATION": read_env_variable("ENABLE_AUTO_REGISTRATION", 'false'),
+        "ENABLE_DEFAULT_LOGIN": read_env_variable("ENABLE_DEFAULT_LOGIN", 'true'),
     }
 
     return render_template('setup_oidc.html', current_values=current_values)
@@ -2044,43 +1675,8 @@ def run_script():
     
 
 
-def fetch_og_image(url):
-    try:
-        response = requests.get(url, verify=False)
-        response.raise_for_status()  # Raise an error for bad status codes
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Try to get the og:image tag
-        og_image = soup.find('meta', property='og:image')
-        if og_image:
-            image_url = og_image.get('content')
-            # Convert relative URL to absolute URL if necessary
-            if not image_url.startswith('http'):
-                image_url = urljoin(url, image_url)
-            return image_url
-
-        # Fallback to twitter:image if og:image is not found
-        twitter_image = soup.find('meta', attrs={'name': 'twitter:image'})
-        if twitter_image:
-            image_url = twitter_image.get('content')
-            if not image_url.startswith('http'):
-                image_url = urljoin(url, image_url)
-            return image_url
-
-        # Fallback to image_src if og:image and twitter:image are not found
-        image_src = soup.find('link', rel='image_src')
-        if image_src:
-            image_url = image_src.get('href')
-            if not image_url.startswith('http'):
-                image_url = urljoin(url, image_url)
-            return image_url
-
-        return None  # No image found
-    except Exception as e:
-        print(f"Error fetching OG image: {e}")
-        return None
-
 @app.route('/fetch_og_image', methods=['GET'])
+@login_required  # not guest_allowed: guests cannot add or edit ideas
 def get_og_image():
     url = request.args.get('url')
     if not url:
@@ -2203,16 +1799,6 @@ def guest_login():
     
     flash(_('Invalid guest password'), 'login_error')
     return redirect(url_for('login'))
-
-def get_visible_groups(users):
-    """Get all groups except guest private families"""
-    all_groups = set()
-    for user in users:
-        for group in user.get('groups', []):
-            # Exclude guest private families (they start with 'guest_')
-            if not group.startswith('guest_'):
-                all_groups.add(group)
-    return sorted(all_groups)
 
 @app.route('/update_currency_settings', methods=['POST'])
 @admin_required
@@ -2377,9 +1963,6 @@ def update_link_sharing():
     return redirect(url_for('setup_advanced'))
 
 
-def generate_share_token():
-    return secrets.token_urlsafe(16)
-
 @app.route('/manage_sharing', methods=['GET', 'POST'])
 @login_required
 def manage_sharing():
@@ -2491,48 +2074,35 @@ def manage_sharing():
 
 @app.route('/shared/<token>')
 def shared_list(token):
-
-
-    if not read_env_variable('ENABLE_LINK_SHARING', 'true').lower() == 'true':
+    """Public view of a shared gift list or individual user list"""
+    if not link_sharing_enabled():
         return render_template('shared_list_expired.html'), 404
 
-
-    """Public view of a shared gift list or individual user list"""
     users = load_users()
     gift_ideas_data = load_gift_ideas()
-    
+
     # Find the entity (user or shared list) that owns this share token
-    share_owner = None
-    active_link = None
-    is_expired = False
-    
-    for user in users:
-        if 'sharing' in user and 'public_links' in user['sharing']:
-            for link in user['sharing']['public_links']:
-                if link['token'] == token:
-                    # Check if link has expired
-                    expires_at = datetime.strptime(link['expires_at'], '%Y-%m-%d %H:%M:%S')
-                    if datetime.now() <= expires_at and link.get('is_active', True):
-                        share_owner = user
-                        active_link = link
-                    else:
-                        share_owner = user
-                        active_link = link
-                        is_expired = True
-                    break
-    
-    if not share_owner or not active_link:
+    share_owner, active_link, usable = find_share_link(users, token)
+
+    if not share_owner:
         return render_template('shared_list_expired.html'), 404
-    
-    if is_expired:
-        return render_template('shared_list_expired.html'), 410  # 410 Gone
-    
+
+    if not usable:
+        return render_template('shared_list_expired.html'), 410  # 410 Gone (expired or deactivated)
+
     # Get gift ideas for the share owner (could be individual user or shared list)
     user_gift_ideas = [
         idea for idea in gift_ideas_data 
         if idea['user_id'] == share_owner['username']
     ]
     
+    # Surprise rule: when the list owner opens their own link while logged in, show it like /my_ideas:
+    # only the ideas they added themselves, nothing bought, and no purchase buttons.
+    if session.get('username') == share_owner['username']:
+        user_gift_ideas = [dict(idea, bought_by=None) for idea in user_gift_ideas
+                           if idea.get('added_by') == share_owner['username']]
+        active_link = dict(active_link, allow_purchases=False)
+
     # Sort by priority
     user_gift_ideas.sort(key=lambda x: (x.get('priority', float('inf')), x['gift_idea_id']))
     
@@ -2550,27 +2120,19 @@ def shared_list(token):
 @app.route('/shared/<token>/mark_bought/<int:idea_id>', methods=['POST'])
 def mark_shared_bought(token, idea_id):
     """Allow visitors to mark items as bought in shared lists"""
+    # Same gating as the public page: link sharing enabled, link known, active and not expired
+    if not link_sharing_enabled():
+        return jsonify({'error': _('Share link not found or expired')}), 404
+
     users = load_users()
     gift_ideas_data = load_gift_ideas()
-    
-    # Find the share link
-    share_owner = None
-    active_link = None
-    
-    for user in users:
-        if 'sharing' in user and 'public_links' in user['sharing']:
-            for link in user['sharing']['public_links']:
-                if link['token'] == token and link.get('is_active', True):
-                    expires_at = datetime.strptime(link['expires_at'], '%Y-%m-%d %H:%M:%S')
-                    if datetime.now() <= expires_at:
-                        share_owner = user
-                        active_link = link
-                    break
-    
-    if not share_owner or not active_link:
+
+    share_owner, active_link, usable = find_share_link(users, token)
+    if not usable:
         return jsonify({'error': _('Share link not found or expired')}), 404
     
-    if not active_link.get('allow_purchases', False):
+    # The logged-in list owner cannot buy from their own link (the answer would reveal what is bought)
+    if not active_link.get('allow_purchases', False) or session.get('username') == share_owner['username']:
         return jsonify({'error': _('Purchases not allowed for this share link')}), 403
     
     # Find the gift idea
@@ -2579,7 +2141,7 @@ def mark_shared_bought(token, idea_id):
         return jsonify({'error': _('Gift idea not found')}), 404
     
     # Get visitor name from request
-    visitor_name = request.json.get('visitor_name', '').strip()
+    visitor_name = str((request.get_json(silent=True) or {}).get('visitor_name') or '').strip()
     if not visitor_name:
         return jsonify({'error': _('Visitor name is required')}), 400
     
@@ -2590,6 +2152,7 @@ def mark_shared_bought(token, idea_id):
     if not idea.get('bought_by'):
         idea['bought_by'] = f"visitor:{visitor_name}"
         idea['date_bought'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        idea.pop('date_bought_unknown', None)
         idea['visitor_id'] = visitor_id
         
         # Track visitor purchase
@@ -2616,40 +2179,35 @@ def mark_shared_bought(token, idea_id):
 @app.route('/shared/<token>/mark_not_bought/<int:idea_id>', methods=['POST'])
 def mark_shared_not_bought(token, idea_id):
     """Allow visitors to unmark items as bought"""
+    # Same gating as the public page: link sharing enabled, link known, active and not expired
+    if not link_sharing_enabled():
+        return jsonify({'error': _('Share link not found or expired')}), 404
+
     users = load_users()
     gift_ideas_data = load_gift_ideas()
-    
-    # Find the share link
-    share_owner = None
-    active_link = None
-    
-    for user in users:
-        if 'sharing' in user and 'public_links' in user['sharing']:
-            for link in user['sharing']['public_links']:
-                if link['token'] == token and link.get('is_active', True):
-                    expires_at = datetime.strptime(link['expires_at'], '%Y-%m-%d %H:%M:%S')
-                    if datetime.now() <= expires_at:
-                        share_owner = user
-                        active_link = link
-                    break
-    
-    if not share_owner or not active_link:
+
+    share_owner, active_link, usable = find_share_link(users, token)
+    if not usable:
         return jsonify({'error': _('Share link not found or expired')}), 404
     
     # Find the gift idea
     idea = find_idea_by_id(gift_ideas_data, idea_id)
-    if not idea or idea['user_id'] != share_owner['username']:
+    # Ideas others added are hidden from the logged-in list owner: answer as for an unknown idea
+    hidden_from_owner = session.get('username') == share_owner['username'] and idea and idea.get('added_by') != share_owner['username']
+    if not idea or idea['user_id'] != share_owner['username'] or hidden_from_owner:
         return jsonify({'error': _('Gift idea not found')}), 404
     
     # Get visitor ID from request
-    visitor_id = request.json.get('visitor_id')
+    visitor_id = (request.get_json(silent=True) or {}).get('visitor_id')
     if not visitor_id:
         return jsonify({'error': _('Visitor ID required')}), 400
     
     # Check if this visitor made the purchase
-    if idea.get('bought_by', '').startswith('visitor:') and idea.get('visitor_id') == visitor_id:
+    # bought_by is null (not missing) on ideas that are not bought
+    if (idea.get('bought_by') or '').startswith('visitor:') and idea.get('visitor_id') == visitor_id:
         idea['bought_by'] = None
         idea.pop('date_bought', None)
+        idea.pop('date_bought_unknown', None)
         idea.pop('visitor_id', None)
         
         # Remove from visitor purchases tracking
@@ -2666,38 +2224,36 @@ def mark_shared_not_bought(token, idea_id):
     else:
         return jsonify({'error': _('You can only cancel your own purchases')}), 403
     
-def generate_share_url(token):
-    """Generate share URL with proper scheme (HTTPS if available)"""
-    # Determine the scheme from headers (in case behind reverse proxy)
-    forwarded_proto = request.headers.get('X-Forwarded-Proto', request.scheme)
-    scheme = forwarded_proto.split(',')[0].strip()  # Handle multi-value headers
-    
-    # Generate external URL with proper scheme
-    return url_for("shared_list", token=token, _external=True, _scheme=scheme)
-
 @app.route('/table_view')
 @login_required
 def table_view():
     users = load_users()
     ideas = load_gift_ideas()
     current_user_username = session['username']
+    current_user = next((user for user in users if user['username'] == current_user_username), None)
+
+    # Same lists as /user_gift_ideas accepts (dashboard users, plus shared lists the user is a member of)
+    visible_users = [user for user in users if can_view_list(current_user, user['username'], users)]
 
     # Create a dictionary to store gifts for each user
-    user_gifts = {user['username']: [] for user in users}
+    user_gifts = {user['username']: [] for user in visible_users}
 
     for idea in ideas:
+        # Surprise rule: in their own column, users only see the ideas they added themselves (as on /my_ideas)
+        if idea['user_id'] == current_user_username and idea.get('added_by') != current_user_username:
+            continue
         if idea['user_id'] in user_gifts:
             user_gifts[idea['user_id']].append(idea)
 
     # Prepare data for the template
-    table_data = []
-    for user in users:
-        if not user.get('guest'):
-            table_data.append({
-                'full_name': user['full_name'],
-                'username': user['username'],
-                'gifts': user_gifts[user['username']]
-            })
+    table_data = [
+        {
+            'full_name': user['full_name'],
+            'username': user['username'],
+            'gifts': user_gifts[user['username']]
+        }
+        for user in visible_users
+    ]
 
     # Find the maximum number of gifts for any user
     max_gifts = 0
