@@ -2502,7 +2502,7 @@ def budget_overview():
         owed_to_me=[t for t in transfers if t[1] == username],
         transfers=transfers,
         is_member=is_member,
-        can_close=can_close_scope(current_user, scope),
+        can_close=can_close_scope(current_user, scope, budgets, users),
         settlements=[s for s in reversed(budgets['settlements'])
                      if s['scope'] == scope and (is_member or username in (s['from'], s['to']))],
     )
@@ -2531,7 +2531,7 @@ def budget_settle():
 @login_required
 def budget_close():
     users, current_user, budgets, scopes, scope = budget_scope_or_404(strict=True)
-    if not can_close_scope(current_user, scope):
+    if not can_close_scope(current_user, scope, budgets, users):
         abort(404)
     close_scope(budgets, scope, users)
     save_budgets(budgets)

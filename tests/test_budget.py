@@ -489,10 +489,26 @@ def test_deleted_payer_keeps_their_credit_under_a_retired_name(client, env):
     assert all(e["idea_id"] is None for e in budget["recipients"]["bob"]["expenses"])
     _en(client, "alice")
     page = client.get("/budget_overview").get_data(as_text=True)
-    assert "To admin" in page and "$10.00" in page
+    assert "To admin (deleted)" in page and "$10.00" in page
 
 
 def test_bought_idea_without_recorded_price_shows_an_empty_field(client, env):
     login(client, "bob")  # idea 2 was bought before the feature: no expense
     page = client.get("/bought_items").get_data(as_text=True)
     assert 'name="price" class="p-2 border rounded inputer"\n                                   value=""' in page.replace("\r\n", "\n")
+
+
+def test_family_without_members_is_closed_by_the_people_involved(client, env):
+    _sharing(env, {"alice": 10, "admin": 10}, [_expense("admin", 20)])
+    budget = env.budgets()
+    budget["recipients"]["bob"]["scope"] = "Smith"
+    env.write_budgets(budget)
+    for username in ("alice", "bob"):
+        env.update_user(username, groups=["Smith2024"])  # the admin renamed the family
+
+    login(client, "carol")  # not involved
+    assert client.post("/budget_overview/close", data={"scope": "Smith"}).status_code == 404
+    other = env.module.app.test_client()
+    login(other, "alice")  # owes admin in the old family
+    other.post("/budget_overview/close", data={"scope": "Smith"})
+    assert env.budgets()["recipients"] == {}

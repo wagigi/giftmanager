@@ -8,6 +8,8 @@ transfers between people, never gifts or recipients.
 import math
 from datetime import datetime
 
+from flask_babel import _
+
 from config import read_env_variable
 from visibility import can_view_list
 
@@ -224,10 +226,16 @@ def is_involved(budgets, scope, users, username):
         username in (s['from'], s['to']) for s in budgets['settlements'] if s['scope'] == scope)
 
 
-def can_close_scope(current_user, scope):
-    """Members of a family close it (not someone who once paid for one of its lists). The "no
-    family" scope has no real members: only an admin's global reset clears it."""
-    return scope != ALL_SCOPE and scope in member_scopes(current_user)
+def can_close_scope(current_user, scope, budgets, users):
+    """Members of a family close it (not someone who once paid for one of its lists). A family
+    that no longer has members (renamed or emptied by an admin) is closed by the people involved
+    in it. The "no family" scope has no real members: only an admin's global reset clears it."""
+    if scope == ALL_SCOPE:
+        return False
+    if scope in member_scopes(current_user):
+        return True
+    has_members = any(scope in member_scopes(user) for user in users if is_budget_user(user))
+    return not has_members and is_involved(budgets, scope, users, current_user['username'])
 
 
 def close_scope(budgets, scope, users):
@@ -329,7 +337,7 @@ def person_names(users):
             if key in self:
                 return self[key]
             if isinstance(key, str) and key.startswith(DELETED_PREFIX):
-                return key.split(':')[1]
+                return _('%(name)s (deleted)', name=key.split(':')[1])
             return default
     return Names((user['username'], user.get('full_name') or user['username']) for user in users)
 
