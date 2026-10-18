@@ -300,7 +300,7 @@ def auth():
         flash(_("New profile created. Please complete your profile setup."), "info")
         return redirect(url_for("setup_profile"))  # Redirect to profile setup page
 
-    flash(_("User not found and auto-registration is disabled."), "danger")
+    flash(_("User not found and auto-registration is disabled."), "login_error")
     return redirect(url_for("login"))
     
 

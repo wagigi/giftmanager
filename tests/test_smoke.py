@@ -75,6 +75,7 @@ def test_session_of_deleted_user_is_logged_out(client, env, path):
     env.write_users([u for u in env.users() if u["username"] != "alice"])
     assert is_redirect_to(client.get(path), "/login")
     assert session_username(client) is None
+    assert [category for category, _ in flashes(client)] == ["login_warning"]  # shown on the login page
 
 
 def test_session_of_deleted_guest_is_logged_out(client, env):

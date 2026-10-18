@@ -118,9 +118,11 @@ def test_enable_auto_registration_is_read_at_call_time(env, app_module, make_cli
     env.set_env("PRIMARY_OIDC_FIELD", "email")
     env.set_env("PRIMARY_DB_FIELD", "email")
 
-    response, username = oidc_login(make_client, app_module, newcomer)
+    client = make_client()
+    response, username = oidc_login(make_client, app_module, newcomer, client=client)
     assert is_redirect_to(response, "/login") and username is None
     assert "newcomer" not in [u["username"] for u in env.users()]
+    assert [category for category, _ in flashes(client)] == ["login_error"]  # shown on the login page
 
     env.set_env("ENABLE_AUTO_REGISTRATION", "true")
     response, username = oidc_login(make_client, app_module, newcomer)

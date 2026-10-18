@@ -22,7 +22,7 @@ def login_required(f):
         user = next((u for u in load_users() if u['username'] == session['username']), None)
         if not user:
             session.clear()
-            flash(_('Please log in first.'), 'warning')
+            flash(_('Please log in first.'), 'login_warning')  # shown on the login page
             return redirect(url_for('login'))
 
         # Check if user is a guest and route doesn't allow guests
@@ -52,7 +52,7 @@ def admin_required(f):
         # A session can outlive its account (user deleted by an admin): log it out
         if not user:
             session.clear()
-            flash(_('Please log in first.'), 'warning')
+            flash(_('Please log in first.'), 'login_warning')  # shown on the login page
             return redirect(url_for('login'))
 
         # Check if the user is an admin
