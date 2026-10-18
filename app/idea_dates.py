@@ -1,7 +1,5 @@
 """Dates on gift ideas: startup backfill of missing dates and the age shown next to each idea."""
 import json
-import os
-import tempfile
 from datetime import datetime
 from pathlib import Path
 from flask_babel import _, ngettext
@@ -18,7 +16,7 @@ def backfill_missing_dates(ideas, now=None):
     stamp = (now or datetime.now()).strftime(DATE_FORMAT)
     changed = 0
     for idea in ideas:
-        if idea.get('user_id') == 'demo':
+        if idea.get('user_id') == 'demo' and idea.get('description') == 'dont delete':
             continue
         touched = False
         if not idea.get('date_added'):
@@ -36,23 +34,17 @@ def backfill_missing_dates(ideas, now=None):
 def migrate_ideas_file(ideas_path):
     """Run backfill_missing_dates() on the ideas file at startup, rewriting it only when a date was missing.
     Runs outside any app context, so it does not use storage.py. Never raises: a failure is logged and
-    the app starts anyway (ideas without dates are shown without an age)."""
+    the app starts anyway (ideas without dates are shown without an age). The file is written in place
+    like save_gift_ideas() does, keeping its owner and permissions (it may also be a bind mount)."""
     path = Path(ideas_path)
     try:
         with open(path, 'r') as file:
             ideas = json.load(file)
         changed = backfill_missing_dates(ideas)
         if changed:
-            # Write a temporary file and swap it in: an interrupted write must not lose the ideas
-            fd, tmp_path = tempfile.mkstemp(dir=path.parent, prefix='.ideas.')
-            try:
-                os.chmod(tmp_path, os.stat(path).st_mode & 0o777)  # mkstemp creates it 0600
-                with os.fdopen(fd, 'w') as file:
-                    json.dump(ideas, file, indent=4)  # same format as save_gift_ideas()
-                os.replace(tmp_path, path)
-            except BaseException:
-                os.unlink(tmp_path)
-                raise
+            text = json.dumps(ideas, indent=4)  # same format as save_gift_ideas(); serialized before truncating
+            with open(path, 'w') as file:
+                file.write(text)
             print(f"Added missing dates to {changed} gift ideas")
         return changed
     except Exception as e:
@@ -75,7 +67,7 @@ def idea_age(idea, today=None):
     months = max((today.year - added.year) * 12 + today.month - added.month - (today.day < added.day), 0)
 
     if days == 0:
-        label = _('Date unknown') if unknown else _('Today')
+        label = _('Before today') if unknown else _('Today')
     elif days < 30 or months < 1:  # months alone would say "1 month" after 28 days (from Feb 28 or Jan 31)
         label = (ngettext('More than %(num)d day', 'More than %(num)d days', days) if unknown
                  else ngettext('%(num)d day', '%(num)d days', days))

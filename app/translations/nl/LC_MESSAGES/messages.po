@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 19:09+0200\n"
+"POT-Creation-Date: 2026-10-18 19:12+0200\n"
 "PO-Revision-Date: 2025-12-09 20:34+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -539,50 +539,50 @@ msgstr "Deze functie is niet beschikbaar voor gastgebruikers."
 msgid "Admin access required."
 msgstr "Admin toegang vereist."
 
-#: app/idea_dates.py:78
-msgid "Date unknown"
-msgstr "Datum onbekend"
+#: app/idea_dates.py:70
+msgid "Before today"
+msgstr "Vóór vandaag"
 
-#: app/idea_dates.py:78
+#: app/idea_dates.py:70
 msgid "Today"
 msgstr "Vandaag"
 
-#: app/idea_dates.py:80
+#: app/idea_dates.py:72
 #, python-format
 msgid "More than %(num)d day"
 msgid_plural "More than %(num)d days"
 msgstr[0] "Meer dan %(num)d dag"
 msgstr[1] "Meer dan %(num)d dagen"
 
-#: app/idea_dates.py:81
+#: app/idea_dates.py:73
 #, python-format
 msgid "%(num)d day"
 msgid_plural "%(num)d days"
 msgstr[0] "%(num)d dag"
 msgstr[1] "%(num)d dagen"
 
-#: app/idea_dates.py:83
+#: app/idea_dates.py:75
 #, python-format
 msgid "More than %(num)d month"
 msgid_plural "More than %(num)d months"
 msgstr[0] "Meer dan %(num)d maand"
 msgstr[1] "Meer dan %(num)d maanden"
 
-#: app/idea_dates.py:84
+#: app/idea_dates.py:76
 #, python-format
 msgid "%(num)d month"
 msgid_plural "%(num)d months"
 msgstr[0] "%(num)d maand"
 msgstr[1] "%(num)d maanden"
 
-#: app/idea_dates.py:87
+#: app/idea_dates.py:79
 #, python-format
 msgid "More than %(num)d year"
 msgid_plural "More than %(num)d years"
 msgstr[0] "Meer dan %(num)d jaar"
 msgstr[1] "Meer dan %(num)d jaar"
 
-#: app/idea_dates.py:88
+#: app/idea_dates.py:80
 #, python-format
 msgid "%(num)d year"
 msgid_plural "%(num)d years"
@@ -602,7 +602,7 @@ msgstr "CadeauManager"
 msgid "Buyer Name"
 msgstr "Naam koper"
 
-#: app/templates/_idea_age.html:7
+#: app/templates/_idea_age.html:8
 msgid ""
 "This idea was already here before the app started recording dates: it is "
 "at least this old."
@@ -2226,4 +2226,7 @@ msgstr "Aankoop voltooid"
 
 #~ msgid "You are not authorized to edit this idea."
 #~ msgstr "U bent niet geautoriseerd om dit idee te bewerken."
+
+#~ msgid "Date unknown"
+#~ msgstr "Datum onbekend"
 

@@ -1,12 +1,13 @@
-{# Age of a gift idea with a clock icon. Import with context: {% from '_idea_age.html' import idea_age_badge with context %} #}
-{% macro idea_age_badge(idea) %}
+{# Age of a gift idea with a clock icon, inside a <tag class="css_class"> (nothing without a readable date).
+   Import with context: {% from '_idea_age.html' import idea_age_badge with context %} #}
+{% macro idea_age_badge(idea, tag='p', css_class='') %}
 {% set age = idea_age(idea) %}
 {% if age %}
-<span class="idea-age"
+<{{ tag }} class="{{ css_class }}"><span class="idea-age"
       style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.875rem; opacity: 0.8;{% if age.unknown %} cursor: help; text-decoration: underline dotted;{% endif %}"
       {% if age.unknown %}title="{{ _('This idea was already here before the app started recording dates: it is at least this old.') }}"{% endif %}>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     <span>{{ age.label }}</span>
-</span>
+</span></{{ tag }}>
 {% endif %}
 {% endmacro %}

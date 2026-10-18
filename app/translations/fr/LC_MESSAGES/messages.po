@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 19:09+0200\n"
+"POT-Creation-Date: 2026-10-18 19:12+0200\n"
 "PO-Revision-Date: 2025-12-09 20:34+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -543,50 +543,50 @@ msgstr "Cette fonctionnalité n'est pas disponible pour les utilisateurs invité
 msgid "Admin access required."
 msgstr "Accès administrateur requis."
 
-#: app/idea_dates.py:78
-msgid "Date unknown"
-msgstr "Date inconnue"
+#: app/idea_dates.py:70
+msgid "Before today"
+msgstr "Avant aujourd'hui"
 
-#: app/idea_dates.py:78
+#: app/idea_dates.py:70
 msgid "Today"
 msgstr "Aujourd'hui"
 
-#: app/idea_dates.py:80
+#: app/idea_dates.py:72
 #, python-format
 msgid "More than %(num)d day"
 msgid_plural "More than %(num)d days"
 msgstr[0] "Plus de %(num)d jour"
 msgstr[1] "Plus de %(num)d jours"
 
-#: app/idea_dates.py:81
+#: app/idea_dates.py:73
 #, python-format
 msgid "%(num)d day"
 msgid_plural "%(num)d days"
 msgstr[0] "%(num)d jour"
 msgstr[1] "%(num)d jours"
 
-#: app/idea_dates.py:83
+#: app/idea_dates.py:75
 #, python-format
 msgid "More than %(num)d month"
 msgid_plural "More than %(num)d months"
 msgstr[0] "Plus de %(num)d mois"
 msgstr[1] "Plus de %(num)d mois"
 
-#: app/idea_dates.py:84
+#: app/idea_dates.py:76
 #, python-format
 msgid "%(num)d month"
 msgid_plural "%(num)d months"
 msgstr[0] "%(num)d mois"
 msgstr[1] "%(num)d mois"
 
-#: app/idea_dates.py:87
+#: app/idea_dates.py:79
 #, python-format
 msgid "More than %(num)d year"
 msgid_plural "More than %(num)d years"
 msgstr[0] "Plus de %(num)d an"
 msgstr[1] "Plus de %(num)d ans"
 
-#: app/idea_dates.py:88
+#: app/idea_dates.py:80
 #, python-format
 msgid "%(num)d year"
 msgid_plural "%(num)d years"
@@ -606,7 +606,7 @@ msgstr "Gestionnaire de Cadeaux"
 msgid "Buyer Name"
 msgstr "Nom de l'acheteur"
 
-#: app/templates/_idea_age.html:7
+#: app/templates/_idea_age.html:8
 msgid ""
 "This idea was already here before the app started recording dates: it is "
 "at least this old."
@@ -2240,4 +2240,7 @@ msgstr "Achat effectué"
 
 #~ msgid "You are not authorized to edit this idea."
 #~ msgstr "Vous n'êtes pas autorisé à modifier cette idée."
+
+#~ msgid "Date unknown"
+#~ msgstr "Date inconnue"
 

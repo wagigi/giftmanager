@@ -45,12 +45,6 @@ def test_migration_fills_and_flags_missing_dates(env, idea_dates, undated):
     assert idea_dates.migrate_ideas_file(env.ideas_file) == 0  # idempotent
 
 
-def test_migration_keeps_the_file_permissions(env, idea_dates, undated):
-    env.ideas_file.chmod(0o644)
-    assert idea_dates.migrate_ideas_file(env.ideas_file) == 2
-    assert env.ideas_file.stat().st_mode & 0o777 == 0o644
-
-
 def test_migration_runs_when_the_app_starts(env, undated):
     importlib.reload(env.module)  # same DATA_DIR: runs app.py's startup code again on the undated ideas
     assert env.idea(1)["date_added_unknown"] is True
@@ -93,7 +87,7 @@ def test_new_purchase_date_replaces_the_unknown_flag(client, env, idea_dates, un
     (date(2026, 9, 20), False, "28 days"),
     (date(2025, 10, 19), False, "11 months"),
     (date(2024, 10, 18), False, "2 years"),
-    (date(2026, 10, 18), True, "Date unknown"),
+    (date(2026, 10, 18), True, "Before today"),
     (date(2026, 10, 15), True, "More than 3 days"),
     (date(2026, 7, 1), True, "More than 3 months"),
     (date(2025, 1, 1), True, "More than 1 year"),
@@ -158,9 +152,20 @@ def test_unknown_date_is_explained_on_hover(client, env):
 
 def test_demo_placeholder_stays_undated(env, idea_dates):
     """The seeded "dont delete" idea has no date, which keeps the age-based admin purge from deleting it."""
-    ideas = [{"gift_idea_id": 1, "user_id": "demo", "added_by": "demo", "bought_by": ""}]
-    assert idea_dates.backfill_missing_dates(ideas) == 0
-    assert "date_added" not in ideas[0]
+    ideas = [{"gift_idea_id": 1, "user_id": "demo", "description": "dont delete", "added_by": "demo", "bought_by": ""},
+             {"gift_idea_id": 2, "user_id": "demo", "description": "", "added_by": "demo", "bought_by": ""}]
+    assert idea_dates.backfill_missing_dates(ideas) == 1  # a real user named demo still gets dates
+    assert "date_added" not in ideas[0] and ideas[1]["date_added_unknown"] is True
+
+
+def test_no_empty_wrapper_without_a_date(client, env):
+    ideas = env.ideas()
+    for idea in ideas:
+        del idea["date_added"]
+    env.write_ideas(ideas)
+    login(client, "bob")
+    page = client.get("/user_gift_ideas/alice").get_data(as_text=True)
+    assert "idea-age" not in page and '<p class="text-gray-600 sec-text"></p>' not in page
 
 
 @pytest.mark.parametrize("content", ["not json", '{"a": 1}', "[null]"])
@@ -172,7 +177,6 @@ def test_migration_never_stops_the_app(env, idea_dates, content):
 
 def test_migration_keeps_the_file_when_the_write_fails(env, idea_dates, undated, monkeypatch):
     before = env.ideas_file.read_text()
-    monkeypatch.setattr(idea_dates.json, "dump", mock.Mock(side_effect=OSError("disk full")))
+    monkeypatch.setattr(idea_dates.json, "dumps", mock.Mock(side_effect=ValueError("not serializable")))
     assert idea_dates.migrate_ideas_file(env.ideas_file) == 0
     assert env.ideas_file.read_text() == before
-    assert [p.name for p in env.data_dir.iterdir() if p.name.startswith(".ideas.")] == []

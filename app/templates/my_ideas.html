@@ -213,7 +213,7 @@
                         <p class="text-gray-600 sec-text">{{ _('Estimated Value:') }} {{ format_currency(gift_idea.value) }}</p>
                         {% endif %}
                         <p class="sec-text">{{ _('Added By:') }} {{ gift_idea.added_by }}</p>
-                        <p class="sec-text">{{ idea_age_badge(gift_idea) }}</p>
+                        {{ idea_age_badge(gift_idea, 'p', 'sec-text') }}
                     </div>
 
                     {% if imgenabled %}
