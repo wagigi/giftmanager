@@ -44,6 +44,15 @@ def test_login_with_unknown_user_does_not_open_session(client):
     assert session_username(client) is None
 
 
+def test_login_to_account_without_password_is_refused(client, env):
+    """OIDC auto-registered accounts may have no password (used to crash with a 500)."""
+    users = env.users()
+    del next(u for u in users if u["username"] == "carol")["password"]
+    env.write_users(users)
+    response = client.post("/login", data={"username": "carol", "password": "anything"})
+    assert response.status_code == 200 and session_username(client) is None
+
+
 def test_shared_list_account_cannot_log_in(client):
     response = login(client, "shared_smith")  # correct password, refused by the shared_list guard
     assert response.status_code == 200
@@ -643,6 +652,12 @@ def test_shared_link_unknown_token(client):
 
 def test_shared_link_expired_token(client):
     assert client.get(f"/shared/{EXPIRED_TOKEN}").status_code == 410
+
+
+def test_shared_link_tolerates_null_sharing_records(client, env):
+    env.update_user("bob", sharing=None)
+    env.update_user("carol", sharing={"public_links": None})
+    assert client.get(f"/shared/{SHARE_TOKEN}").status_code == 200
 
 
 @pytest.mark.parametrize("expires_at", [None, "2026-12-01 10:00", "soon"])

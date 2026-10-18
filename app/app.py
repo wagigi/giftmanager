@@ -422,8 +422,8 @@ def login():
                             guests_exist=guests_exist_flag,
                             enable_self_registration=enable_self_registration
                         )
-                    # Verify the password hash
-                    if verify_password(user['password'], password):
+                    # Verify the password hash (OIDC accounts may have no password)
+                    if user.get('password') and verify_password(user['password'], password):
                         session['username'] = user['username']
                         flash(_('Login successful!'), 'login_success')
                         return redirect(url_for('dashboard'))
