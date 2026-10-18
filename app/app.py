@@ -730,7 +730,7 @@ def dashboard():
     # Sort the users alphabetically by full name
     sorted_users = sorted(
             visible_users,
-            key=lambda x: (x['username'] != current_user['username'], x['full_name'].lower())
+            key=lambda x: (x['username'] != current_user['username'], (x.get('full_name') or x['username']).lower())
         )
 
 
@@ -845,7 +845,7 @@ def mark_as_bought(idea_id):
             if buyer.startswith('visitor:'):
                 buyer = buyer[len('visitor:'):]
             else:
-                buyer = next((user.get('full_name', buyer) for user in users if user['username'] == buyer), buyer)
+                buyer = next((user.get('full_name') or buyer for user in users if user['username'] == buyer), buyer)
             flash(_('"%(name)s" has already been bought by %(buyer)s.', name=idea["gift_name"], buyer=buyer), 'warning')
     else:
         flash(_('Idea not found'), 'danger')

@@ -237,6 +237,17 @@ def test_mark_as_not_bought_does_not_name_hidden_ideas(client, env):
     assert env.idea(2)["bought_by"] == "bob"
 
 
+def test_already_bought_message_falls_back_to_buyer_username(client, env):
+    """OIDC auto-registered accounts can have full_name null (used to read "bought by None")."""
+    env.update_user("admin", full_name=None)
+    env.update_idea(3, bought_by="admin")
+    login(client, "alice")
+    client.get("/set_language/en")
+    client.get("/dashboard")  # consume the login flash message
+    client.post("/mark_as_bought/3")
+    assert [message for _, message in flashes(client)] == ['"Bob own idea" has already been bought by admin.']
+
+
 def test_buyer_can_cancel_after_leaving_the_family(client, env):
     login(client, "alice")
     client.post("/mark_as_bought/3")

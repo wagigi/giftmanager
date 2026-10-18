@@ -2,6 +2,7 @@
 import io
 import logging
 import os
+import tempfile
 from pathlib import Path
 from dotenv import load_dotenv, dotenv_values, set_key
 from dotenv.parser import parse_stream
@@ -125,8 +126,8 @@ def set_env_variable(key, value):
             if not (binding.error and binding.original.string.split('=', 1)[0].strip() == key)]
     if len(kept) != len(bindings):
         # Write a temporary file and swap it in, like set_key(): other threads keep reading .env
-        tmp_path = f'{dotenv_path}.tmp'
-        with open(tmp_path, 'w') as file:
+        fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(os.path.abspath(dotenv_path)), prefix='.env.')
+        with os.fdopen(fd, 'w') as file:
             file.write(''.join(kept))
         os.replace(tmp_path, dotenv_path)
     set_key(dotenv_path, key, value)
