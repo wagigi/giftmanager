@@ -469,3 +469,21 @@ def test_no_family_scope_is_closed_by_people_involved_or_admins(client, env):
     login(other, "alice")  # involved, although in family Smith
     other.post("/budget_overview/close", data={"scope": "__all__"})
     assert env.budgets()["recipients"] == {}
+
+
+def test_deleted_payer_keeps_their_credit_under_a_retired_name(client, env):
+    _sharing(env, {"alice": 10, "admin": 10}, [_expense("admin", 20)])
+    env.update_user("admin", groups=["Smith"])  # so that another admin is not needed below
+    users = env.users()
+    users.append(dict(env.user("admin"), username="root"))
+    env.write_users(users)
+    root = env.module.app.test_client()
+    login(root, "root", PASSWORDS["admin"])
+    root.post("/users", data={"username": "admin", "delete_user": "1"})
+
+    budget = env.budgets()
+    (payer,) = {e["paid_by"] for e in budget["recipients"]["bob"]["expenses"]}
+    assert payer.startswith("deleted:admin:") and set(budget["recipients"]["bob"]["budgets"]) == {"alice", payer}
+    _en(client, "alice")
+    page = client.get("/budget_overview").get_data(as_text=True)
+    assert "To admin" in page and "$10.00" in page

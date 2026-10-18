@@ -24,7 +24,7 @@ from idea_dates import migrate_ideas_file, idea_age
 from budget import (ALL_SCOPE, budget_enabled, can_see_budget, parse_amount, to_cents, format_cents, recipient_entry,
                     recipient_split, scope_transfers, user_scopes, close_scope, add_settlement, add_expense,
                     find_idea_expense, record_idea_purchase, remove_idea_purchase, detach_ideas, empty_budgets,
-                    member_scopes, entry_scope, can_close_scope, retire_recipient)
+                    member_scopes, entry_scope, can_close_scope, retire_user, person_names)
 
 app = Flask(__name__)
 
@@ -707,8 +707,8 @@ def delete_idea(idea_id):
 
     # Its price paid stays in the cost sharing, no longer tied to its id (a new idea may reuse it)
     budgets = load_budgets()
-    detach_ideas(budgets, {idea_id})
-    save_budgets(budgets)
+    if detach_ideas(budgets, {idea_id}):
+        save_budgets(budgets)
 
     return '', 204  # Return a response with HTTP status code 204 (no content)
 
@@ -986,7 +986,7 @@ def user_gift_ideas(selected_user_id):
             'split': recipient_split(entry),
             'expenses': entry['expenses'],
             'my_budget': entry['budgets'].get(connected_user),
-            'names': {user['username']: user.get('full_name') or user['username'] for user in users},
+            'names': person_names(users),
         }
 
     # Check if there are no ideas and redirect to the NOIDEA page (unless the budget block has to
@@ -1301,8 +1301,8 @@ def manage_users():
                         user_obj['list_members'].remove(username)
 
             budgets = load_budgets()
-            retire_recipient(budgets, username)
-            save_budgets(budgets)
+            if deleted_user and retire_user(budgets, deleted_user):
+                save_budgets(budgets)
             
             flash(_('User deleted successfully!'), 'success')
 
@@ -2421,12 +2421,12 @@ def delete_budget_expense(recipient, expense_id):
 @app.route('/budget/<path:recipient>/reset', methods=['POST'])
 @login_required
 def reset_budget(recipient):
-    budget_recipient_or_404(recipient)
+    _current_user, recipient_user = budget_recipient_or_404(recipient)
     budgets = load_budgets()
     entry = recipient_entry(budgets, recipient)
     # Reimbursements were made against this list's debts: dropping it alone would reverse them
     if entry is not None:
-        scope = entry_scope(recipient, entry, {user['username']: user for user in load_users()})
+        scope = entry_scope(recipient, entry, {recipient: recipient_user})
         if any(settlement['scope'] == scope for settlement in budgets['settlements']):
             flash(_('Reimbursements are recorded in this family: close the family on the "Who owes whom" page instead.'), 'warning')
             return redirect(url_for('user_gift_ideas', selected_user_id=recipient))
@@ -2489,7 +2489,7 @@ def budget_overview():
     if not is_member:
         # Outside their own families, people only see what concerns them
         transfers = [t for t in transfers if username in t[:2]]
-    names = {user['username']: user.get('full_name') or user['username'] for user in users}
+    names = person_names(users)
     return render_template(
         'budget_overview.html',
         scopes=scopes,

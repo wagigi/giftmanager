@@ -287,19 +287,59 @@ def remove_idea_purchase(budgets, idea_id):
     return removed
 
 
-def retire_recipient(budgets, username, now=None):
-    """A deleted account's entry keeps counting in its family (the money others paid is not lost),
-    under a key no new account can take, so a user later created with the same name starts empty."""
+DELETED_PREFIX = 'deleted:'
+
+
+def retire_user(budgets, user):
+    """A deleted account keeps counting everywhere (its list, its budgets, the money it paid or
+    was reimbursed), so the other balances do not change, but under a name no new account can
+    take ('deleted:<username>:<date>'): a user later created with the same name starts empty.
+    Returns False when the account appears nowhere."""
+    username = user['username']
+    retired = f"{DELETED_PREFIX}{username}:{_now()}"
+    changed = False
     entry = budgets['recipients'].pop(username, None)
     if entry is not None:
-        budgets['recipients'][f"deleted:{username}:{now or _now()}"] = entry
+        entry.setdefault('scope', recipient_scope(user))
+        budgets['recipients'][retired] = entry
+        changed = True
+    for entry in budgets['recipients'].values():
+        if username in entry['budgets']:
+            entry['budgets'][retired] = entry['budgets'].pop(username)
+            changed = True
+        for expense in entry['expenses']:
+            if expense['paid_by'] == username:
+                expense['paid_by'] = retired
+                changed = True
+    for settlement in budgets['settlements']:
+        for side in ('from', 'to'):
+            if settlement[side] == username:
+                settlement[side] = retired
+                changed = True
+    return changed
+
+
+def person_names(users):
+    """Display names of the people in budgets.json, including retired (deleted) accounts."""
+    class Names(dict):
+        def get(self, key, default=None):
+            if key in self:
+                return self[key]
+            if isinstance(key, str) and key.startswith(DELETED_PREFIX):
+                return key.split(':')[1]
+            return default
+    return Names((user['username'], user.get('full_name') or user['username']) for user in users)
 
 
 def detach_ideas(budgets, idea_ids):
     """Ideas deleted or purged: their expenses stay (the money was spent) but no longer point to
-    the idea, whose id a new idea may reuse (ids are max + 1). They become free expenses."""
+    the idea, whose id a new idea may reuse (ids are max + 1). They become free expenses.
+    True if an expense was changed."""
+    changed = False
     for entry in budgets['recipients'].values():
         for expense in entry['expenses']:
             if expense.get('idea_id') in idea_ids:
                 expense['idea_id'] = None
+                changed = True
+    return changed
 

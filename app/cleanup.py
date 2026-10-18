@@ -66,8 +66,8 @@ def delete_gift_ideas(bought_only, older_than_days):
 
     # Prices paid stay in the cost sharing, no longer tied to the ids (new ideas may reuse them)
     budgets = load_budgets()
-    detach_ideas(budgets, ids_to_delete)
-    save_budgets(budgets)
+    if detach_ideas(budgets, ids_to_delete):
+        save_budgets(budgets)
 
     # Record the last execution time
     last_execution_time = datetime.now().isoformat()
