@@ -10,7 +10,7 @@ Giftmanager is a self-hosted family gift-list web app: users post gift ideas for
 
 - **Backend:** Flask. `app/app.py` (~2300 lines) creates the app and holds its config, Babel, OAuth, context processors, error handlers and all routes; the non-route helpers live in small flat modules next to it (see Layout), imported without a package prefix (`from storage import load_users`) because gunicorn runs `app:app` from `/app` and dev runs `flask --app app run` from `app/`. Helper modules never import `app` (use `flask.current_app` or `config`). No blueprints, no ORM, no database.
 - **Storage:** flat JSON files, read and rewritten in full on every request (`load_users()` / `save_users()`, `load_gift_ideas()` / `save_gift_ideas()` in `storage.py`, paths taken from `current_app.config['USERS_FILE']` / `['IDEAS_FILE']`). There is no locking, which is why gunicorn runs with a single worker (`-w 1 --threads 4`). Keep it that way unless storage changes.
-- **Templates:** Jinja2 in `app/templates/`, one standalone HTML page per view (no base layout; each page carries its own `<head>`, inline CSS variables for light/dark theme, Tailwind 2 and Font Awesome from CDN). The only shared partial is `_language_switcher.html`.
+- **Templates:** Jinja2 in `app/templates/`, one standalone HTML page per view (no base layout; each page carries its own `<head>`, inline CSS variables for light/dark theme, Tailwind 2 and Font Awesome from CDN). The shared partials are `_language_switcher.html` and `_idea_age.html` (macro `idea_age_badge(idea, tag, css_class)`, imported `with context`: clock icon + idea age in a wrapper element, nothing without a readable date, shown on `/user_gift_ideas`, `/my_ideas`, `/table_view`, `/bought_items` and `/shared/<token>`).
 - **Auth:** local passwords hashed with argon2 (`argon2-cffi`), plus optional OIDC via Authlib (`/login_oidc`, `/auth`).
 - **Email:** Mailjet (`get_mailjet_client()` returns `None` when keys are unset, so email is optional).
 - **Other deps:** BeautifulSoup + requests (fetch `og:image` previews for gift links), Pillow (avatar upload, cropped to 256px JPEG), Flask-Babel.
@@ -30,6 +30,7 @@ app/
   cleanup.py           # get_delete_days, find_gift_ideas_to_delete, delete_gift_ideas, delete_old_gift_ideas
   currency.py          # get_currency_symbol, get_currency_position, format_currency
   sharing.py           # generate_share_token, generate_share_url, link_sharing_enabled, find_share_link
+  idea_dates.py        # backfill_missing_dates, migrate_ideas_file (startup), idea_age (age label shown on idea pages)
   requirements.txt     # unpinned dependencies
   templates/           # one template per page
   static/              # icons, avatars, bg image, manifest.json, sw.js
@@ -60,7 +61,7 @@ The same list also holds two special kinds of entries:
 - **Guests:** `guest: true`, `access_type` (`family` → see `groups`; `people` → see `access_users`). Only routes decorated with `@guest_allowed` are reachable by guests.
 - **Shared lists:** `shared_list: true`, username `shared_<name>`, `list_members[]`. A collaborative list that members can edit like their own.
 
-**Idea** (`ideas.json`): `gift_idea_id` (int, max+1), `user_id` (recipient username), `gift_name`, `description`, `link`, `value`, `added_by`, `bought_by`, `image_path`, `date_added`, `date_bought`. Order for the reorder feature is persisted via `/update_order`. The seeded `demo` idea is a placeholder ("dont delete").
+**Idea** (`ideas.json`): `gift_idea_id` (int, max+1), `user_id` (recipient username), `gift_name`, `description`, `link`, `value`, `added_by`, `bought_by`, `image_path`, `date_added`, `date_bought` (both `%Y-%m-%d %H:%M:%S`), optional `date_added_unknown` / `date_bought_unknown`. Older versions did not record these dates: at startup `migrate_ideas_file()` gives the current date to ideas missing `date_added` (except the seeded `demo` placeholder, so the age-based purge keeps skipping it) (and to bought ideas missing `date_bought`, which `/rundl` could otherwise never purge) and sets the matching `_unknown` flag; the age is then shown as "More than N days" with an explanation on hover. Marking an idea bought or not bought drops `date_bought_unknown`. Order for the reorder feature is persisted via `/update_order`. The seeded `demo` idea is a placeholder ("dont delete").
 
 ## Access control
 
@@ -134,3 +135,6 @@ Commit both `.po` and compiled `.mo` files. `BABEL_DEFAULT_LOCALE` is `fr`; the 
 - Before opening any pull request, have the changes reviewed by an agent by running `/code-review` on the branch. Fix the findings that hold up (or note why one is dismissed) before creating the PR.
 - This is enforced by a Claude Code hook (`.claude/settings.json` → `.claude/hooks/require-code-review.sh`): a `/code-review` of the current branch with a clean tree records HEAD in `.git/claude-code-review-head` once it has finished (interrupted or failed reviews don't count), and `gh pr create` / `gh pr new` is denied unless that commit is the current HEAD. Commit before reviewing; any new commit (including review fixes) needs another `/code-review`. It only guards Claude Code; it is not a security boundary.
 - Every PR description on GitHub (the body passed to `gh pr create`) starts with a short summary of the feature: **What** changed, **How** it was done, **Why** it was needed. Keep each part to a few simple bullet points.
+- When the PR adds or changes a user-visible feature, the description also has a **Screenshots** section showing what was asked for, one captioned image per affected page (light theme by default, plus dark or mobile width when the change touches them). Pure refactors, fixes without UI change and test-only PRs skip it.
+  - Take them from the real app (see the `run` skill) started with a throwaway `DATA_DIR` holding fake users and ideas (e.g. copied from `app/users.json` / `app/ideas.json`, with ideas added to show the feature), never from `data/`. Headless Playwright works for pages behind login (`pip install playwright && playwright install firefox`, kept out of `requirements-dev.txt`).
+  - GitHub has no API to attach images to a PR body, so push the PNGs to the orphan branch `pr-screenshots`, under a folder named after the PR branch (`feat/idea-age/…`), and embed them with `![caption](https://raw.githubusercontent.com/wagigi/giftmanager/pr-screenshots/<branch>/<file>.png)`. Create the branch on first use with `git switch --orphan pr-screenshots` (in a separate worktree so the feature branch stays untouched).
