@@ -396,3 +396,12 @@ def test_login_oidc_button_follows_the_registered_client(client, app_module, mon
     assert "/login_oidc" not in client.get("/login").get_data(as_text=True)
     monkeypatch.setitem(app_module.OIDC_STARTUP_SETTINGS, "OIDC_CLIENT_ID", "registered")
     assert "/login_oidc" in client.get("/login").get_data(as_text=True)
+
+
+def test_auth_with_invalid_state_shows_error_on_login_page(make_client):
+    client = make_client()
+    with client.session_transaction() as sess:
+        sess["state"] = "expected"
+    assert is_redirect_to(client.get("/auth?state=forged"), "/login")
+    assert session_username(client) is None
+    assert [category for category, _ in flashes(client)] == ["login_error"]

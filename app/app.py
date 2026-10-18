@@ -215,14 +215,14 @@ def auth():
     state = request.args.get("state")
     saved_state = session.pop("state", None)
     if state != saved_state:
-        flash(_("Authorization failed: invalid state."), "danger")
+        flash(_("Authorization failed: invalid state."), "login_error")
         return redirect(url_for("login"))
     
     try:
         # Retrieve the access token from OIDC provider
         token = oauth.keycloak.authorize_access_token()
     except Exception as e:
-        flash(_("OIDC authorization failed."), "danger")
+        flash(_("OIDC authorization failed."), "login_error")
         return redirect(url_for("login"))
     
     # Pop nonce from session after use
@@ -232,7 +232,7 @@ def auth():
         # Parse ID token and retrieve user info
         user_info = oauth.keycloak.parse_id_token(token, nonce=nonce)
     except Exception as e:
-        flash(_("Failed to parse user information."), "danger")
+        flash(_("Failed to parse user information."), "login_error")
         return redirect(url_for("login"))
     
     # Retrieve fields dynamically from the environment
