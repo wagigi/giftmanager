@@ -7,15 +7,17 @@ from storage import load_gift_ideas, save_gift_ideas
 
 
 DEFAULT_DELETE_DAYS = 30  # same default as the .env written by prepopulate_file()
+MAX_DELETE_DAYS = 36500  # 100 years; much larger values overflow datetime arithmetic
 
 
 def get_delete_days():
     """DELETE_DAYS from .env (days after purchase before /rundl purges an idea).
-    Falls back to the default when the value is missing, empty or not a positive integer."""
+    Falls back to the default when the value is missing, empty or not an integer between 1 and
+    MAX_DELETE_DAYS."""
     value = read_env_variable("DELETE_DAYS", str(DEFAULT_DELETE_DAYS))
     try:
         days = int(value)
-        if days >= 1:
+        if 1 <= days <= MAX_DELETE_DAYS:
             return days
     except (TypeError, ValueError):
         pass

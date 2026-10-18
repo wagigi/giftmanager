@@ -330,7 +330,7 @@ def test_recipient_cannot_delete_idea_others_added(client, env):
     client.get("/dashboard")  # consume the login flash message
     assert client.delete("/delete_idea/2").status_code == 404
     assert 2 in [i["gift_idea_id"] for i in env.ideas()]
-    assert flashes(client) == [("danger", "Idée non trouvée")]
+    assert flashes(client) == []  # called with fetch(): nothing left for a later page
 
 
 def test_recipient_cannot_edit_idea_others_added(client, env):

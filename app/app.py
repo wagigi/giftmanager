@@ -17,7 +17,7 @@ from visibility import get_visible_users, get_visible_groups, can_view_list, can
 from mailer import send_email_to_buyer_via_mailjet
 from avatars import UPLOADED_AVATAR_PREFIX, AVATAR_SIZE, avatar_url, delete_uploaded_avatar
 from og_image import fetch_og_image
-from cleanup import delete_gift_ideas, delete_old_gift_ideas, get_delete_days
+from cleanup import MAX_DELETE_DAYS, delete_gift_ideas, delete_old_gift_ideas, get_delete_days
 from currency import get_currency_symbol, get_currency_position, format_currency
 from sharing import generate_share_token, generate_share_url, link_sharing_enabled, find_share_link
 
@@ -674,8 +674,8 @@ def delete_idea(idea_id):
     idea = find_idea_by_id(gift_ideas_data, idea_id)
     # Only the adder or a shared-list member may delete it; anyone else gets the same answer as for
     # an unknown id, so ideas on lists they cannot see (or hidden from the recipient) are not revealed
+    # (no flash: the page calls this route with fetch(), the message would show up on a later page)
     if not idea or not can_modify_idea(session['username'], idea, users):
-        flash(_('Idea not found'), 'danger')
         return '', 404
 
     # Check if the idea is bought
@@ -1364,7 +1364,7 @@ def delete_old_gift_ideas_page():
         if filters['age_filter']:
             try:
                 older_than_days = int(filters['days'])
-                if older_than_days < 1:
+                if not 1 <= older_than_days <= MAX_DELETE_DAYS:
                     raise ValueError
             except ValueError:
                 flash(_("Invalid number of days entered. Please enter a valid number."), "danger")
@@ -1393,7 +1393,7 @@ def change_delete_days():
         if new_days:
             try:
                 new_days = int(new_days)
-                if new_days < 1:
+                if not 1 <= new_days <= MAX_DELETE_DAYS:
                     raise ValueError
 
                 # Update the .env file with the new value

@@ -34,7 +34,7 @@ def test_rundl_reads_delete_days_at_call_time(client, env, old_purchases):
     assert _ids(env) == {1, 4, 5}
 
 
-@pytest.mark.parametrize("value", ["", "abc", "0", "-3"])
+@pytest.mark.parametrize("value", ["", "abc", "0", "-3", "1000000"])
 def test_rundl_falls_back_to_default_delete_days(client, env, old_purchases, value):
     """An empty or invalid DELETE_DAYS used to make the purge read the .env
     path as a number of days. The default (30 days) applies instead."""
@@ -76,7 +76,7 @@ def test_admin_pages_show_default_when_delete_days_is_invalid(client, env, path)
     assert 'value="30"' in response.get_data(as_text=True)
 
 
-@pytest.mark.parametrize("days", ["0", "-1", "abc"])
+@pytest.mark.parametrize("days", ["0", "-1", "abc", "1000000"])
 def test_change_delete_days_refuses_invalid_values(client, env, days):
     login(client, "admin")
     client.post("/change_delete_days", data={"days": days})
