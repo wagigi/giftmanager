@@ -13,7 +13,7 @@ from flask_babel import Babel, _, lazy_gettext as _l, get_locale as current_babe
 from config import DATA_DIR, dotenv_path, read_env_variable, set_env_variable, SUPPORTED_LANGUAGES
 from storage import load_users, save_users, load_gift_ideas, save_gift_ideas, find_idea_by_id, get_full_name
 from auth import ph, password_hash, verify_password, login_required, admin_required, guest_allowed
-from visibility import get_visible_users, get_visible_groups, can_view_list
+from visibility import get_visible_users, get_visible_groups, can_view_list, can_modify_idea
 from mailer import send_email_to_buyer_via_mailjet
 from avatars import UPLOADED_AVATAR_PREFIX, AVATAR_SIZE, avatar_url, delete_uploaded_avatar
 from og_image import fetch_og_image
@@ -672,15 +672,14 @@ def delete_idea(idea_id):
 
     # Find the idea by its ID
     idea = find_idea_by_id(gift_ideas_data, idea_id)
-    if not idea:
+    current_user_username = session['username']  # Use 'username' from the session
+    # Ideas others added for the current user are hidden from them: answer as for an unknown id
+    if not idea or (idea['user_id'] == current_user_username and not can_modify_idea(current_user_username, idea, users)):
         flash(_('Idea not found'), 'danger')
         return '', 404
 
-    shared_list = next((user for user in users if user['username'] == idea['user_id'] and user.get('shared_list')), None)
-    current_user_username = session['username']  # Use 'username' from the session
-
-    # Check if the idea was added by the current user, if it's in their list, OR if they're a member of the shared list
-    if idea['added_by'] == current_user_username or idea['user_id'] == current_user_username or (shared_list and current_user_username in shared_list.get('list_members', [])):
+    # Check if the idea was added by the current user OR if they're a member of the shared list
+    if can_modify_idea(current_user_username, idea, users):
         # Check if the idea is bought
         if idea['bought_by']:
             # Send an email to the buyer using Mailjet
@@ -1064,15 +1063,14 @@ def edit_idea(idea_id):
     
     # Find the idea by its ID
     idea = find_idea_by_id(gift_ideas_data, idea_id)
-    if not idea:
+    current_user_username = session['username']  # Use 'username' from the session
+    # Ideas others added for the current user are hidden from them: answer as for an unknown id
+    if not idea or (idea['user_id'] == current_user_username and not can_modify_idea(current_user_username, idea, users)):
         flash(_('Idea not found'), 'danger')
         return redirect(url_for('dashboard'))
 
-    shared_list = next((user for user in users if user['username'] == idea['user_id'] and user.get('shared_list')), None)
-    current_user_username = session['username']  # Use 'username' from the session
-
-    # Check if the idea was added by the current user or if it's in their list
-    if idea['added_by'] == current_user_username or idea['user_id'] == current_user_username or (shared_list and current_user_username in shared_list.get('list_members', [])):
+    # Check if the idea was added by the current user OR if they're a member of the shared list
+    if can_modify_idea(current_user_username, idea, users):
         if request.method == 'POST':
             # Debug: print received form data
             print(f"Received description: {request.form.get('description')}")

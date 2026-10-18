@@ -94,7 +94,7 @@ def test_delete_idea_proceeds_when_mailjet_fails(client, env, mailer_module):
     abort the deletion with a 500."""
     env.set_env("MAILJET_API_KEY", "key")
     env.set_env("MAILJET_API_SECRET", "secret")
-    login(client, "alice")
+    login(client, "bob")
     with mock.patch.object(mailer_module, "Client") as mailjet_client:
         mailjet_client.return_value.send.create.side_effect = ConnectionError("mailjet down")
         assert client.delete("/delete_idea/2").status_code == 204

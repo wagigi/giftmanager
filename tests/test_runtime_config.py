@@ -38,7 +38,7 @@ def test_system_email_is_read_at_call_time(client, env, mailer_module):
     env.set_env("MAILJET_API_KEY", "new-key")
     env.set_env("MAILJET_API_SECRET", "new-secret")
     env.set_env("SYSTEM_EMAIL", "noreply@new.example.com")
-    login(client, "alice")
+    login(client, "bob")
     with mock.patch.object(mailer_module, "Client") as mailjet_client:
         assert client.delete("/delete_idea/2").status_code == 204
     send = mailjet_client.return_value.send.create

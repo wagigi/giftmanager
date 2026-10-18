@@ -291,9 +291,8 @@ def test_delete_own_idea(client, env):
 
 
 def test_delete_bought_idea_without_mailjet_keys(client, env, mailer_module):
-    """The recipient may delete an idea someone else added. The buyer email is
-    skipped because the Mailjet keys are empty (no network call)."""
-    login(client, "alice")
+    """The buyer email is skipped because the Mailjet keys are empty (no network call)."""
+    login(client, "bob")
     with mock.patch.object(mailer_module, "Client") as mailjet_client:
         assert client.delete("/delete_idea/2").status_code == 204
     mailjet_client.assert_not_called()
@@ -311,6 +310,32 @@ def test_delete_unknown_idea(client, env):
     login(client, "alice")
     assert client.delete("/delete_idea/999").status_code == 404
     assert len(env.ideas()) == 5
+
+
+def test_recipient_cannot_delete_idea_others_added(client, env):
+    """Ideas others added for the recipient are hidden from them: same answer as an unknown id."""
+    login(client, "alice")
+    client.get("/dashboard")  # consume the login flash message
+    assert client.delete("/delete_idea/2").status_code == 404
+    assert 2 in [i["gift_idea_id"] for i in env.ideas()]
+    assert flashes(client) == [("danger", "Idée non trouvée")]
+
+
+def test_recipient_cannot_edit_idea_others_added(client, env):
+    login(client, "alice")
+    client.get("/dashboard")  # consume the login flash message
+    assert is_redirect_to(client.get("/edit_idea/2"), "/dashboard")
+    response = client.post("/edit_idea/2", data={"description": "changed"})
+    assert is_redirect_to(response, "/dashboard")
+    assert env.idea(2)["description"] != "changed"
+    assert [category for category, _ in flashes(client)] == ["danger", "danger"]
+
+
+def test_adder_can_edit_idea_for_someone_else(client, env):
+    login(client, "bob")
+    response = client.post("/edit_idea/2", data={"description": "changed"})
+    assert is_redirect_to(response, "/user_gift_ideas/alice")
+    assert env.idea(2)["description"] == "changed"
 
 
 def test_edit_unknown_idea(client):
