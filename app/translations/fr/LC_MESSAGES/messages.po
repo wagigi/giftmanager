@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 19:12+0200\n"
+"POT-Creation-Date: 2026-10-19 00:42+0200\n"
 "PO-Revision-Date: 2025-12-09 20:34+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -18,57 +18,57 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/app.py:85 app/app.py:125 app/app.py:326
+#: app/app.py:89 app/app.py:129 app/app.py:333
 msgid "User not found."
 msgstr "Utilisateur non trouvé."
 
-#: app/app.py:91
+#: app/app.py:95
 msgid "Email updated successfully."
 msgstr "Email mis à jour avec succès."
 
-#: app/app.py:134
+#: app/app.py:138
 msgid "Profile picture removed."
 msgstr "Photo de profil supprimée."
 
-#: app/app.py:139
+#: app/app.py:143
 msgid "Please choose an image."
 msgstr "Veuillez choisir une image."
 
-#: app/app.py:149
+#: app/app.py:153
 msgid "Invalid image file."
 msgstr "Fichier image invalide."
 
-#: app/app.py:160
+#: app/app.py:164
 msgid "Profile picture updated."
 msgstr "Photo de profil mise à jour."
 
-#: app/app.py:165
+#: app/app.py:169
 msgid "File is too large (max 10 MB)."
 msgstr "Le fichier est trop volumineux (10 Mo max)."
 
-#: app/app.py:221
+#: app/app.py:228
 msgid "Authorization failed: invalid state."
 msgstr "Échec d'autorisation : état invalide."
 
-#: app/app.py:228
+#: app/app.py:235
 msgid "OIDC authorization failed."
 msgstr "Échec de l'autorisation OIDC."
 
-#: app/app.py:238
+#: app/app.py:245
 msgid "Failed to parse user information."
 msgstr "Échec de l'analyse des informations utilisateur."
 
-#: app/app.py:277
+#: app/app.py:284
 msgid "Login successful with OIDC!"
 msgstr "Connexion réussie avec OIDC !"
 
-#: app/app.py:286
+#: app/app.py:293
 msgid "Cannot create your account: the identity provider did not send a username."
 msgstr ""
 "Impossible de créer votre compte : le fournisseur d'identité n'a pas "
 "transmis de nom d'utilisateur."
 
-#: app/app.py:290
+#: app/app.py:297
 #, python-format
 msgid ""
 "Cannot create your account: the username \"%(username)s\" is already "
@@ -77,266 +77,270 @@ msgstr ""
 "Impossible de créer votre compte : le nom d'utilisateur « %(username)s » "
 "est déjà pris. Contactez un administrateur."
 
-#: app/app.py:306
+#: app/app.py:313
 msgid "New profile created. Please complete your profile setup."
 msgstr "Nouveau profil créé. Veuillez compléter la configuration de votre profil."
 
-#: app/app.py:309
+#: app/app.py:316
 msgid "User not found and auto-registration is disabled."
 msgstr "Utilisateur non trouvé et auto-inscription désactivée."
 
-#: app/app.py:331
+#: app/app.py:338
 msgid "Profile setup not required. Avatar already set."
 msgstr "Configuration du profil non requise. Avatar déjà défini."
 
-#: app/app.py:352
+#: app/app.py:359
 msgid "Profile setup complete!"
 msgstr "Configuration du profil terminée !"
 
-#: app/app.py:383 app/app.py:440
+#: app/app.py:390 app/app.py:447
 #, python-format
 msgid "Error reading users.json: %(error)s"
 msgstr "Erreur de lecture de users.json : %(error)s"
 
-#: app/app.py:403
+#: app/app.py:410
 msgid "No account? Contact a family member to create an account."
 msgstr "Pas de compte ? Contactez un membre de votre famille pour en créer un."
 
-#: app/app.py:420 app/app.py:438
+#: app/app.py:427 app/app.py:445
 msgid "User does not exist"
 msgstr "L'utilisateur n'existe pas"
 
-#: app/app.py:431
+#: app/app.py:438
 msgid "Login successful!"
 msgstr "Connexion réussie !"
 
-#: app/app.py:434
+#: app/app.py:441
 msgid "Wrong password"
 msgstr "Mot de passe incorrect"
 
-#: app/app.py:455
+#: app/app.py:462
 msgid "Self-registration is not enabled. Please contact an administrator."
 msgstr ""
 "L'auto-inscription n'est pas activée. Veuillez contacter un "
 "administrateur."
 
-#: app/app.py:474
+#: app/app.py:481
 msgid "Invalid joining code. Please check with your family."
 msgstr "Code de participation invalide. Veuillez vérifier auprès de votre famille."
 
-#: app/app.py:479
+#: app/app.py:486
 msgid "Please fill in all required fields."
 msgstr "Veuillez remplir tous les champs obligatoires."
 
-#: app/app.py:483
+#: app/app.py:490
 msgid "Passwords do not match."
 msgstr "Les mots de passe ne correspondent pas."
 
-#: app/app.py:493
+#: app/app.py:500
 msgid "Username already exists. Please choose a different one."
 msgstr "Ce nom d'utilisateur existe déjà. Veuillez en choisir un autre."
 
-#: app/app.py:498
+#: app/app.py:505
 msgid "Email already registered. Please use a different email or contact support."
 msgstr ""
 "Email déjà enregistré. Veuillez utiliser un email différent ou contacter "
 "le support."
 
-#: app/app.py:518
+#: app/app.py:525
 msgid "Registration successful! You can now log in."
 msgstr "Inscription réussie ! Vous pouvez maintenant vous connecter."
 
-#: app/app.py:537 app/app.py:615
+#: app/app.py:544 app/app.py:622
 msgid "Current user not found."
 msgstr "Utilisateur actuel non trouvé."
 
-#: app/app.py:558 app/app.py:636
+#: app/app.py:565 app/app.py:643
 msgid "You are not allowed to add ideas to this list."
 msgstr "Vous n'êtes pas autorisé à ajouter des idées à cette liste."
 
-#: app/app.py:666
+#: app/app.py:673
 #, python-format
 msgid "Idea \"%(name)s\" added for user %(user)s by %(added_by)s!"
 msgstr "Idée « %(name)s » ajoutée pour %(user)s par %(added_by)s !"
 
-#: app/app.py:692
+#: app/app.py:699
 msgid "IDEAS DELETED"
 msgstr "IDÉES SUPPRIMÉES"
 
-#: app/app.py:723
+#: app/app.py:730
 msgid "User data not found"
 msgstr "Données utilisateur non trouvées"
 
-#: app/app.py:796 app/app.py:1979
+#: app/app.py:804 app/app.py:2044
 msgid "User not found"
 msgstr "Utilisateur non trouvé"
 
-#: app/app.py:801
+#: app/app.py:809
 msgid "Current password is incorrect"
 msgstr "Le mot de passe actuel est incorrect"
 
-#: app/app.py:806
+#: app/app.py:814
 msgid "New password and confirmation do not match"
 msgstr "Le nouveau mot de passe et la confirmation ne correspondent pas"
 
-#: app/app.py:815
+#: app/app.py:823
 msgid "Password successfully changed"
 msgstr "Mot de passe modifié avec succès"
 
-#: app/app.py:836
+#: app/app.py:844
 msgid "You cannot mark your own gift ideas as bought."
 msgstr "Vous ne pouvez pas marquer vos propres idées cadeaux comme achetées."
 
-#: app/app.py:845
+#: app/app.py:853
 #, python-format
 msgid "Marked \"%(name)s\" as bought!"
 msgstr "« %(name)s » marqué comme acheté !"
 
-#: app/app.py:856
+#: app/app.py:863
+msgid "Invalid amount: the price paid was not recorded."
+msgstr "Montant invalide : le prix payé n'a pas été enregistré."
+
+#: app/app.py:874
 #, python-format
 msgid "\"%(name)s\" has already been bought by %(buyer)s."
 msgstr "« %(name)s » a déjà été acheté par %(buyer)s."
 
-#: app/app.py:858 app/app.py:895 app/app.py:1074
+#: app/app.py:876 app/app.py:919 app/app.py:1118 app/app.py:2432
 msgid "Idea not found"
 msgstr "Idée non trouvée"
 
-#: app/app.py:888
+#: app/app.py:906
 #, python-format
 msgid "Marked \"%(name)s\" as not bought."
 msgstr "« %(name)s » marqué comme non acheté."
 
-#: app/app.py:893
+#: app/app.py:917
 #, python-format
 msgid "You did not buy \"%(name)s\", so you cannot mark it as not bought."
 msgstr ""
 "Vous n'avez pas acheté « %(name)s », vous ne pouvez donc pas le marquer "
 "comme non acheté."
 
-#: app/app.py:932
+#: app/app.py:964
 msgid "You are not allowed to view this list."
 msgstr "Vous n'êtes pas autorisé à consulter cette liste."
 
-#: app/app.py:944
+#: app/app.py:976
 msgid "No gift ideas for this user."
 msgstr "Aucune idée de cadeau pour cet utilisateur."
 
-#: app/app.py:974
+#: app/app.py:1018
 msgid "You haven't added any gift ideas."
 msgstr "Vous n'avez ajouté aucune idée de cadeau."
 
-#: app/app.py:1035
+#: app/app.py:1079
 msgid "Username already exists!"
 msgstr "Ce nom d'utilisateur existe déjà !"
 
-#: app/app.py:1056
+#: app/app.py:1100
 msgid "User added successfully!"
 msgstr "Utilisateur ajouté avec succès !"
 
-#: app/app.py:1098
+#: app/app.py:1142
 msgid "Idea updated successfully!"
 msgstr "Idée mise à jour avec succès !"
 
-#: app/app.py:1131
+#: app/app.py:1175
 #, python-format
 msgid "Pool \"%(name)s\" does not exist."
 msgstr "Le groupe « %(name)s » n'existe pas."
 
-#: app/app.py:1141
+#: app/app.py:1185
 #, python-format
 msgid "Pool \"%(name)s\" has been deleted!"
 msgstr "Le groupe « %(name)s » a été supprimé !"
 
-#: app/app.py:1152
+#: app/app.py:1196
 msgid "Pool name is required!"
 msgstr "Le nom du groupe est requis !"
 
-#: app/app.py:1156
+#: app/app.py:1200
 msgid "You need at least 2 participants for Secret Santa!"
 msgstr "Il faut au moins 2 participants pour le Secret Santa !"
 
-#: app/app.py:1182
+#: app/app.py:1226
 msgid "Secret Santa assignments have been made!"
 msgstr "Les attributions du Secret Santa ont été effectuées !"
 
-#: app/app.py:1203
+#: app/app.py:1247
 msgid "You don't have any Secret Santa assignments yet."
 msgstr "Vous n'avez pas encore d'attributions Secret Santa."
 
-#: app/app.py:1213
+#: app/app.py:1257
 msgid "No specific instructions provided."
 msgstr "Aucune instruction spécifique fournie."
 
-#: app/app.py:1251
+#: app/app.py:1299
 msgid "User deleted successfully!"
 msgstr "Utilisateur supprimé avec succès !"
 
-#: app/app.py:1262
+#: app/app.py:1310
 msgid "Admin status updated successfully!"
 msgstr "Statut administrateur mis à jour avec succès !"
 
-#: app/app.py:1285
+#: app/app.py:1333
 msgid "User updated successfully!"
 msgstr "Utilisateur mis à jour avec succès !"
 
-#: app/app.py:1326
+#: app/app.py:1374
 msgid "Email settings updated successfully!"
 msgstr "Paramètres email mis à jour avec succès !"
 
-#: app/app.py:1328
+#: app/app.py:1376
 #, python-format
 msgid "An error occurred: %(error)s"
 msgstr "Une erreur est survenue : %(error)s"
 
-#: app/app.py:1348
+#: app/app.py:1396
 msgid "Login message updated successfully!"
 msgstr "Message de connexion mis à jour avec succès !"
 
-#: app/app.py:1350
+#: app/app.py:1398
 #, python-format
 msgid "Error updating login message: %(error)s"
 msgstr "Erreur lors de la mise à jour du message de connexion : %(error)s"
 
-#: app/app.py:1352
+#: app/app.py:1400
 msgid "Message cannot be empty."
 msgstr "Le message ne peut pas être vide."
 
-#: app/app.py:1377 app/app.py:1409
+#: app/app.py:1425 app/app.py:1457
 msgid "Invalid number of days entered. Please enter a valid number."
 msgstr "Nombre de jours invalide. Veuillez entrer un nombre valide."
 
-#: app/app.py:1381
+#: app/app.py:1429
 msgid "Select at least one filter."
 msgstr "Sélectionnez au moins un filtre."
 
-#: app/app.py:1386
+#: app/app.py:1434
 #, python-format
 msgid "%(count)s gift ideas have been deleted."
 msgstr "%(count)s idées de cadeaux ont été supprimées."
 
-#: app/app.py:1388
+#: app/app.py:1436
 #, python-format
 msgid "Error deleting old gift ideas: %(error)s"
 msgstr "Erreur lors de la suppression des anciennes idées : %(error)s"
 
-#: app/app.py:1406
+#: app/app.py:1454
 #, python-format
 msgid "The number of days to delete old gift ideas has been updated to %(days)s."
 msgstr ""
 "Le nombre de jours avant suppression des anciennes idées est maintenant "
 "de %(days)s."
 
-#: app/app.py:1411
+#: app/app.py:1459
 msgid "Please provide a value for the number of days."
 msgstr "Veuillez fournir une valeur pour le nombre de jours."
 
-#: app/app.py:1424
+#: app/app.py:1472
 msgid "Users are already configured. Setup page is unavailable."
 msgstr ""
 "Les utilisateurs sont déjà configurés. La page de configuration est "
 "indisponible."
 
-#: app/app.py:1459
+#: app/app.py:1507
 msgid ""
 "Admin account created successfully. Please configure the environment "
 "variables."
@@ -344,15 +348,15 @@ msgstr ""
 "Compte administrateur créé avec succès. Veuillez configurer les variables"
 " d'environnement."
 
-#: app/app.py:1470
+#: app/app.py:1518
 msgid "You must access this page from the setupadmin route."
 msgstr "Vous devez accéder à cette page depuis l'itinéraire setupadmin."
 
-#: app/app.py:1498
+#: app/app.py:1546
 msgid "Environment variables saved successfully!"
 msgstr "Variables d'environnement sauvegardées avec succès !"
 
-#: app/app.py:1501 app/app.py:1541
+#: app/app.py:1549 app/app.py:1589
 msgid ""
 "Restart the application to apply the new client ID, client secret or "
 "server metadata URL."
@@ -360,51 +364,59 @@ msgstr ""
 "Redémarrez l'application pour appliquer le nouvel ID client, le nouveau "
 "secret client ou la nouvelle URL des métadonnées du serveur."
 
-#: app/app.py:1528
+#: app/app.py:1576
 #, python-format
 msgid "Missing required fields: %(fields)s"
 msgstr "Champs obligatoires manquants : %(fields)s"
 
-#: app/app.py:1539
+#: app/app.py:1587
 msgid "OIDC settings saved successfully!"
 msgstr "Paramètres OIDC sauvegardés avec succès !"
 
-#: app/app.py:1544
+#: app/app.py:1592
 #, python-format
 msgid "Error saving OIDC settings: %(error)s"
 msgstr "Erreur lors de l'enregistrement des paramètres OIDC : %(error)s"
 
-#: app/app.py:1591
+#: app/app.py:1639
 msgid "New group added successfully!"
 msgstr "Nouveau groupe ajouté avec succès !"
 
-#: app/app.py:1618
+#: app/app.py:1666
 msgid "Group assignments updated successfully!"
 msgstr "Attributions de groupe mises à jour avec succès !"
 
-#: app/app.py:1667
+#: app/app.py:1715
+msgid "Budget settings updated!"
+msgstr "Paramètres du budget mis à jour !"
+
+#: app/app.py:1722
+msgid "All budgets, expenses and reimbursements have been reset."
+msgstr "Tous les budgets, dépenses et remboursements ont été réinitialisés."
+
+#: app/app.py:1732
 #, python-format
 msgid "Successfully removed %(count)s gift ideas."
 msgstr "%(count)s idées de cadeaux supprimées avec succès."
 
-#: app/app.py:1673
+#: app/app.py:1738
 #, python-format
 msgid "Error occurred while running delete_old_gift_ideas: %(error)s"
 msgstr "Erreur lors de l'exécution de delete_old_gift_ideas : %(error)s"
 
-#: app/app.py:1683
+#: app/app.py:1748
 msgid "URL parameter is required"
 msgstr "Le paramètre URL est requis"
 
-#: app/app.py:1689
+#: app/app.py:1754
 msgid "No OG image found"
 msgstr "Aucune image OG trouvée"
 
-#: app/app.py:1731
+#: app/app.py:1796
 msgid "Guest user created successfully!"
 msgstr "Utilisateur invité créé avec succès !"
 
-#: app/app.py:1780
+#: app/app.py:1845
 #, python-format
 msgid ""
 "Guest user %(username)s deleted successfully! %(count)s purchased gift "
@@ -413,123 +425,175 @@ msgstr ""
 "Invité %(username)s supprimé avec succès ! %(count)s idées achetées "
 "supprimées."
 
-#: app/app.py:1782
+#: app/app.py:1847
 msgid "Guest user not found."
 msgstr "Utilisateur invité non trouvé."
 
-#: app/app.py:1797
+#: app/app.py:1862
 msgid "Guest login successful!"
 msgstr "Connexion invité réussie !"
 
-#: app/app.py:1800
+#: app/app.py:1865
 msgid "Invalid guest password"
 msgstr "Mot de passe invité invalide"
 
-#: app/app.py:1812
+#: app/app.py:1877
 msgid "Currency settings updated! Please restart to see changes"
 msgstr "Paramètres de devise mis à jour ! Redémarrez pour voir les changements"
 
-#: app/app.py:1825
+#: app/app.py:1890
 msgid "Self-registration settings updated successfully!"
 msgstr "Paramètres d'auto-inscription mis à jour avec succès !"
 
-#: app/app.py:1868
+#: app/app.py:1933
 #, python-format
 msgid "Shared list \"%(name)s\" created successfully!"
 msgstr "Liste partagée « %(name)s » créée avec succès !"
 
-#: app/app.py:1905 app/app.py:1933
+#: app/app.py:1970 app/app.py:1998
 msgid "Shared list not found."
 msgstr "Liste partagée introuvable."
 
-#: app/app.py:1910
+#: app/app.py:1975
 msgid "Only the list owner can delete this shared list."
 msgstr "Seul le propriétaire de la liste peut supprimer cette liste partagée."
 
-#: app/app.py:1921
+#: app/app.py:1986
 #, python-format
 msgid "Shared list \"%(name)s\" deleted successfully!"
 msgstr "Liste partagée « %(name)s » supprimée avec succès !"
 
-#: app/app.py:1938
+#: app/app.py:2003
 msgid "Only the list owner can edit members."
 msgstr "Seul le propriétaire de la liste peut modifier les membres."
 
-#: app/app.py:1950
+#: app/app.py:2015
 #, python-format
 msgid "Members updated for \"%(name)s\"!"
 msgstr "Membres mis à jour pour « %(name)s » !"
 
-#: app/app.py:1962
+#: app/app.py:2027
 msgid "Link sharing settings updated!"
 msgstr "Paramètres de partage par lien mis à jour !"
 
-#: app/app.py:1971
+#: app/app.py:2036
 msgid "Link sharing feature is currently disabled by administrator."
 msgstr "Le partage par lien est actuellement désactivé par l'administrateur."
 
-#: app/app.py:1987
+#: app/app.py:2052
 msgid "Target not found"
 msgstr "Cible introuvable"
 
-#: app/app.py:1994
+#: app/app.py:2059
 msgid "You are not a member of this shared list"
 msgstr "Vous n'êtes pas membre de cette liste partagée"
 
-#: app/app.py:1999
+#: app/app.py:2064
 msgid "You can only manage your own sharing settings"
 msgstr "Vous ne pouvez gérer que vos propres paramètres de partage"
 
-#: app/app.py:2026
+#: app/app.py:2091
 msgid "New share link created!"
 msgstr "Nouveau lien de partage créé !"
 
-#: app/app.py:2035
+#: app/app.py:2100
 msgid "Share link activated!"
 msgstr "Lien de partage activé !"
 
-#: app/app.py:2035
+#: app/app.py:2100
 msgid "Share link deactivated!"
 msgstr "Lien de partage désactivé !"
 
-#: app/app.py:2049
+#: app/app.py:2114
 #, python-format
 msgid "Share link extended by %(days)s days! New expiry: %(expiry)s"
 msgstr ""
 "Lien de partage prolongé de %(days)s jours ! Nouvelle expiration : "
 "%(expiry)s"
 
-#: app/app.py:2060
+#: app/app.py:2125
 msgid "Share link deleted!"
 msgstr "Lien de partage supprimé !"
 
-#: app/app.py:2125 app/app.py:2132 app/app.py:2184 app/app.py:2191
+#: app/app.py:2190 app/app.py:2197 app/app.py:2249 app/app.py:2256
 msgid "Share link not found or expired"
 msgstr "Lien de partage introuvable ou expiré"
 
-#: app/app.py:2136
+#: app/app.py:2201
 msgid "Purchases not allowed for this share link"
 msgstr "Les achats ne sont pas autorisés pour ce lien de partage"
 
-#: app/app.py:2141 app/app.py:2198
+#: app/app.py:2206 app/app.py:2263
 msgid "Gift idea not found"
 msgstr "Idée de cadeau introuvable"
 
-#: app/app.py:2146
+#: app/app.py:2211
 msgid "Visitor name is required"
 msgstr "Le nom du visiteur est requis"
 
-#: app/app.py:2177
+#: app/app.py:2242
 msgid "Item already purchased"
 msgstr "Article déjà acheté"
 
-#: app/app.py:2203
+#: app/app.py:2268
 msgid "Visitor ID required"
 msgstr "Identifiant du visiteur requis"
 
-#: app/app.py:2225
+#: app/app.py:2290
 msgid "You can only cancel your own purchases"
 msgstr "Vous ne pouvez annuler que vos propres achats"
+
+#: app/app.py:2362 app/app.py:2384 app/app.py:2438
+msgid "Invalid amount."
+msgstr "Montant invalide."
+
+#: app/app.py:2369
+msgid "Budget saved."
+msgstr "Budget enregistré."
+
+#: app/app.py:2372
+msgid "Budget removed."
+msgstr "Budget supprimé."
+
+#: app/app.py:2388
+msgid "Other expense"
+msgstr "Autre dépense"
+
+#: app/app.py:2390
+msgid "Expense added."
+msgstr "Dépense ajoutée."
+
+#: app/app.py:2406
+msgid "Expense deleted."
+msgstr "Dépense supprimée."
+
+#: app/app.py:2408
+msgid "Expense not found."
+msgstr "Dépense introuvable."
+
+#: app/app.py:2419
+#, python-format
+msgid "Budgets and expenses for %(name)s have been reset."
+msgstr "Les budgets et dépenses pour %(name)s ont été réinitialisés."
+
+#: app/app.py:2444
+#, python-format
+msgid "Purchase of \"%(name)s\" updated."
+msgstr "Achat de « %(name)s » mis à jour."
+
+#: app/app.py:2496
+msgid "This reimbursement cannot be recorded."
+msgstr "Ce remboursement ne peut pas être enregistré."
+
+#: app/app.py:2500
+msgid "Reimbursement recorded."
+msgstr "Remboursement enregistré."
+
+#: app/app.py:2510
+msgid "Budgets, expenses and reimbursements of this family have been reset."
+msgstr ""
+"Les budgets, dépenses et remboursements de cette famille ont été "
+"réinitialisés."
 
 #: app/auth.py:18 app/auth.py:25 app/auth.py:43 app/auth.py:55 app/auth.py:79
 msgid "Please log in first."
@@ -637,15 +701,16 @@ msgstr "URL d'image invalide. Veuillez saisir une URL valide."
 
 #: app/templates/add2.html:203 app/templates/add_idea.html:203
 #: app/templates/add_user.html:120 app/templates/bought_items.html:122
+#: app/templates/budget_overview.html:111
 #: app/templates/manage_shared_lists.html:134
 #: app/templates/manage_sharing.html:109 app/templates/my_ideas.html:191
 #: app/templates/noideas.html:158 app/templates/register.html:120
-#: app/templates/user_gift_ideas.html:176
+#: app/templates/user_gift_ideas.html:230
 msgid "Back"
 msgstr "Retour"
 
 #: app/templates/add2.html:209 app/templates/add_idea.html:209
-#: app/templates/user_gift_ideas.html:177
+#: app/templates/user_gift_ideas.html:231
 msgid "Add Ideas"
 msgstr "Ajouter des idées"
 
@@ -771,7 +836,7 @@ msgstr "Avatar 5"
 msgid "Avatar 6"
 msgstr "Avatar 6"
 
-#: app/templates/add_user.html:171
+#: app/templates/add_user.html:171 app/templates/user_gift_ideas.html:397
 msgid "Add"
 msgstr "Ajouter"
 
@@ -797,7 +862,7 @@ msgid "Management"
 msgstr "Gestion"
 
 #: app/templates/admin_dashboard.html:191 app/templates/advanced.html:237
-#: app/templates/dashboard.html:479
+#: app/templates/dashboard.html:485
 #: app/templates/delete_old_gift_ideas.html:198
 #: app/templates/edit_email_settings.html:198
 #: app/templates/edit_login_message.html:198
@@ -958,20 +1023,21 @@ msgid "Reordering button"
 msgstr "Bouton de réorganisation"
 
 #: app/templates/advanced.html:308 app/templates/advanced.html:327
-#: app/templates/setup_oidc.html:344 app/templates/setup_oidc.html:355
-#: app/templates/setupenv.html:80
+#: app/templates/advanced.html:346 app/templates/setup_oidc.html:344
+#: app/templates/setup_oidc.html:355 app/templates/setupenv.html:80
 msgid "True"
 msgstr "Oui"
 
 #: app/templates/advanced.html:309 app/templates/advanced.html:328
-#: app/templates/setup_oidc.html:345 app/templates/setup_oidc.html:356
-#: app/templates/setupenv.html:81
+#: app/templates/advanced.html:347 app/templates/setup_oidc.html:345
+#: app/templates/setup_oidc.html:356 app/templates/setupenv.html:81
 msgid "False"
 msgstr "Non"
 
 #: app/templates/advanced.html:315 app/templates/advanced.html:334
+#: app/templates/advanced.html:353 app/templates/bought_items.html:154
 #: app/templates/manage_shared_lists.html:272
-#: app/templates/setup_profile.html:71
+#: app/templates/setup_profile.html:71 app/templates/user_gift_ideas.html:319
 msgid "Save"
 msgstr "Enregistrer"
 
@@ -984,62 +1050,84 @@ msgid "Images"
 msgstr "Images"
 
 #: app/templates/advanced.html:343
+msgid ""
+"Let users enter a budget per person and share the cost of the gifts "
+"bought."
+msgstr ""
+"Permettre aux utilisateurs de saisir un budget par personne et de "
+"partager le coût des cadeaux achetés."
+
+#: app/templates/advanced.html:344 app/templates/user_gift_ideas.html:309
+msgid "Budget & cost sharing"
+msgstr "Budget et partage des frais"
+
+#: app/templates/advanced.html:357
+msgid "Reset every budget, expense and reimbursement, for all families?"
+msgstr ""
+"Réinitialiser tous les budgets, dépenses et remboursements, pour toutes "
+"les familles ?"
+
+#: app/templates/advanced.html:359
+msgid "Reset all budgets"
+msgstr "Réinitialiser tous les budgets"
+
+#: app/templates/advanced.html:368
 msgid "Currency Settings"
 msgstr "Paramètres de devise"
 
-#: app/templates/advanced.html:348
+#: app/templates/advanced.html:373
 msgid "Currency Symbol"
 msgstr "Symbole monétaire"
 
-#: app/templates/advanced.html:357
+#: app/templates/advanced.html:382
 msgid "Enter the currency symbol (max 5 characters)"
 msgstr "Saisissez le symbole monétaire (5 caractères max.)"
 
-#: app/templates/advanced.html:363
+#: app/templates/advanced.html:388
 msgid "Symbol Position"
 msgstr "Position du symbole"
 
-#: app/templates/advanced.html:369
+#: app/templates/advanced.html:394
 msgid "Before amount (e.g., $50)"
 msgstr "Avant le montant (ex. $50)"
 
-#: app/templates/advanced.html:374
+#: app/templates/advanced.html:399
 msgid "After amount (e.g., 50€)"
 msgstr "Après le montant (ex. 50€)"
 
-#: app/templates/advanced.html:381
+#: app/templates/advanced.html:406
 msgid "Preview:"
 msgstr "Aperçu :"
 
-#: app/templates/advanced.html:383
+#: app/templates/advanced.html:408
 msgid "This is how gift values will appear"
 msgstr "Voici comment les valeurs des cadeaux s'afficheront"
 
-#: app/templates/advanced.html:390
+#: app/templates/advanced.html:415
 msgid "Save Currency Settings"
 msgstr "Enregistrer les paramètres de devise"
 
-#: app/templates/advanced.html:400
+#: app/templates/advanced.html:425
 msgid "Self-Registration Settings"
 msgstr "Paramètres d'auto-inscription"
 
-#: app/templates/advanced.html:407
+#: app/templates/advanced.html:432
 msgid "Enable Self Registration"
 msgstr "Activer l'auto-inscription"
 
-#: app/templates/advanced.html:409
+#: app/templates/advanced.html:434
 msgid "Allow new users to create their own accounts"
 msgstr "Permettre aux nouveaux utilisateurs de créer leur propre compte"
 
-#: app/templates/advanced.html:415
+#: app/templates/advanced.html:440
 msgid "Joining Code (Optional)"
 msgstr "Code de participation (facultatif)"
 
-#: app/templates/advanced.html:422
+#: app/templates/advanced.html:447
 msgid "Leave empty to allow anyone to register"
 msgstr "Laisser vide pour permettre à tout le monde de s'inscrire"
 
-#: app/templates/advanced.html:424
+#: app/templates/advanced.html:449
 msgid ""
 "If set, users must provide this code to register. Leave empty for open "
 "registration."
@@ -1047,19 +1135,19 @@ msgstr ""
 "Si renseigné, les utilisateurs doivent fournir ce code pour s'inscrire. "
 "Laisser vide pour une inscription libre."
 
-#: app/templates/advanced.html:432
+#: app/templates/advanced.html:457
 msgid "Save Registration Settings"
 msgstr "Enregistrer les paramètres d'inscription"
 
-#: app/templates/advanced.html:442
+#: app/templates/advanced.html:467
 msgid "Link Sharing Settings"
 msgstr "Paramètres de partage par lien"
 
-#: app/templates/advanced.html:449
+#: app/templates/advanced.html:474
 msgid "Enable Link Sharing Feature"
 msgstr "Activer le partage par lien"
 
-#: app/templates/advanced.html:452
+#: app/templates/advanced.html:477
 msgid ""
 "Allow users to create public share links for their gift lists. When "
 "disabled, the \"Share My List\" feature will be hidden from all users."
@@ -1068,7 +1156,7 @@ msgstr ""
 "de cadeaux. Si désactivé, la fonction « Partager ma liste » sera masquée "
 "pour tous."
 
-#: app/templates/advanced.html:460
+#: app/templates/advanced.html:485
 msgid "Save Link Sharing Settings"
 msgstr "Enregistrer les paramètres de partage"
 
@@ -1080,17 +1168,113 @@ msgstr "Articles achetés"
 msgid "Object bought by me:"
 msgstr "Objets achetés par moi :"
 
-#: app/templates/bought_items.html:132
+#: app/templates/bought_items.html:137
 msgid "For:"
 msgstr "Pour :"
 
-#: app/templates/bought_items.html:134
+#: app/templates/bought_items.html:139
 msgid "Description:"
 msgstr "Description :"
 
-#: app/templates/bought_items.html:136
+#: app/templates/bought_items.html:141
 msgid "Link:"
 msgstr "Lien :"
+
+#: app/templates/bought_items.html:146
+msgid "Price paid"
+msgstr "Prix payé"
+
+#: app/templates/bought_items.html:152 app/templates/user_gift_ideas.html:416
+msgid "Individual gift"
+msgstr "Cadeau individuel"
+
+#: app/templates/budget_overview.html:6 app/templates/budget_overview.html:116
+#: app/templates/dashboard.html:465
+msgid "Budget & reimbursements"
+msgstr "Budget et remboursements"
+
+#: app/templates/budget_overview.html:97
+msgid "No family"
+msgstr "Sans famille"
+
+#: app/templates/budget_overview.html:104
+msgid "Amount reimbursed"
+msgstr "Montant remboursé"
+
+#: app/templates/budget_overview.html:119
+#: app/templates/budget_overview.html:128
+msgid "Family"
+msgstr "Famille"
+
+#: app/templates/budget_overview.html:125
+msgid "Show"
+msgstr "Afficher"
+
+#: app/templates/budget_overview.html:139
+msgid "I owe"
+msgstr "Je dois"
+
+#: app/templates/budget_overview.html:145
+#, python-format
+msgid "To %(name)s"
+msgstr "À %(name)s"
+
+#: app/templates/budget_overview.html:148
+msgid "Mark as reimbursed"
+msgstr "Marquer remboursé"
+
+#: app/templates/budget_overview.html:153
+msgid "You owe nothing."
+msgstr "Vous ne devez rien."
+
+#: app/templates/budget_overview.html:158
+msgid "Owed to me"
+msgstr "On me doit"
+
+#: app/templates/budget_overview.html:164
+#, python-format
+msgid "From %(name)s"
+msgstr "De %(name)s"
+
+#: app/templates/budget_overview.html:167
+msgid "Mark as received"
+msgstr "Marquer reçu"
+
+#: app/templates/budget_overview.html:172
+msgid "Nobody owes you anything."
+msgstr "Personne ne vous doit rien."
+
+#: app/templates/budget_overview.html:177
+msgid "All reimbursements in the family"
+msgstr "Tous les remboursements de la famille"
+
+#: app/templates/budget_overview.html:178
+msgid ""
+"The debts on every list of the family are offset against each other: "
+"these are the only transfers left to make."
+msgstr ""
+"Les dettes de toutes les listes de la famille se compensent : il ne reste"
+" que ces virements à faire."
+
+#: app/templates/budget_overview.html:189
+msgid "Everyone is even."
+msgstr "Tout le monde est quitte."
+
+#: app/templates/budget_overview.html:195
+msgid "Reimbursements recorded"
+msgstr "Remboursements enregistrés"
+
+#: app/templates/budget_overview.html:208
+msgid ""
+"Close this family? Every budget, expense and reimbursement of its lists "
+"will be deleted."
+msgstr ""
+"Clôturer cette famille ? Tous les budgets, dépenses et remboursements de "
+"ses listes seront supprimés."
+
+#: app/templates/budget_overview.html:210
+msgid "Close the family (reset)"
+msgstr "Clôturer la famille (réinitialiser)"
 
 #: app/templates/dashboard.html:6
 msgid "Gift Dashboard"
@@ -1173,15 +1357,15 @@ msgstr "Thème"
 msgid "Show as table"
 msgstr "Afficher en tableau"
 
-#: app/templates/dashboard.html:465
+#: app/templates/dashboard.html:471
 msgid "View your Secret Santa assignment"
 msgstr "Voir votre attribution Secret Santa"
 
-#: app/templates/dashboard.html:466
+#: app/templates/dashboard.html:472
 msgid "Secret Santa Icon"
 msgstr "Icône Secret Santa"
 
-#: app/templates/dashboard.html:472 app/templates/my_ideas.html:193
+#: app/templates/dashboard.html:478 app/templates/my_ideas.html:193
 #: app/templates/noideas.html:166
 msgid "Add ideas"
 msgstr "Ajouter des idées"
@@ -1221,6 +1405,7 @@ msgstr ""
 #: app/templates/manage_guest_users.html:444
 #: app/templates/manage_shared_lists.html:243
 #: app/templates/manage_sharing.html:247 app/templates/manage_users.html:294
+#: app/templates/user_gift_ideas.html:375
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -1277,7 +1462,7 @@ msgstr "Modifier une idée"
 
 #: app/templates/edit_idea.html:233 app/templates/my_ideas.html:223
 #: app/templates/shared_list_public.html:218
-#: app/templates/user_gift_ideas.html:201
+#: app/templates/user_gift_ideas.html:255
 msgid "OG Image"
 msgstr "Image OG"
 
@@ -1288,6 +1473,7 @@ msgstr "Saisissez la valeur estimée"
 #: app/templates/edit_idea.html:255 app/templates/manage_shared_lists.html:276
 #: app/templates/manage_sharing.html:304 app/templates/manage_users.html:316
 #: app/templates/shared_list_public.html:277
+#: app/templates/user_gift_ideas.html:420
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -1560,7 +1746,7 @@ msgid "View"
 msgstr "Voir"
 
 #: app/templates/manage_shared_lists.html:238
-#: app/templates/manage_users.html:293
+#: app/templates/manage_users.html:293 app/templates/user_gift_ideas.html:378
 msgid "Edit"
 msgstr "Modifier"
 
@@ -1583,7 +1769,7 @@ msgstr "Aucune liste partagée pour l'instant."
 #: app/templates/manage_shared_lists.html:292
 #: app/templates/manage_sharing.html:319
 #: app/templates/secret_santa_assignment.html:144
-#: app/templates/table_view.html:87
+#: app/templates/table_view.html:92
 msgid "Back to Dashboard"
 msgstr "Retour au tableau de bord"
 
@@ -1783,25 +1969,25 @@ msgid "Save Order"
 msgstr "Enregistrer l'ordre"
 
 #: app/templates/my_ideas.html:213 app/templates/shared_list_public.html:209
-#: app/templates/user_gift_ideas.html:191
+#: app/templates/user_gift_ideas.html:245
 msgid "Estimated Value:"
 msgstr "Valeur estimée :"
 
 #: app/templates/my_ideas.html:215 app/templates/shared_list_public.html:211
-#: app/templates/user_gift_ideas.html:193
+#: app/templates/user_gift_ideas.html:247
 msgid "Added By:"
 msgstr "Ajouté par :"
 
-#: app/templates/my_ideas.html:231 app/templates/user_gift_ideas.html:209
+#: app/templates/my_ideas.html:231 app/templates/user_gift_ideas.html:263
 msgid "Delete Icon"
 msgstr "Icône supprimer"
 
-#: app/templates/my_ideas.html:234 app/templates/user_gift_ideas.html:212
+#: app/templates/my_ideas.html:234 app/templates/user_gift_ideas.html:266
 msgid "Edit Icon"
 msgstr "Icône modifier"
 
 #: app/templates/my_ideas.html:243 app/templates/shared_list_public.html:230
-#: app/templates/user_gift_ideas.html:221
+#: app/templates/user_gift_ideas.html:275
 msgid "Open Link Icon"
 msgstr "Icône ouvrir le lien"
 
@@ -2143,8 +2329,8 @@ msgstr "Idées de cadeaux pour %(name)s"
 
 #: app/templates/shared_list_public.html:238
 #: app/templates/shared_list_public.html:247
-#: app/templates/user_gift_ideas.html:228
-#: app/templates/user_gift_ideas.html:289
+#: app/templates/user_gift_ideas.html:282
+#: app/templates/user_gift_ideas.html:476
 msgid "Purchased by:"
 msgstr "Acheté par :"
 
@@ -2153,7 +2339,7 @@ msgid "Cancel Purchase"
 msgstr "Annuler l'achat"
 
 #: app/templates/shared_list_public.html:250
-#: app/templates/user_gift_ideas.html:233
+#: app/templates/user_gift_ideas.html:287
 msgid "Available idea"
 msgstr "Idée disponible"
 
@@ -2208,26 +2394,151 @@ msgstr "Une erreur est survenue"
 msgid "Gift Summary Table"
 msgstr "Tableau récapitulatif des cadeaux"
 
-#: app/templates/table_view.html:94
+#: app/templates/table_view.html:99
 msgid "Gift Summary"
 msgstr "Récapitulatif des cadeaux"
+
+#: app/templates/table_view.html:109 app/templates/user_gift_ideas.html:342
+msgid "Budget"
+msgstr "Budget"
+
+#: app/templates/table_view.html:110
+msgid "Spent"
+msgstr "Dépensé"
+
+#: app/templates/table_view.html:111
+msgid "My share"
+msgstr "Ma part"
 
 #: app/templates/user_gift_ideas.html:7
 msgid "Ideas List"
 msgstr "Liste d'idées"
 
-#: app/templates/user_gift_ideas.html:182
+#: app/templates/user_gift_ideas.html:236
 #, python-format
 msgid "Ideas list for %(name)s"
 msgstr "Liste d'idées pour %(name)s"
 
-#: app/templates/user_gift_ideas.html:230
+#: app/templates/user_gift_ideas.html:284
 msgid "Cancel the purchase"
 msgstr "Annuler l'achat"
 
-#: app/templates/user_gift_ideas.html:234
+#: app/templates/user_gift_ideas.html:288
+#: app/templates/user_gift_ideas.html:409
 msgid "Purchase completed"
 msgstr "Achat effectué"
+
+#: app/templates/user_gift_ideas.html:310
+msgid "Who owes whom"
+msgstr "Qui doit à qui"
+
+#: app/templates/user_gift_ideas.html:315
+#, python-format
+msgid "My budget for %(name)s"
+msgstr "Mon budget pour %(name)s"
+
+#: app/templates/user_gift_ideas.html:326
+msgid "Spent:"
+msgstr "Dépensé :"
+
+#: app/templates/user_gift_ideas.html:327
+msgid "Budgets:"
+msgstr "Budgets :"
+
+#: app/templates/user_gift_ideas.html:331
+#, python-format
+msgid ""
+"The spending exceeds the budgets by %(amount)s: each giver pays their "
+"full budget, the rest stays with those who paid it."
+msgstr ""
+"Les dépenses dépassent les budgets de %(amount)s : chacun paie son budget"
+" complet, le reste est à la charge de ceux qui l'ont payé."
+
+#: app/templates/user_gift_ideas.html:333
+#, python-format
+msgid "Nobody has set a budget yet: %(amount)s spent is not shared."
+msgstr ""
+"Personne n'a encore saisi de budget : les %(amount)s dépensés ne sont pas"
+" partagés."
+
+#: app/templates/user_gift_ideas.html:342
+msgid "Person"
+msgstr "Personne"
+
+#: app/templates/user_gift_ideas.html:342
+msgid "Paid"
+msgstr "Payé"
+
+#: app/templates/user_gift_ideas.html:342
+msgid "Share"
+msgstr "Part"
+
+#: app/templates/user_gift_ideas.html:342
+msgid "Balance"
+msgstr "Solde"
+
+#: app/templates/user_gift_ideas.html:360
+msgid ""
+"A positive balance is owed to the person, a negative one is to pay. "
+"Reimbursements are settled for the whole family on the \"Who owes whom\" "
+"page."
+msgstr ""
+"Un solde positif est dû à la personne, un solde négatif est à payer. Les "
+"remboursements se règlent pour toute la famille sur la page « Qui doit à "
+"qui »."
+
+#: app/templates/user_gift_ideas.html:363
+msgid "Expenses"
+msgstr "Dépenses"
+
+#: app/templates/user_gift_ideas.html:370
+msgid "price not set"
+msgstr "prix non renseigné"
+
+#: app/templates/user_gift_ideas.html:371
+msgid "individual gift, not shared"
+msgstr "cadeau individuel, non partagé"
+
+#: app/templates/user_gift_ideas.html:385
+msgid "No expenses yet."
+msgstr "Aucune dépense pour l'instant."
+
+#: app/templates/user_gift_ideas.html:390
+msgid "Other expense paid by me (shipping, gift outside the list...)"
+msgstr "Autre dépense payée par moi (port, cadeau hors liste...)"
+
+#: app/templates/user_gift_ideas.html:391
+msgid "Description"
+msgstr "Description"
+
+#: app/templates/user_gift_ideas.html:394
+msgid "Amount"
+msgstr "Montant"
+
+#: app/templates/user_gift_ideas.html:401
+#, python-format
+msgid ""
+"Reset all budgets and expenses for %(name)s? Reimbursements already "
+"recorded are kept."
+msgstr ""
+"Réinitialiser tous les budgets et dépenses pour %(name)s ? Les "
+"remboursements déjà enregistrés sont conservés."
+
+#: app/templates/user_gift_ideas.html:402
+msgid "Reset"
+msgstr "Réinitialiser"
+
+#: app/templates/user_gift_ideas.html:411
+msgid "Price paid (optional)"
+msgstr "Prix payé (facultatif)"
+
+#: app/templates/user_gift_ideas.html:418
+msgid "I pay for it alone: its cost is not shared."
+msgstr "Je le paie seul : son coût n'est pas partagé."
+
+#: app/templates/user_gift_ideas.html:421
+msgid "Confirm"
+msgstr "Confirmer"
 
 #~ msgid "Delete Gift Ideas Older Than %(days)s Days"
 #~ msgstr "Supprimer les idées de plus de %(days)s jours"

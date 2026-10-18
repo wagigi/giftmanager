@@ -337,6 +337,31 @@
 
                     <div class="my-6 border-t border-gray-300"></div>
 
+                    <!-- Budget & cost sharing Section -->
+                    <form method="post" action="{{ url_for('update_budget_setting') }}">
+                        <div class="mb-4">
+                            <p class="mb-2">{{ _('Let users enter a budget per person and share the cost of the gifts bought.') }}</p>
+                            <label for="enable_budget" class="block sec-text font-medium">{{ _('Budget & cost sharing') }}</label>
+                            <select id="enable_budget" name="enable_budget" class="p-3 w-full border rounded-lg inputer">
+                                <option value="true" {% if enable_budget %}selected{% endif %}>{{ _('True') }}</option>
+                                <option value="false" {% if not enable_budget %}selected{% endif %}>{{ _('False') }}</option>
+                            </select>
+                        </div>
+                        <button 
+                            type="submit" 
+                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
+                            {{ _('Save') }}
+                        </button>
+                    </form>
+                    <form method="post" action="{{ url_for('reset_all_budgets') }}" class="mt-4"
+                          onsubmit="return confirm({{ _('Reset every budget, expense and reimbursement, for all families?')|tojson|forceescape }});">
+                        <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">
+                            {{ _('Reset all budgets') }}
+                        </button>
+                    </form>
+
+                    <div class="my-6 border-t border-gray-300"></div>
+
                     <!-- Currency Settings Section -->
                     <form method="post" action="{{ url_for('update_currency_settings') }}">
                         <div class="mb-6">

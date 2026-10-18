@@ -77,6 +77,11 @@
         .text-secondary {
             color: var(--secondary-text-color);
         }
+        .budget-summary {
+            font-size: 0.8rem;
+            font-weight: normal;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -97,7 +102,16 @@
             <thead>
                 <tr>
                     {% for user in users %}
-                        <th>{{ user.full_name }}</th>
+                        <th>
+                            {{ user.full_name }}
+                            {% if user.budget and (user.budget.total_budget or user.budget.total_spent) %}
+                            <div class="budget-summary text-secondary">
+                                <div>{{ _('Budget') }} {{ format_money(user.budget.total_budget) }}</div>
+                                <div>{{ _('Spent') }} {{ format_money(user.budget.total_spent) }}</div>
+                                <div>{{ _('My share') }} {{ format_money(user.budget.my_share) }}</div>
+                            </div>
+                            {% endif %}
+                        </th>
                     {% endfor %}
                 </tr>
             </thead>

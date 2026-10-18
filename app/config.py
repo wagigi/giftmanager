@@ -8,7 +8,7 @@ from dotenv import load_dotenv, dotenv_values, set_key
 from dotenv.parser import parse_stream
 
 
-# Directory holding .env, users.json, ideas.json and Secret Santa files (set to /app/data in Docker)
+# Directory holding .env, users.json, ideas.json, budgets.json and Secret Santa files (set to /app/data in Docker)
 DATA_DIR = os.getenv("DATA_DIR", os.path.dirname(os.path.abspath(__file__)))
 dotenv_path = os.path.join(DATA_DIR, '.env') # Load the .env file from the data directory
 load_dotenv(dotenv_path)
@@ -44,6 +44,8 @@ prepopulate_file(Path(DATA_DIR, 'users.json'), """
         [
         ]""")
 
+prepopulate_file(Path(DATA_DIR, 'budgets.json'), """{"recipients": {}, "settlements": []}""")
+
 prepopulate_file(dotenv_path, """
 MAILJET_API_KEY=''
 MAILJET_API_SECRET=''
@@ -63,6 +65,7 @@ LOGIN_PAGE_MESSAGE='No account? Contact a family member to create an account!'
 ENABLE_DEFAULT_LOGIN='true'
 REORDERING='true'
 IMGENABLED='false'
+ENABLE_BUDGET='true'
 """)
 
 

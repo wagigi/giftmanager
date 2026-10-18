@@ -460,6 +460,12 @@
                         <span style="padding-left: 5px;">{{ _('Show as table') }}</span>
                     </div>
 
+                    {% if budget_enabled %}
+                    <div class="help flex justify-between items-center" onclick="location.href='{{ url_for('budget_overview') }}'">
+                        <span>{{ _('Budget & reimbursements') }}</span>
+                    </div>
+                    {% endif %}
+
                     {% if assigned_users %}
                     <div class="help">
                         <a href="{{ url_for('secret_santa_assignments') }}" title="{{ _('View your Secret Santa assignment') }}">
@@ -571,4 +577,4 @@
         }
     </script>
 </body>
-</html>
+</html>

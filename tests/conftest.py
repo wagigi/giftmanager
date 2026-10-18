@@ -38,6 +38,7 @@ ENABLE_SELF_REGISTRATION='false'
 ENABLE_LINK_SHARING='true'
 REORDERING='true'
 IMGENABLED='false'
+ENABLE_BUDGET='true'
 """
 
 @lru_cache(maxsize=None)
@@ -56,7 +57,7 @@ ENV_KEYS = [
     "PRIMARY_OIDC_FIELD", "SECONDARY_OIDC_FIELD", "PRIMARY_DB_FIELD", "SECONDARY_DB_FIELD",
     "ENABLE_AUTO_REGISTRATION", "ENABLE_DEFAULT_LOGIN", "LOGIN_PAGE_MESSAGE", "REORDERING",
     "IMGENABLED", "ENABLE_LINK_SHARING", "ENABLE_SELF_REGISTRATION", "JOINING_CODE",
-    "CURRENCY_SYMBOL", "CURRENCY_POSITION",
+    "CURRENCY_SYMBOL", "CURRENCY_POSITION", "ENABLE_BUDGET",
 ]
 
 
@@ -141,6 +142,7 @@ class Env:
         self.data_dir = Path(data_dir)
         self.users_file = self.data_dir / "users.json"
         self.ideas_file = self.data_dir / "ideas.json"
+        self.budgets_file = self.data_dir / "budgets.json"
         self.env_file = self.data_dir / ".env"
 
     def users(self):
@@ -148,6 +150,12 @@ class Env:
 
     def ideas(self):
         return json.loads(self.ideas_file.read_text())
+
+    def budgets(self):
+        return json.loads(self.budgets_file.read_text())
+
+    def write_budgets(self, budgets):
+        self.budgets_file.write_text(json.dumps(budgets, indent=4))
 
     def user(self, username):
         return next(u for u in self.users() if u["username"] == username)
@@ -233,6 +241,7 @@ def env(tmp_path):
         handle = Env(module, data_dir)
         handle.write_users(build_users(cached_password_hash))
         handle.write_ideas(build_ideas())
+        handle.write_budgets({"recipients": {}, "settlements": []})
 
         yield handle
 
@@ -246,6 +255,12 @@ def app_module(env):
 def mailer_module(env):
     """The mailer module loaded by this test's app (patch Client here)."""
     return sys.modules["mailer"]
+
+
+@pytest.fixture
+def budget_module(env):
+    """The budget module loaded by this test's app (pure cost-sharing functions)."""
+    return sys.modules["budget"]
 
 
 @pytest.fixture
