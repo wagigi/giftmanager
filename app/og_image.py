@@ -10,7 +10,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 def fetch_og_image(url):
     try:
-        response = requests.get(url, verify=False)
+        response = requests.get(url, verify=False, timeout=10)
         response.raise_for_status()  # Raise an error for bad status codes
         soup = BeautifulSoup(response.text, 'html.parser')
 

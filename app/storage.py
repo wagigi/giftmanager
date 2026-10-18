@@ -43,5 +43,5 @@ def get_full_name(username):
     users = load_users()  # Load the users from the JSON file
     for user in users:
         if user['username'] == username:
-            return user.get('full_name', username)  # Return the full name or fallback to username
+            return user.get('full_name') or username  # Return the full name or fallback to username
     return username  # If no match found, return the username itself
