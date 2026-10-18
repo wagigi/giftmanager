@@ -246,6 +246,10 @@ def test_already_bought_message_falls_back_to_buyer_username(client, env):
     client.get("/dashboard")  # consume the login flash message
     client.post("/mark_as_bought/3")
     assert [message for _, message in flashes(client)] == ['"Bob own idea" has already been bought by admin.']
+    env.update_user("bob", full_name=None)
+    env.update_idea(3, bought_by="alice")
+    page = client.get("/bought_items").get_data(as_text=True)  # recipient: get_full_name("bob")
+    assert "Bob own idea" in page and "None" not in page
 
 
 def test_buyer_can_cancel_after_leaving_the_family(client, env):
