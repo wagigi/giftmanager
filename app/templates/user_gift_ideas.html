@@ -228,7 +228,7 @@
     <header class="header p-4">
         <nav class="container mx-auto flex justify-between items-center">
             <button id="backButton" class="text-2xl px-4 py-2">{{ _('Back') }}</button>
-            <a href="{{ url_for('add_idea', selected_user_id=user_gift_ideas[0].user_id) }}" class="bg-blue-500 text-white px-4 py-2 rounded">{{ _('Add Ideas') }}</a>
+            <a href="{{ url_for('add_idea', selected_user_id=selected_user_id) }}" class="bg-blue-500 text-white px-4 py-2 rounded">{{ _('Add Ideas') }}</a>
         </nav>
     </header>
     <main class="main container mx-auto p-8">
@@ -288,6 +288,8 @@
                     <button class="bg-green-500 text-white px-3 py-1 rounded mark-as-bought-button" data-idea-id="{{ gift_idea.gift_idea_id }}" data-value="{{ gift_idea.value or '' }}">{{ _('Purchase completed') }}</button>
                     {% endif %}
                 </li>
+                {% else %}
+                <li class="sec-text">{{ _('No gift ideas for this user.') }}</li>
                 {% endfor %}
             </ul>
         </section>
@@ -398,7 +400,7 @@
             </form>
 
             <form method="post" action="{{ url_for('reset_budget', recipient=budget.recipient) }}"
-                  onsubmit="return confirm({{ _('Reset all budgets and expenses for %(name)s? Reimbursements already recorded are kept.', name=user_namels)|tojson|forceescape }});">
+                  onsubmit="return confirm({{ _('Reset all budgets and expenses for %(name)s?', name=user_namels)|tojson|forceescape }});">
                 <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded text-sm">{{ _('Reset') }}</button>
             </form>
         </section>

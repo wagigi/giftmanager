@@ -143,8 +143,7 @@ def recipient_split(entry):
 def recipient_scope(user):
     """The one family a recipient's balances are counted in (the first one alphabetically, so a
     recipient in several families is never counted twice), or ALL_SCOPE when they have none."""
-    groups = sorted(group for group in user.get('groups', []) if not group.startswith('guest_'))
-    return groups[0] if groups else ALL_SCOPE
+    return member_scopes(user)[0]
 
 
 def entry_scope(recipient, entry, users_by_name):

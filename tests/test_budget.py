@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from smoke_helpers import flashes, is_redirect_to, login
+from smoke_helpers import PASSWORDS, flashes, is_redirect_to, login
 
 
 def _user(username, groups=None, **extra):
@@ -439,3 +439,31 @@ def test_admin_toggles_the_feature(client, env):
     login(client, "admin")
     client.post("/update_budget_setting", data={"enable_budget": "false"})
     assert "ENABLE_BUDGET='false'" in env.env_file.read_text()
+
+
+def test_budget_block_is_reachable_on_a_list_without_ideas(client, env):
+    env.write_ideas([idea for idea in env.ideas() if idea["user_id"] != "bob"])
+    login(client, "alice")
+    response = client.get("/user_gift_ideas/bob")
+    assert response.status_code == 200 and 'id="budget"' in response.get_data(as_text=True)
+
+    # Without the budget block (feature off), the former redirection is kept
+    env.set_env("ENABLE_BUDGET", "false")
+    assert is_redirect_to(client.get("/user_gift_ideas/bob"), "/noidea")
+
+
+def test_no_family_scope_is_closed_by_people_involved_or_admins(client, env):
+    # dan has no family; alice (Smith) and admin share his gift
+    users = env.users()
+    users.append(dict(env.user("carol"), username="dan", full_name="Dan", groups=[]))
+    users.append(dict(env.user("carol"), username="erin", full_name="Erin", groups=[]))
+    env.write_users(users)
+    entry = dict(_entry({"alice": 10, "admin": 10}, _expense("alice", 20)), scope="__all__")
+    env.write_budgets({"recipients": {"dan": entry}, "settlements": []})
+
+    login(client, "erin", PASSWORDS["carol"])  # no family either, but not involved (carol's password hash)
+    assert client.post("/budget_overview/close", data={"scope": "__all__"}).status_code == 404
+    other = env.module.app.test_client()
+    login(other, "alice")  # involved, although in family Smith
+    other.post("/budget_overview/close", data={"scope": "__all__"})
+    assert env.budgets()["recipients"] == {}

@@ -24,7 +24,7 @@ from idea_dates import migrate_ideas_file, idea_age
 from budget import (ALL_SCOPE, budget_enabled, can_see_budget, parse_amount, to_cents, format_cents, recipient_entry,
                     recipient_split, scope_transfers, user_scopes, close_scope, add_settlement, add_expense,
                     find_idea_expense, record_idea_purchase, remove_idea_purchase, detach_ideas, empty_budgets,
-                    member_scopes, entry_scope)
+                    member_scopes, entry_scope, scope_balances)
 
 app = Flask(__name__)
 
@@ -978,17 +978,6 @@ def user_gift_ideas(selected_user_id):
     # Sort the gift ideas by priority, with ideas that have no priority appearing at the bottom
     user_gift_ideas.sort(key=lambda x: (x.get('priority', float('inf')), x['gift_idea_id']))
 
-    # Check if there are no ideas and redirect to the NOIDEA page
-    if not user_gift_ideas:
-        flash(_('No gift ideas for this user.'), 'info')
-        return redirect(url_for('noidea'))
-
-    shared_list = next((user for user in users if user['username'] == selected_user_id and user.get('shared_list')), None)
-    is_shared_list_member = shared_list and connected_user in shared_list.get('list_members', [])
-    # Call get_full_name function to fetch the user's full name directly in the route
-    user_namels = get_full_name(selected_user_id)  # Get the full name based on the selected user ID
-    imgenabled = read_env_variable('IMGENABLED', 'true').lower() == 'true'
-
     # Budgets and cost sharing (never shown to the recipient, who is redirected to /my_ideas above)
     budget_view = None
     if budget_enabled() and can_see_budget(current_user, selected_user_id, users):
@@ -999,8 +988,20 @@ def user_gift_ideas(selected_user_id):
             'expenses': entry['expenses'],
             'my_budget': entry['budgets'].get(connected_user),
         }
+
+    # Check if there are no ideas and redirect to the NOIDEA page (unless the budget block has to
+    # stay reachable: budgets can be set before any idea, and expenses outlive purged ideas)
+    if not user_gift_ideas and not budget_view:
+        flash(_('No gift ideas for this user.'), 'info')
+        return redirect(url_for('noidea'))
+
+    shared_list = next((user for user in users if user['username'] == selected_user_id and user.get('shared_list')), None)
+    is_shared_list_member = shared_list and connected_user in shared_list.get('list_members', [])
+    # Call get_full_name function to fetch the user's full name directly in the route
+    user_namels = get_full_name(selected_user_id)  # Get the full name based on the selected user ID
+    imgenabled = read_env_variable('IMGENABLED', 'true').lower() == 'true'
     return render_template('user_gift_ideas.html', user_gift_ideas=user_gift_ideas, user_namels=user_namels, imgenabled=imgenabled,
-                           is_shared_list_member=is_shared_list_member, budget=budget_view)
+                           is_shared_list_member=is_shared_list_member, budget=budget_view, selected_user_id=selected_user_id)
 
 
 @app.route('/my_ideas')
@@ -2523,8 +2524,14 @@ def budget_settle():
 @login_required
 def budget_close():
     users, current_user, budgets, scopes, scope = budget_scope_or_404(strict=True)
-    # Only the members of the family (not someone who once paid for one of its lists)
-    if scope not in member_scopes(current_user):
+    # Only the members of a family (not someone who once paid for one of its lists). Nobody is a
+    # real member of the "no family" scope: there, the people involved in it, and admins, close it.
+    if scope == ALL_SCOPE:
+        allowed = current_user.get('admin') or scope_balances(budgets, scope, users).get(current_user['username']) \
+            or any(current_user['username'] in (s['from'], s['to']) for s in budgets['settlements'] if s['scope'] == scope)
+    else:
+        allowed = current_user.get('admin') or scope in member_scopes(current_user)
+    if not allowed:
         abort(404)
     close_scope(budgets, scope, users)
     save_budgets(budgets)
