@@ -2,6 +2,7 @@
 app/.env
 app/users.json
 app/ideas.json
+app/budgets.json
 app/data/
 app/santa_inst_*.txt
 app/last_execution_time.txt
