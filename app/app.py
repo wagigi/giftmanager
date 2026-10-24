@@ -2346,10 +2346,10 @@ def table_view():
         for user in visible_users
     ]
 
-    # Find the maximum number of gifts for any user
+    # Find the maximum number of gifts for any user (at least one row, for the "No ideas" cells)
     max_gifts = 0
     if table_data:
-        max_gifts = max(len(user['gifts']) for user in table_data) if table_data else 0
+        max_gifts = max(1, max(len(user['gifts']) for user in table_data))
 
     return render_template('table_view.html', users=table_data, max_gifts=max_gifts, current_user_username=current_user_username)
 

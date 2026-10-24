@@ -148,7 +148,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for i in range([max_gifts, 1 if users else 0]|max) %}
+                {% for i in range(max_gifts) %}
                     <tr>
                         {% for user in users %}
                             <td{% if not user.gifts %} class="empty-list"{% endif %}>
