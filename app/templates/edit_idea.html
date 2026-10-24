@@ -96,6 +96,13 @@
     #imageContainer{
         width: 200px;
     }
+    .break-words {
+        overflow-wrap: anywhere;
+    }
+    @media (max-width: 640px) {
+        .main { padding: 16px; }
+        .section { padding: 16px; }
+    }
     </style>
 <script>
     // Inline script to apply the theme from the cookie immediately
@@ -108,7 +115,7 @@
                     return value;
                 }
             }
-            return 'light'; // Default to light mode if no cookie is found
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; // No cookie yet: follow the device setting
         }
 
         const theme = getThemeFromCookie();
@@ -210,8 +217,13 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 </head>
 <body class="body font-sans">
+<header class="header p-4">
+    <nav class="container mx-auto flex justify-between items-center">
+        <a href="{{ url_for('user_gift_ideas', selected_user_id=idea.user_id) }}" class="text-2xl px-4 py-2">{{ _('Back') }}</a>
+    </nav>
+</header>
 <div class="main container mx-auto p-8">
-    <h1 class="text-4xl font-bold mb-8">{{ idea.gift_name }}</h1> <!-- Display the gift_name as a heading -->
+    <h1 class="text-2xl sm:text-4xl font-bold mb-4 sm:mb-8 break-words">{{ idea.gift_name }}</h1> <!-- Display the gift_name as a heading -->
 
     <form method="post" action="{{ url_for('edit_idea', idea_id=idea.gift_idea_id) }}" class="section p-6 rounded-lg shadow-md mb-8">
         <!-- Description Field -->
@@ -233,8 +245,8 @@ document.addEventListener('DOMContentLoaded', function () {
             <img src="{{ idea.image_path }}" alt="{{ _('OG Image') }}" class="w-full rounded shadow-lg mt-4"> <!-- Prepopulate the image if already set -->
             {% endif %}
         </div> 
-        <div id="manualImageUrlContainer" class="mb-4">
-            <label for="manualImageUrl" class="block sec-text font-bold">{{ _('Enter Image URL (Optional):') }}</label>
+        <div id="manualImageUrlContainer">
+            <label for="manualImageUrl" class="block mt-4 mb-2 sec-text">{{ _('Enter Image URL (Optional):') }}</label>
             <input type="url" name="manualImageUrl" id="manualImageUrl" class="border inputer rounded py-2 px-3 w-full" value="{{ idea.image_path }}">
         </div>
         {% endif %}
@@ -249,10 +261,12 @@ document.addEventListener('DOMContentLoaded', function () {
         <br>
     
         <!-- Save and Cancel Buttons -->
-        <button type="submit" class="bg-blue-500 text-white px-3 py-2 rounded mt-4 hover:bg-blue-700 focus:outline-none focus:shadow-outline-blue active:bg-blue-800">
-            {{ _('Save Changes') }}
-        </button>
-        <a href="{{ url_for('user_gift_ideas', selected_user_id=idea.user_id) }}" class="text-blue-500 hover:underline">{{ _('Cancel') }}</a>
+        <div class="flex flex-wrap items-center gap-4 mt-4">
+            <button type="submit" class="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-700 focus:outline-none focus:shadow-outline-blue active:bg-blue-800">
+                {{ _('Save Changes') }}
+            </button>
+            <a href="{{ url_for('user_gift_ideas', selected_user_id=idea.user_id) }}" class="text-blue-500 hover:underline px-2 py-2">{{ _('Cancel') }}</a>
+        </div>
     </form>
 </div>
 <script>

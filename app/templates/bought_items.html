@@ -96,6 +96,14 @@
         color: var(--button-text-color);
         background-color: var(--card-bg-color);
     }
+    /* Long words and links wrap instead of overflowing the card */
+    .break-words {
+        overflow-wrap: anywhere;
+    }
+    @media (max-width: 640px) {
+        .main { padding: 16px; }
+        .item-card { padding: 16px; }
+    }
 </style>
 <script>
     // Inline script to apply the theme from the cookie immediately
@@ -108,7 +116,7 @@
                     return value;
                 }
             }
-            return 'light'; // Default to light mode if no cookie is found
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; // No cookie yet: follow the device setting
         }
 
         const theme = getThemeFromCookie();
@@ -124,21 +132,23 @@
         </nav>
     </header>
     <main class="main container mx-auto p-8">
-        <h1 class="text-4xl font-bold mb-8">{{ _('Object bought by me:') }}</h1>
+        <h1 class="text-2xl sm:text-4xl font-bold mb-4 sm:mb-8">{{ _('Object bought by me:') }}</h1>
         {% with messages = get_flashed_messages(with_categories=true, category_filter=['success', 'danger', 'warning', 'info']) %}
             {% for category, message in messages %}
             <div class="p-3 mb-4 rounded section">{{ message }}</div>
             {% endfor %}
         {% endwith %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8">
             {% for item in bought_items %}
-                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-300 section">
-                    <h3 class="text-xl font-semibold mb-4">{{ item.gift_name }}</h3>
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-300 section item-card min-w-0">
+                    <h3 class="text-xl font-semibold mb-4 break-words">{{ item.gift_name }}</h3>
                     <p><strong>{{ _('For:') }}</strong> {{ item.recipient_name }}</p>
                     {{ idea_age_badge(item) }}
-                    <p><strong>{{ _('Description:') }}</strong> {{ item.description }}</p>
+                    {% if item.description %}
+                    <p class="break-words"><strong>{{ _('Description:') }}</strong> {{ item.description }}</p>
+                    {% endif %}
                     {% if item.link %}
-                        <p><strong>{{ _('Link:') }}</strong> <a href="{{ item.link }}" target="_blank">{{ item.link }}</a></p>
+                        <p class="break-words"><strong>{{ _('Link:') }}</strong> <a href="{{ item.link }}" target="_blank">{{ item.link }}</a></p>
                     {% endif %}
                     {% if item.purchase is defined %}
                     <form method="post" action="{{ url_for('update_purchase', idea_id=item.gift_idea_id) }}" class="mt-4 space-y-2">
@@ -151,7 +161,7 @@
                             <input type="checkbox" name="individual" {% if item.purchase.individual %}checked{% endif %}>
                             <span>{{ _('Individual gift') }}</span>
                         </label>
-                        <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded">{{ _('Save') }}</button>
+                        <button type="submit" class="bg-blue-500 text-white px-3 py-2 rounded">{{ _('Save') }}</button>
                     </form>
                     {% endif %}
                 </div>

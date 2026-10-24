@@ -9,7 +9,8 @@
     <title>{{ _('Login') }}</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            /* Same system font stack as Tailwind's font-sans, used on the other pages */
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
@@ -29,6 +30,11 @@
             width: 320px;
             text-align: center;
             box-sizing: border-box; /* Ensures padding doesn't affect width */
+        }
+
+        /* Language links readable on the dark translucent form */
+        .language-switcher {
+            color: #fff;
         }
 
         h1 {

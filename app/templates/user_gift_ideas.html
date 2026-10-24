@@ -65,11 +65,19 @@
         }
 
         /* Responsive layout adjustments */
+        /* Long words (names without spaces) wrap instead of overflowing the card */
+        .break-words {
+            overflow-wrap: anywhere;
+        }
+
         @media (max-width: 640px) {
             .idea-container {
                 flex-direction: column;
-                align-items: flex-start;
+                align-items: stretch;
             }
+
+            .main { padding: 16px; }
+            .section { padding: 16px; }
 
             .idea-actions {
                 flex-direction: row;
@@ -122,6 +130,10 @@
         [data-theme="dark"] .helplogo {
             filter: invert(1) brightness(1.5);
         }
+        /* White icons on the colored action buttons, in both themes */
+        .idea-actions .helplogo {
+            filter: invert(1) brightness(2);
+        }
         /* Base styles for the image and container */
     .image{
         justify-self: center;
@@ -163,6 +175,19 @@
             padding: 6px 10px;
             text-align: left;
             white-space: nowrap;
+        }
+        /* On phones the five columns fit the screen: names wrap, amounts stay on one line */
+        @media (max-width: 640px) {
+            .budget-table {
+                font-size: 13px;
+            }
+            .budget-table th, .budget-table td {
+                padding: 4px 6px;
+            }
+            .budget-table td:first-child {
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
         }
         .flash-success { background-color: #dcfce7; color: #166534; }
         .flash-danger { background-color: var(--alert-bg-color); color: var(--alert-text-color); }
@@ -216,7 +241,7 @@
                         return value;
                     }
                 }
-                return 'light'; // Default to light mode if no cookie is found
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; // No cookie yet: follow the device setting
             }
 
             const theme = getThemeFromCookie();
@@ -238,7 +263,7 @@
                 {% for gift_idea in user_gift_ideas %}
                 <li class="actions-container p-4 shadow-md rounded-lg">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center idea-container" style="margin-bottom: 5px">
-                        <div class="min-w-0 mb-2 sm:mb-0">
+                        <div class="min-w-0">
                             <h2 class="text-lg font-semibold break-words">{{ gift_idea.gift_name }}</h2>
                             <p class="text-gray-600 description" style="white-space: pre-wrap;">{{ gift_idea.description }}</p>
                             {% if gift_idea.value %}
@@ -248,21 +273,18 @@
                             {{ idea_age_badge(gift_idea, 'p', 'text-gray-600 sec-text') }}
                         </div>
 
-                        {% if imgenabled %}
+                        {% if imgenabled and gift_idea.image_path %}
                         <div class="divimage">
-                            <!-- Display image if available -->
-                            {% if gift_idea.image_path %}
-                                <img src="{{ gift_idea.image_path }}" alt="{{ _('OG Image') }}" class="image">
-                            {% endif %}
+                            <img src="{{ gift_idea.image_path }}" alt="{{ _('OG Image') }}" class="image">
                         </div>
                         {% endif %}
 
                         <div class="flex flex-col sm:flex-row items-start sm:items-center sm:space-x-2 idea-actions">
                             {% if gift_idea.added_by == session['username'] or is_shared_list_member %}
-                            <button class="bg-red-500 text-white px-3 py-1 rounded delete-idea-button flex justify-center items-center" data-idea-id="{{ gift_idea.gift_idea_id }}">
+                            <button class="bg-red-500 text-white px-3 py-2 rounded delete-idea-button flex justify-center items-center" data-idea-id="{{ gift_idea.gift_idea_id }}">
                                 <img src="{{ url_for('static', filename='icons/delete.svg') }}" alt="{{ _('Delete Icon') }}" class="h-5 w-5 helplogo">
                             </button>
-                            <a href="#" class="bg-blue-500 text-white px-3 py-1 rounded edit-idea-link flex justify-center items-center" data-idea-id="{{ gift_idea.gift_idea_id }}">
+                            <a href="#" class="bg-blue-500 text-white px-3 py-2 rounded edit-idea-link flex justify-center items-center" data-idea-id="{{ gift_idea.gift_idea_id }}">
                                 <img src="{{ url_for('static', filename='icons/edit.svg') }}" alt="{{ _('Edit Icon') }}" class="h-5 w-5 helplogo">
                             </a>
                             {% endif %}
@@ -271,7 +293,7 @@
                             {% if not link.startswith('http://') and not link.startswith('https://') %}
                             {% set link = 'https://' + link %}
                             {% endif %}
-                            <a href="{{ link }}" target="_blank" class="bg-blue-500 text-white px-3 py-1 rounded flex justify-center items-center open-link-button">
+                            <a href="{{ link }}" target="_blank" class="bg-blue-500 text-white px-3 py-2 rounded flex justify-center items-center open-link-button">
                                 <img src="{{ url_for('static', filename='icons/link.svg') }}" alt="{{ _('Open Link Icon') }}" class="h-5 w-5 helplogo">
                             </a>
                             {% endif %}
@@ -279,13 +301,13 @@
                     </div>
     
                     {% if gift_idea.bought_by %}
-                    <p class="text-green-500">{{ _('Purchased by:') }} {{ get_full_name(gift_idea.bought_by) }}</p>
+                    <p class="text-green-500 mt-2">{{ _('Purchased by:') }} {{ get_full_name(gift_idea.bought_by) }}</p>
                     {% if gift_idea.bought_by == session['username'] %}
-                    <button class="bg-red-500 text-white px-3 py-1 rounded mark-as-not-bought-button" data-idea-id="{{ gift_idea.gift_idea_id }}">{{ _('Cancel the purchase') }}</button>
+                    <button class="bg-red-500 text-white px-3 py-2 rounded mt-1 mark-as-not-bought-button" data-idea-id="{{ gift_idea.gift_idea_id }}">{{ _('Cancel the purchase') }}</button>
                     {% endif %}
                     {% else %}
-                    <strong>{{ _('Available idea') }}</strong>
-                    <button class="bg-green-500 text-white px-3 py-1 rounded mark-as-bought-button" data-idea-id="{{ gift_idea.gift_idea_id }}" data-value="{{ gift_idea.value or '' }}">{{ _('Purchase completed') }}</button>
+                    <strong class="block mt-2">{{ _('Available idea') }}</strong>
+                    <button class="bg-green-500 text-white px-3 py-2 rounded mt-1 mark-as-bought-button" data-idea-id="{{ gift_idea.gift_idea_id }}" data-value="{{ gift_idea.value or '' }}">{{ _('Purchase completed') }}</button>
                     {% endif %}
                 </li>
                 {% else %}
@@ -313,9 +335,9 @@
             </div>
 
             <form method="post" action="{{ url_for('set_budget', recipient=budget.recipient) }}" class="flex flex-wrap items-end gap-2 mb-4">
-                <label class="flex flex-col">
+                <label class="flex flex-col flex-1 sm:flex-none min-w-0">
                     <span class="sec-text text-sm">{{ _('My budget for %(name)s', name=user_namels) }}</span>
-                    <input type="text" inputmode="decimal" name="amount" class="p-2 border rounded budget-input"
+                    <input type="text" inputmode="decimal" name="amount" class="w-full p-2 border rounded budget-input"
                            value="{{ format_cents(to_cents(budget.my_budget)) if budget.my_budget is not none else '' }}" placeholder="0">
                 </label>
                 <button type="submit" class="bg-blue-500 text-white px-3 py-2 rounded">{{ _('Save') }}</button>
@@ -364,13 +386,16 @@
 
             <h3 class="font-semibold mb-2">{{ _('Expenses') }}</h3>
             {% if budget.expenses %}
-            <ul class="mb-4 space-y-1">
+            <ul class="mb-4 space-y-2">
                 {% for expense in budget.expenses %}
-                <li class="flex flex-wrap items-center gap-2">
-                    <span>{{ expense.label or _('Other expense') }}</span>
-                    <span class="sec-text">— {{ budget.names.get(expense.paid_by, expense.paid_by) }}</span>
-                    <strong>{% if expense.amount is not none %}{{ format_money(to_cents(expense.amount)) }}{% else %}{{ _('price not set') }}{% endif %}</strong>
-                    {% if expense.individual %}<span class="sec-text text-sm">({{ _('individual gift, not shared') }})</span>{% endif %}
+                <li>
+                    <div class="flex justify-between items-baseline gap-2">
+                        <span class="min-w-0 break-words">{{ expense.label or _('Other expense') }}</span>
+                        <strong class="whitespace-nowrap">{% if expense.amount is not none %}{{ format_money(to_cents(expense.amount)) }}{% else %}{{ _('price not set') }}{% endif %}</strong>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-x-2 text-sm">
+                    <span class="sec-text">{{ budget.names.get(expense.paid_by, expense.paid_by) }}</span>
+                    {% if expense.individual %}<span class="sec-text">({{ _('individual gift, not shared') }})</span>{% endif %}
                     {% if expense.paid_by == session['username'] %}
                         {% if expense.idea_id is none %}
                         <form method="post" action="{{ url_for('delete_budget_expense', recipient=budget.recipient, expense_id=expense.id) }}" class="inline">
@@ -380,6 +405,7 @@
                         <a href="{{ url_for('bought_items') }}" class="text-sm underline sec-text">{{ _('Edit') }}</a>
                         {% endif %}
                     {% endif %}
+                    </div>
                 </li>
                 {% endfor %}
             </ul>
@@ -388,20 +414,20 @@
             {% endif %}
 
             <form method="post" action="{{ url_for('add_budget_expense', recipient=budget.recipient) }}" class="flex flex-wrap items-end gap-2 mb-4">
-                <label class="flex flex-col">
+                <label class="flex flex-col w-full sm:w-auto sm:flex-1">
                     <span class="sec-text text-sm">{{ _('Other expense paid by me (shipping, gift outside the list...)') }}</span>
-                    <input type="text" name="label" maxlength="100" class="p-2 border rounded budget-input" placeholder="{{ _('Description') }}">
+                    <input type="text" name="label" maxlength="100" class="w-full p-2 border rounded budget-input" placeholder="{{ _('Description') }}">
                 </label>
-                <label class="flex flex-col">
+                <label class="flex flex-col flex-1 sm:flex-none min-w-0">
                     <span class="sec-text text-sm">{{ _('Amount') }}</span>
-                    <input type="text" inputmode="decimal" name="amount" required class="p-2 border rounded budget-input" placeholder="0">
+                    <input type="text" inputmode="decimal" name="amount" required class="w-full p-2 border rounded budget-input" placeholder="0">
                 </label>
                 <button type="submit" class="bg-blue-500 text-white px-3 py-2 rounded">{{ _('Add') }}</button>
             </form>
 
             <form method="post" action="{{ url_for('reset_budget', recipient=budget.recipient) }}"
                   onsubmit="return confirm({{ _('Reset all budgets and expenses for %(name)s?', name=user_namels)|tojson|forceescape }});">
-                <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded text-sm">{{ _('Reset') }}</button>
+                <button type="submit" class="bg-red-500 text-white px-3 py-2 rounded text-sm">{{ _('Reset') }}</button>
             </form>
         </section>
 
@@ -448,7 +474,7 @@
                 return value;
             }
         }
-        return 'light'; // Default to light mode if no cookie is found
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; // No cookie yet: follow the device setting
     }
 
     // Apply the theme preference from the cookie on page load
