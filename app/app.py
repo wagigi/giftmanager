@@ -2334,13 +2334,19 @@ def table_view():
                 'my_share': split['shares'].get(current_user_username, 0),
             }
 
+    def has_budget_summary(username):
+        summary = budget_summaries.get(username)
+        return bool(summary and (summary['total_budget'] or summary['total_spent']))
+
     # Prepare data for the template
     table_data = [
         {
             'full_name': user['full_name'],
             'username': user['username'],
             'gifts': user_gifts[user['username']],
-            'budget': budget_summaries.get(user['username'])
+            'budget': budget_summaries.get(user['username']),
+            # Narrow column when there is nothing to show: no idea and no budget summary
+            'narrow': not user_gifts[user['username']] and not has_budget_summary(user['username']),
         }
         for user in visible_users
     ]

@@ -544,7 +544,7 @@ def test_table_view_respects_families(client):
 
 # 8. Guests -----------------------------------------------------------------------
 
-def test_guest_dashboard_hides_links_to_refused_pages(client):
+def test_guest_pages_hide_links_to_refused_pages(client):
     """Guests are not shown links to pages that refuse them (adding ideas, table,
     shared lists, public links), on the dashboard, /noidea and /user_gift_ideas."""
     def page(some_client, path):
@@ -554,7 +554,7 @@ def test_guest_dashboard_hides_links_to_refused_pages(client):
 
     login(client, "alice")
     dashboard = page(client, "/dashboard")
-    for path in ("/add2/", "/table_view", "/manage_shared_lists", "/manage_sharing"):
+    for path in ("/add2/", "/table_view", "/manage_shared_lists", "/manage_sharing", "/budget_overview"):
         assert path in dashboard
     assert "/add2/" in page(client, "/noidea")
     assert "/add_idea/bob" in page(client, "/user_gift_ideas/bob")
@@ -563,7 +563,7 @@ def test_guest_dashboard_hides_links_to_refused_pages(client):
     guest.post("/guest_login", data={"password": "guestpass"})
     dashboard = page(guest, "/dashboard")
     assert "/bought_items" in dashboard
-    for path in ("/add2/", "/table_view", "/manage_shared_lists", "/manage_sharing"):
+    for path in ("/add2/", "/table_view", "/manage_shared_lists", "/manage_sharing", "/budget_overview"):
         assert path not in dashboard
     assert "/add2/" not in page(guest, "/noidea")
     assert "/add_idea/" not in page(guest, "/user_gift_ideas/bob")
