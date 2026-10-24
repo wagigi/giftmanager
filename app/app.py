@@ -763,7 +763,6 @@ def dashboard():
         'full_name': current_user.get('full_name'),
         'birthday': current_user.get('birthday'),
         'admin': current_user.get('admin'),
-        'guest': is_guest,
         'avatar': current_user.get('avatar')
     }
 
