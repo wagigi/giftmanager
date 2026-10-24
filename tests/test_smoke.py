@@ -546,12 +546,13 @@ def test_table_view_respects_families(client):
 
 def test_guest_dashboard_hides_links_to_refused_pages(client):
     """Guests are not shown links to pages that refuse them (adding ideas, table,
-    shared lists, public links), on the dashboard and on /noidea."""
+    shared lists, public links), on the dashboard, /noidea and /user_gift_ideas."""
     login(client, "alice")
     page = client.get("/dashboard").get_data(as_text=True)
     for path in ("/add2/", "/table_view", "/manage_shared_lists", "/manage_sharing"):
         assert path in page
     assert "/add2/" in client.get("/noidea").get_data(as_text=True)
+    assert "/add_idea/bob" in client.get("/user_gift_ideas/bob").get_data(as_text=True)
 
     guest = client.application.test_client()
     guest.post("/guest_login", data={"password": "guestpass"})
@@ -560,6 +561,7 @@ def test_guest_dashboard_hides_links_to_refused_pages(client):
     for path in ("/add2/", "/table_view", "/manage_shared_lists", "/manage_sharing"):
         assert path not in page
     assert "/add2/" not in guest.get("/noidea").get_data(as_text=True)
+    assert "/add_idea/" not in guest.get("/user_gift_ideas/bob").get_data(as_text=True)
 
 
 

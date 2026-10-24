@@ -1,4 +1,4 @@
-from flask import Flask, abort, render_template, request, redirect, url_for, session, flash, make_response, get_flashed_messages, request, jsonify, send_from_directory
+from flask import Flask, abort, render_template, request, redirect, url_for, session, flash, make_response, get_flashed_messages, request, jsonify, send_from_directory, g
 from datetime import datetime, timedelta
 from authlib.integrations.flask_client import OAuth
 import json, secrets
@@ -48,6 +48,11 @@ migrate_ideas_file(app.config['IDEAS_FILE'])  # Fill in the dates older versions
 @app.context_processor
 def inject_languages():
     return {'supported_languages': SUPPORTED_LANGUAGES, 'current_locale': str(current_babel_locale())}
+
+@app.context_processor
+def inject_is_guest():
+    # Set by login_required: hides links to pages refused to guests
+    return {'is_guest': g.get('is_guest', False)}
 
 @app.route('/set_language/<lang_code>')
 def set_language(lang_code):
@@ -1062,8 +1067,7 @@ def update_order():
 @login_required
 @guest_allowed
 def noidea():
-    current_user = next((user for user in load_users() if user['username'] == session['username']), None)
-    return render_template('noideas.html', is_guest=bool(current_user and current_user.get('guest')))
+    return render_template('noideas.html')
 
 @app.route('/add_user', methods=['GET', 'POST'])
 @admin_required

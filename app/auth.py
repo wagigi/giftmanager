@@ -1,6 +1,6 @@
 """Password hashing and the access-control decorators."""
 from functools import wraps
-from flask import session, flash, redirect, url_for
+from flask import session, flash, redirect, url_for, g
 from flask_babel import _
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
@@ -31,7 +31,9 @@ def login_required(f):
             if not getattr(f, '_guest_allowed', False):
                 flash(_('This feature is not available for guest users.'), 'danger')
                 return redirect(url_for('dashboard'))
-        
+
+        # Templates use it (as is_guest) to hide links to pages refused to guests
+        g.is_guest = user.get('guest', False)
         return f(*args, **kwargs)
     return decorated_function
 
