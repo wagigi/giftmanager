@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-19 01:25+0200\n"
+"POT-Creation-Date: 2026-10-24 14:21+0200\n"
 "PO-Revision-Date: 2025-12-09 20:34+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -221,7 +221,7 @@ msgstr ""
 msgid "You are not allowed to view this list."
 msgstr "U mag deze lijst niet bekijken."
 
-#: app/app.py:995 app/templates/user_gift_ideas.html:292
+#: app/app.py:995 app/templates/user_gift_ideas.html:314
 msgid "No gift ideas for this user."
 msgstr "Geen cadeau-ideeën voor deze gebruiker."
 
@@ -685,75 +685,75 @@ msgstr ""
 msgid "New Ideas"
 msgstr "Nieuwe ideeën"
 
-#: app/templates/add2.html:157 app/templates/add_idea.html:157
-#: app/templates/edit_idea.html:173
+#: app/templates/add2.html:161 app/templates/add_idea.html:161
+#: app/templates/edit_idea.html:180
 msgid "No OG image found. Enter an image URL below."
 msgstr "Geen OG-afbeelding gevonden. Voer hieronder een afbeeldings-URL in."
 
-#: app/templates/add2.html:163 app/templates/add_idea.html:163
-#: app/templates/edit_idea.html:178
+#: app/templates/add2.html:167 app/templates/add_idea.html:167
+#: app/templates/edit_idea.html:185
 msgid "Error fetching OG image. Enter an image URL below."
 msgstr ""
 "Fout bij het ophalen van de OG-afbeelding. Voer hieronder een "
 "afbeeldings-URL in."
 
-#: app/templates/add2.html:187 app/templates/add_idea.html:187
-#: app/templates/edit_idea.html:200
+#: app/templates/add2.html:191 app/templates/add_idea.html:191
+#: app/templates/edit_idea.html:207
 msgid "Invalid image URL. Please enter a valid URL."
 msgstr "Ongeldige afbeeldings-URL. Voer een geldige URL in."
 
-#: app/templates/add2.html:203 app/templates/add_idea.html:203
-#: app/templates/add_user.html:120 app/templates/bought_items.html:122
-#: app/templates/budget_overview.html:111
-#: app/templates/manage_shared_lists.html:134
-#: app/templates/manage_sharing.html:109 app/templates/my_ideas.html:191
-#: app/templates/noideas.html:158 app/templates/register.html:120
-#: app/templates/user_gift_ideas.html:230
+#: app/templates/add2.html:207 app/templates/add_idea.html:207
+#: app/templates/add_user.html:120 app/templates/bought_items.html:130
+#: app/templates/budget_overview.html:111 app/templates/edit_idea.html:222
+#: app/templates/manage_shared_lists.html:142
+#: app/templates/manage_sharing.html:117 app/templates/my_ideas.html:206
+#: app/templates/noideas.html:169 app/templates/register.html:120
+#: app/templates/table_view.html:128 app/templates/user_gift_ideas.html:255
 msgid "Back"
 msgstr "Terug"
 
-#: app/templates/add2.html:209 app/templates/add_idea.html:209
-#: app/templates/user_gift_ideas.html:231
+#: app/templates/add2.html:213 app/templates/add_idea.html:213
+#: app/templates/user_gift_ideas.html:256
 msgid "Add Ideas"
 msgstr "Ideeën toevoegen"
 
-#: app/templates/add2.html:212 app/templates/add_idea.html:212
+#: app/templates/add2.html:216 app/templates/add_idea.html:216
 msgid "Add to:"
 msgstr "Toevoegen aan:"
 
-#: app/templates/add2.html:214
+#: app/templates/add2.html:218
 msgid "-- Choose here --"
 msgstr "-- Kies hier --"
 
-#: app/templates/add2.html:221 app/templates/add_idea.html:220
+#: app/templates/add2.html:225 app/templates/add_idea.html:224
 msgid "Title:"
 msgstr "Titel:"
 
-#: app/templates/add2.html:225 app/templates/add_idea.html:224
-#: app/templates/edit_idea.html:218
+#: app/templates/add2.html:229 app/templates/add_idea.html:228
+#: app/templates/edit_idea.html:230
 msgid "Description (Optional):"
 msgstr "Beschrijving (optioneel):"
 
-#: app/templates/add2.html:229 app/templates/add_idea.html:228
-#: app/templates/edit_idea.html:224
+#: app/templates/add2.html:233 app/templates/add_idea.html:232
+#: app/templates/edit_idea.html:236
 msgid "Link (Optional):"
 msgstr "Link (optioneel):"
 
-#: app/templates/add2.html:235 app/templates/add_idea.html:234
-#: app/templates/edit_idea.html:237
+#: app/templates/add2.html:239 app/templates/add_idea.html:238
+#: app/templates/edit_idea.html:249
 msgid "Enter Image URL (Optional):"
 msgstr "Afbeeldings-URL (optioneel):"
 
-#: app/templates/add2.html:241 app/templates/add_idea.html:240
-#: app/templates/edit_idea.html:246
+#: app/templates/add2.html:245 app/templates/add_idea.html:244
+#: app/templates/edit_idea.html:258
 msgid "Estimated Value (Optional):"
 msgstr "Geschatte waarde (optioneel):"
 
-#: app/templates/add2.html:242 app/templates/add_idea.html:241
+#: app/templates/add2.html:246 app/templates/add_idea.html:245
 msgid "Estimated Value"
 msgstr "Geschatte waarde"
 
-#: app/templates/add2.html:245 app/templates/add_idea.html:244
+#: app/templates/add2.html:249 app/templates/add_idea.html:248
 msgid "Submit"
 msgstr "Verzenden"
 
@@ -839,12 +839,12 @@ msgstr "Avatar 5"
 msgid "Avatar 6"
 msgstr "Avatar 6"
 
-#: app/templates/add_user.html:171 app/templates/user_gift_ideas.html:399
+#: app/templates/add_user.html:171 app/templates/user_gift_ideas.html:425
 msgid "Add"
 msgstr "Toevoegen"
 
 #: app/templates/admin_dashboard.html:6 app/templates/admin_dashboard.html:183
-#: app/templates/advanced.html:229 app/templates/dashboard.html:434
+#: app/templates/advanced.html:229 app/templates/dashboard.html:503
 #: app/templates/delete_old_gift_ideas.html:190
 #: app/templates/edit_email_settings.html:190
 #: app/templates/edit_login_message.html:190
@@ -865,7 +865,7 @@ msgid "Management"
 msgstr "Beheer"
 
 #: app/templates/admin_dashboard.html:191 app/templates/advanced.html:237
-#: app/templates/dashboard.html:485
+#: app/templates/dashboard.html:560
 #: app/templates/delete_old_gift_ideas.html:198
 #: app/templates/edit_email_settings.html:198
 #: app/templates/edit_login_message.html:198
@@ -876,6 +876,7 @@ msgid "Users"
 msgstr "Gebruikers"
 
 #: app/templates/admin_dashboard.html:194 app/templates/advanced.html:240
+#: app/templates/dashboard.html:547
 #: app/templates/delete_old_gift_ideas.html:201
 #: app/templates/edit_email_settings.html:201
 #: app/templates/edit_login_message.html:201
@@ -1038,9 +1039,9 @@ msgid "False"
 msgstr "Nee"
 
 #: app/templates/advanced.html:315 app/templates/advanced.html:334
-#: app/templates/advanced.html:353 app/templates/bought_items.html:154
-#: app/templates/manage_shared_lists.html:272
-#: app/templates/setup_profile.html:71 app/templates/user_gift_ideas.html:321
+#: app/templates/advanced.html:353 app/templates/bought_items.html:164
+#: app/templates/manage_shared_lists.html:280
+#: app/templates/setup_profile.html:71 app/templates/user_gift_ideas.html:343
 msgid "Save"
 msgstr "Opslaan"
 
@@ -1060,7 +1061,7 @@ msgstr ""
 "Gebruikers laten een budget per persoon invoeren en de kosten van "
 "gekochte cadeaus delen."
 
-#: app/templates/advanced.html:344 app/templates/user_gift_ideas.html:311
+#: app/templates/advanced.html:344 app/templates/user_gift_ideas.html:333
 msgid "Budget & cost sharing"
 msgstr "Budget en kostenverdeling"
 
@@ -1165,32 +1166,32 @@ msgstr "Instellingen voor delen opslaan"
 msgid "Bought Items"
 msgstr "Gekochte artikelen"
 
-#: app/templates/bought_items.html:127
+#: app/templates/bought_items.html:135
 msgid "Object bought by me:"
 msgstr "Door mij gekochte items:"
 
-#: app/templates/bought_items.html:137
+#: app/templates/bought_items.html:145
 msgid "For:"
 msgstr "Voor:"
 
-#: app/templates/bought_items.html:139
+#: app/templates/bought_items.html:148
 msgid "Description:"
 msgstr "Beschrijving:"
 
-#: app/templates/bought_items.html:141
+#: app/templates/bought_items.html:151
 msgid "Link:"
 msgstr "Link:"
 
-#: app/templates/bought_items.html:146
+#: app/templates/bought_items.html:156
 msgid "Price paid"
 msgstr "Betaalde prijs"
 
-#: app/templates/bought_items.html:152 app/templates/user_gift_ideas.html:418
+#: app/templates/bought_items.html:162 app/templates/user_gift_ideas.html:444
 msgid "Individual gift"
 msgstr "Individueel cadeau"
 
 #: app/templates/budget_overview.html:6 app/templates/budget_overview.html:116
-#: app/templates/dashboard.html:465
+#: app/templates/dashboard.html:538
 msgid "Budget & reimbursements"
 msgstr "Budget en terugbetalingen"
 
@@ -1281,93 +1282,102 @@ msgstr "Familie afsluiten (wissen)"
 msgid "Gift Dashboard"
 msgstr "Cadeau Dashboard"
 
-#: app/templates/dashboard.html:336
+#: app/templates/dashboard.html:403 app/templates/dashboard.html:517
 msgid "Menu"
 msgstr "Menu"
 
-#: app/templates/dashboard.html:349
+#: app/templates/dashboard.html:416
 msgid "Info"
 msgstr "Info"
 
-#: app/templates/dashboard.html:350 app/templates/dashboard.html:381
+#: app/templates/dashboard.html:417 app/templates/dashboard.html:448
 msgid "Profile picture"
 msgstr "Profielfoto"
 
-#: app/templates/dashboard.html:351 app/templates/manage_users.html:261
+#: app/templates/dashboard.html:418 app/templates/manage_users.html:261
 msgid "Name"
 msgstr "Naam"
 
-#: app/templates/dashboard.html:352
+#: app/templates/dashboard.html:419
 msgid "Birthday"
 msgstr "Verjaardag"
 
-#: app/templates/dashboard.html:359 app/templates/dashboard.html:373
+#: app/templates/dashboard.html:426 app/templates/dashboard.html:440
 msgid "Change Password"
 msgstr "Wachtwoord wijzigen"
 
-#: app/templates/dashboard.html:364
+#: app/templates/dashboard.html:431
 msgid "Current Password"
 msgstr "Huidig wachtwoord"
 
-#: app/templates/dashboard.html:367 app/templates/manage_users.html:305
+#: app/templates/dashboard.html:434 app/templates/manage_users.html:305
 msgid "New Password"
 msgstr "Nieuw wachtwoord"
 
-#: app/templates/dashboard.html:370
+#: app/templates/dashboard.html:437
 msgid "Repeat New Password"
 msgstr "Herhaal nieuw wachtwoord"
 
-#: app/templates/dashboard.html:386
+#: app/templates/dashboard.html:453
 msgid "Choose an image"
 msgstr "Kies een afbeelding"
 
-#: app/templates/dashboard.html:389
+#: app/templates/dashboard.html:456
 msgid "Upload"
 msgstr "Uploaden"
 
-#: app/templates/dashboard.html:393
+#: app/templates/dashboard.html:460
 msgid "Remove picture"
 msgstr "Foto verwijderen"
 
-#: app/templates/dashboard.html:402 app/templates/dashboard.html:410
+#: app/templates/dashboard.html:469 app/templates/dashboard.html:477
 msgid "Change Email"
 msgstr "E-mail wijzigen"
 
-#: app/templates/dashboard.html:407
+#: app/templates/dashboard.html:474
 msgid "New Email"
 msgstr "Nieuw e-mailadres"
 
-#: app/templates/dashboard.html:420 app/templates/dashboard.html:421
+#: app/templates/dashboard.html:487 app/templates/dashboard.html:488
 msgid "Logout"
 msgstr "Uitloggen"
 
-#: app/templates/dashboard.html:424 app/templates/manage_shared_lists.html:6
-#: app/templates/manage_shared_lists.html:135
+#: app/templates/dashboard.html:492 app/templates/manage_shared_lists.html:6
+#: app/templates/manage_shared_lists.html:143
 msgid "Shared Lists"
 msgstr "Gedeelde lijsten"
 
-#: app/templates/dashboard.html:426
+#: app/templates/dashboard.html:495
 msgid "Public links"
 msgstr "Openbare links"
 
-#: app/templates/dashboard.html:429
+#: app/templates/dashboard.html:498
 msgid "Theme"
 msgstr "Thema"
 
-#: app/templates/dashboard.html:460
+#: app/templates/dashboard.html:527
+msgid "My purchases"
+msgstr "Mijn aankopen"
+
+#: app/templates/dashboard.html:531
 msgid "Show as table"
 msgstr "Toon als tabel"
 
-#: app/templates/dashboard.html:471
+#: app/templates/dashboard.html:533
+msgid "Table"
+msgstr "Tabel"
+
+#: app/templates/dashboard.html:540 app/templates/table_view.html:142
+#: app/templates/user_gift_ideas.html:366
+msgid "Budget"
+msgstr "Budget"
+
+#: app/templates/dashboard.html:545
 msgid "View your Secret Santa assignment"
 msgstr "Bekijk uw Secret Santa toewijzing"
 
-#: app/templates/dashboard.html:472
-msgid "Secret Santa Icon"
-msgstr "Secret Santa-icoon"
-
-#: app/templates/dashboard.html:478 app/templates/my_ideas.html:193
-#: app/templates/noideas.html:166
+#: app/templates/dashboard.html:553 app/templates/my_ideas.html:208
+#: app/templates/noideas.html:175
 msgid "Add ideas"
 msgstr "Ideeën toevoegen"
 
@@ -1403,9 +1413,9 @@ msgstr ""
 
 #: app/templates/delete_old_gift_ideas.html:279
 #: app/templates/manage_guest_users.html:444
-#: app/templates/manage_shared_lists.html:243
-#: app/templates/manage_sharing.html:247 app/templates/manage_users.html:294
-#: app/templates/user_gift_ideas.html:377
+#: app/templates/manage_shared_lists.html:251
+#: app/templates/manage_sharing.html:255 app/templates/manage_users.html:294
+#: app/templates/user_gift_ideas.html:402
 msgid "Delete"
 msgstr "Verwijderen"
 
@@ -1450,7 +1460,7 @@ msgstr "Mailjet API-geheim:"
 msgid "System Email:"
 msgstr "Systeem-e-mail:"
 
-#: app/templates/edit_email_settings.html:288 app/templates/edit_idea.html:253
+#: app/templates/edit_email_settings.html:288 app/templates/edit_idea.html:266
 #: app/templates/manage_groups.html:340 app/templates/manage_users.html:315
 #: app/templates/setup_oidc.html:363
 msgid "Save Changes"
@@ -1460,20 +1470,20 @@ msgstr "Wijzigingen opslaan"
 msgid "Edit an idea"
 msgstr "Een idee bewerken"
 
-#: app/templates/edit_idea.html:233 app/templates/my_ideas.html:223
-#: app/templates/shared_list_public.html:218
-#: app/templates/user_gift_ideas.html:255
+#: app/templates/edit_idea.html:245 app/templates/my_ideas.html:236
+#: app/templates/shared_list_public.html:229
+#: app/templates/user_gift_ideas.html:278
 msgid "OG Image"
 msgstr "OG-afbeelding"
 
-#: app/templates/edit_idea.html:247
+#: app/templates/edit_idea.html:259
 msgid "Enter estimated value in dollars"
 msgstr "Voer de geschatte waarde in"
 
-#: app/templates/edit_idea.html:255 app/templates/manage_shared_lists.html:276
-#: app/templates/manage_sharing.html:304 app/templates/manage_users.html:316
-#: app/templates/shared_list_public.html:277
-#: app/templates/user_gift_ideas.html:422
+#: app/templates/edit_idea.html:268 app/templates/manage_shared_lists.html:284
+#: app/templates/manage_sharing.html:312 app/templates/manage_users.html:316
+#: app/templates/shared_list_public.html:287
+#: app/templates/user_gift_ideas.html:448
 msgid "Cancel"
 msgstr "Annuleren"
 
@@ -1487,70 +1497,70 @@ msgstr "Inlogbericht bewerken"
 msgid "Update Message"
 msgstr "Bericht bijwerken"
 
-#: app/templates/login.html:9 app/templates/login.html:207
+#: app/templates/login.html:9 app/templates/login.html:213
 msgid "Login"
 msgstr "Inloggen"
 
-#: app/templates/login.html:225 app/templates/manage_guest_users.html:406
+#: app/templates/login.html:231 app/templates/manage_guest_users.html:406
 #: app/templates/manage_users.html:260 app/templates/setup_oidc.html:321
 #: app/templates/setup_oidc.html:332
 msgid "Username"
 msgstr "Gebruikersnaam"
 
-#: app/templates/login.html:227
+#: app/templates/login.html:233
 msgid "Password"
 msgstr "Wachtwoord"
 
-#: app/templates/login.html:229
+#: app/templates/login.html:235
 msgid "SIGN IN"
 msgstr "INLOGGEN"
 
-#: app/templates/login.html:232 app/templates/login.html:243
+#: app/templates/login.html:238 app/templates/login.html:249
 #: app/templates/oidc_only.html:141
 msgid "or"
 msgstr "of"
 
-#: app/templates/login.html:237
+#: app/templates/login.html:243
 msgid "Create New Account"
 msgstr "Nieuw account aanmaken"
 
-#: app/templates/login.html:248 app/templates/oidc_only.html:144
+#: app/templates/login.html:254 app/templates/oidc_only.html:144
 msgid "I have a guest password"
 msgstr "Ik heb een gastwachtwoord"
 
-#: app/templates/login.html:255 app/templates/oidc_only.html:137
+#: app/templates/login.html:261 app/templates/oidc_only.html:137
 msgid "Login with OIDC"
 msgstr "Inloggen met OIDC"
 
-#: app/templates/login.html:259
+#: app/templates/login.html:265
 msgid "Contact the administrator to reset your password."
 msgstr "Neem contact op met de beheerder om uw wachtwoord te resetten."
 
-#: app/templates/login.html:265
+#: app/templates/login.html:271
 msgid "Guest Login"
 msgstr "Gast-login"
 
-#: app/templates/login.html:267
+#: app/templates/login.html:273
 msgid "Enter your guest password to access limited features"
 msgstr "Voer uw gastwachtwoord in voor beperkte toegang"
 
-#: app/templates/login.html:282
+#: app/templates/login.html:288
 msgid "Guest Password"
 msgstr "Gastwachtwoord"
 
-#: app/templates/login.html:284 app/templates/oidc_only.html:150
+#: app/templates/login.html:290 app/templates/oidc_only.html:150
 msgid "Enter guest password"
 msgstr "Voer het gastwachtwoord in"
 
-#: app/templates/login.html:286
+#: app/templates/login.html:292
 msgid "LOGIN AS GUEST"
 msgstr "INLOGGEN ALS GAST"
 
-#: app/templates/login.html:289
+#: app/templates/login.html:295
 msgid "Back to regular login"
 msgstr "Terug naar normaal inloggen"
 
-#: app/templates/login.html:292
+#: app/templates/login.html:298
 msgid "Contact the administrator for guest access."
 msgstr "Neem contact op met de beheerder voor gasttoegang."
 
@@ -1699,220 +1709,213 @@ msgstr "Weet u zeker dat u gastgebruiker %(name)s wilt verwijderen?"
 msgid "No guest users configured yet."
 msgstr "Nog geen gastgebruikers geconfigureerd."
 
-#: app/templates/manage_shared_lists.html:153
+#: app/templates/manage_shared_lists.html:161
 msgid "Create New Shared List"
 msgstr "Nieuwe gedeelde lijst aanmaken"
 
-#: app/templates/manage_shared_lists.html:157
+#: app/templates/manage_shared_lists.html:165
 msgid "List Name:"
 msgstr "Naam van de lijst:"
 
-#: app/templates/manage_shared_lists.html:160
+#: app/templates/manage_shared_lists.html:168
 msgid "e.g., Family Vacation, Office Party"
 msgstr "bijv. Familievakantie, Kantoorfeest"
 
-#: app/templates/manage_shared_lists.html:164
+#: app/templates/manage_shared_lists.html:172
 msgid "List Avatar:"
 msgstr "Avatar van de lijst:"
 
-#: app/templates/manage_shared_lists.html:180
+#: app/templates/manage_shared_lists.html:188
 msgid "Select an avatar for your shared list"
 msgstr "Kies een avatar voor uw gedeelde lijst"
 
-#: app/templates/manage_shared_lists.html:185
+#: app/templates/manage_shared_lists.html:193
 msgid "Add Members:"
 msgstr "Leden toevoegen:"
 
-#: app/templates/manage_shared_lists.html:197
+#: app/templates/manage_shared_lists.html:205
 msgid "Create Shared List"
 msgstr "Gedeelde lijst aanmaken"
 
-#: app/templates/manage_shared_lists.html:204
+#: app/templates/manage_shared_lists.html:212
 msgid "My Shared Lists"
 msgstr "Mijn gedeelde lijsten"
 
-#: app/templates/manage_shared_lists.html:215
+#: app/templates/manage_shared_lists.html:223
 msgid "List Avatar"
 msgstr "Avatar van de lijst"
 
-#: app/templates/manage_shared_lists.html:224
+#: app/templates/manage_shared_lists.html:232
 msgid "Members:"
 msgstr "Leden:"
 
-#: app/templates/manage_shared_lists.html:233
+#: app/templates/manage_shared_lists.html:241
 msgid "View"
 msgstr "Bekijken"
 
-#: app/templates/manage_shared_lists.html:238
-#: app/templates/manage_users.html:293 app/templates/user_gift_ideas.html:380
+#: app/templates/manage_shared_lists.html:246
+#: app/templates/manage_users.html:293 app/templates/user_gift_ideas.html:405
 msgid "Edit"
 msgstr "Bewerken"
 
-#: app/templates/manage_shared_lists.html:241
+#: app/templates/manage_shared_lists.html:249
 msgid "Delete this list?"
 msgstr "Deze lijst verwijderen?"
 
-#: app/templates/manage_shared_lists.html:248
+#: app/templates/manage_shared_lists.html:256
 msgid "Member"
 msgstr "Lid"
 
-#: app/templates/manage_shared_lists.html:257
+#: app/templates/manage_shared_lists.html:265
 msgid "Edit Members"
 msgstr "Leden bewerken"
 
-#: app/templates/manage_shared_lists.html:286
+#: app/templates/manage_shared_lists.html:294
 msgid "No shared lists yet."
 msgstr "Nog geen gedeelde lijsten."
-
-#: app/templates/manage_shared_lists.html:292
-#: app/templates/manage_sharing.html:319
-#: app/templates/secret_santa_assignment.html:144
-#: app/templates/table_view.html:92
-msgid "Back to Dashboard"
-msgstr "Terug naar dashboard"
 
 #: app/templates/manage_sharing.html:6
 msgid "Share List"
 msgstr "Lijst delen"
 
-#: app/templates/manage_sharing.html:112
+#: app/templates/manage_sharing.html:120
 #, python-format
 msgid "Share: %(name)s"
 msgstr "Delen: %(name)s"
 
-#: app/templates/manage_sharing.html:114
+#: app/templates/manage_sharing.html:122
 msgid "Share My List"
 msgstr "Mijn lijst delen"
 
-#: app/templates/manage_sharing.html:127
+#: app/templates/manage_sharing.html:135
 msgid "My Personal List"
 msgstr "Mijn persoonlijke lijst"
 
-#: app/templates/manage_sharing.html:154
+#: app/templates/manage_sharing.html:162
 #, python-format
 msgid "Create Share Link for %(name)s"
 msgstr "Deellink maken voor %(name)s"
 
-#: app/templates/manage_sharing.html:156
+#: app/templates/manage_sharing.html:164
 msgid "Create New Share Link"
 msgstr "Nieuwe deellink maken"
 
-#: app/templates/manage_sharing.html:163
+#: app/templates/manage_sharing.html:171
 msgid "Link Name:"
 msgstr "Naam van de link:"
 
-#: app/templates/manage_sharing.html:166
+#: app/templates/manage_sharing.html:174
 #, python-format
 msgid "%(name)s List"
 msgstr "Lijst %(name)s"
 
-#: app/templates/manage_sharing.html:166
+#: app/templates/manage_sharing.html:174
 msgid "My Gift List"
 msgstr "Mijn cadeaulijst"
 
-#: app/templates/manage_sharing.html:167
+#: app/templates/manage_sharing.html:175
 msgid "Give this link a name"
 msgstr "Geef deze link een naam"
 
-#: app/templates/manage_sharing.html:170
+#: app/templates/manage_sharing.html:178
 msgid "Valid for:"
 msgstr "Geldig voor:"
 
-#: app/templates/manage_sharing.html:172 app/templates/manage_sharing.html:291
+#: app/templates/manage_sharing.html:180 app/templates/manage_sharing.html:299
 msgid "7 days"
 msgstr "7 dagen"
 
-#: app/templates/manage_sharing.html:173 app/templates/manage_sharing.html:292
+#: app/templates/manage_sharing.html:181 app/templates/manage_sharing.html:300
 msgid "30 days"
 msgstr "30 dagen"
 
-#: app/templates/manage_sharing.html:174 app/templates/manage_sharing.html:293
+#: app/templates/manage_sharing.html:182 app/templates/manage_sharing.html:301
 msgid "90 days"
 msgstr "90 dagen"
 
-#: app/templates/manage_sharing.html:175 app/templates/manage_sharing.html:294
+#: app/templates/manage_sharing.html:183 app/templates/manage_sharing.html:302
 msgid "1 year"
 msgstr "1 jaar"
 
-#: app/templates/manage_sharing.html:181
+#: app/templates/manage_sharing.html:189
 msgid "Allow visitors to mark items as purchased"
 msgstr "Bezoekers toestaan items als gekocht te markeren"
 
-#: app/templates/manage_sharing.html:183
+#: app/templates/manage_sharing.html:191
 msgid "Visitors can enter their name when marking items as bought"
 msgstr "Bezoekers kunnen hun naam invullen wanneer ze items als gekocht markeren"
 
-#: app/templates/manage_sharing.html:187
+#: app/templates/manage_sharing.html:195
 msgid "Create Share Link"
 msgstr "Deellink maken"
 
-#: app/templates/manage_sharing.html:198
+#: app/templates/manage_sharing.html:206
 #, python-format
 msgid "%(name)s Share Links"
 msgstr "Deellinks van %(name)s"
 
-#: app/templates/manage_sharing.html:200
+#: app/templates/manage_sharing.html:208
 msgid "My Share Links"
 msgstr "Mijn deellinks"
 
-#: app/templates/manage_sharing.html:219 app/templates/manage_sharing.html:271
+#: app/templates/manage_sharing.html:227 app/templates/manage_sharing.html:279
 msgid "Expired"
 msgstr "Verlopen"
 
-#: app/templates/manage_sharing.html:220
+#: app/templates/manage_sharing.html:228
 msgid "Active"
 msgstr "Actief"
 
-#: app/templates/manage_sharing.html:221
+#: app/templates/manage_sharing.html:229
 msgid "Inactive"
 msgstr "Inactief"
 
-#: app/templates/manage_sharing.html:225
+#: app/templates/manage_sharing.html:233
 #, python-format
 msgid "by %(name)s"
 msgstr "door %(name)s"
 
-#: app/templates/manage_sharing.html:239
+#: app/templates/manage_sharing.html:247
 msgid "Deactivate"
 msgstr "Deactiveren"
 
-#: app/templates/manage_sharing.html:239
+#: app/templates/manage_sharing.html:247
 msgid "Activate"
 msgstr "Activeren"
 
-#: app/templates/manage_sharing.html:244
+#: app/templates/manage_sharing.html:252
 msgid "Are you sure you want to delete this share link?"
 msgstr "Weet u zeker dat u deze deellink wilt verwijderen?"
 
-#: app/templates/manage_sharing.html:255
+#: app/templates/manage_sharing.html:263
 msgid "Share URL:"
 msgstr "Deel-URL:"
 
-#: app/templates/manage_sharing.html:264
+#: app/templates/manage_sharing.html:272
 msgid "Created:"
 msgstr "Aangemaakt:"
 
-#: app/templates/manage_sharing.html:268
+#: app/templates/manage_sharing.html:276
 msgid "Expires:"
 msgstr "Verloopt:"
 
-#: app/templates/manage_sharing.html:279
+#: app/templates/manage_sharing.html:287
 msgid "↻ Extend Expiration"
 msgstr "↻ Vervaldatum verlengen"
 
-#: app/templates/manage_sharing.html:284
+#: app/templates/manage_sharing.html:292
 msgid "Extend Expiration"
 msgstr "Vervaldatum verlengen"
 
-#: app/templates/manage_sharing.html:289
+#: app/templates/manage_sharing.html:297
 msgid "Add days:"
 msgstr "Dagen toevoegen:"
 
-#: app/templates/manage_sharing.html:300
+#: app/templates/manage_sharing.html:308
 msgid "Extend"
 msgstr "Verlengen"
 
-#: app/templates/manage_sharing.html:313
+#: app/templates/manage_sharing.html:321
 msgid "No share links created yet."
 msgstr "Nog geen deellinks aangemaakt."
 
@@ -1954,38 +1957,38 @@ msgstr "Huidige avatar"
 msgid "My Ideas"
 msgstr "Mijn ideeën"
 
-#: app/templates/my_ideas.html:198
+#: app/templates/my_ideas.html:213
 msgid "My List of Ideas"
 msgstr "Mijn lijst met ideeën"
 
-#: app/templates/my_ideas.html:200
+#: app/templates/my_ideas.html:215
 msgid "Reorder"
 msgstr "Herschikken"
 
-#: app/templates/my_ideas.html:201
+#: app/templates/my_ideas.html:216
 msgid "Save Order"
 msgstr "Volgorde opslaan"
 
-#: app/templates/my_ideas.html:213 app/templates/shared_list_public.html:209
-#: app/templates/user_gift_ideas.html:245
+#: app/templates/my_ideas.html:228 app/templates/shared_list_public.html:221
+#: app/templates/user_gift_ideas.html:270
 msgid "Estimated Value:"
 msgstr "Geschatte waarde:"
 
-#: app/templates/my_ideas.html:215 app/templates/shared_list_public.html:211
-#: app/templates/user_gift_ideas.html:247
+#: app/templates/my_ideas.html:230 app/templates/shared_list_public.html:223
+#: app/templates/user_gift_ideas.html:272
 msgid "Added By:"
 msgstr "Toegevoegd door:"
 
-#: app/templates/my_ideas.html:231 app/templates/user_gift_ideas.html:263
+#: app/templates/my_ideas.html:243 app/templates/user_gift_ideas.html:285
 msgid "Delete Icon"
 msgstr "Verwijder-icoon"
 
-#: app/templates/my_ideas.html:234 app/templates/user_gift_ideas.html:266
+#: app/templates/my_ideas.html:246 app/templates/user_gift_ideas.html:288
 msgid "Edit Icon"
 msgstr "Bewerk-icoon"
 
-#: app/templates/my_ideas.html:243 app/templates/shared_list_public.html:230
-#: app/templates/user_gift_ideas.html:275
+#: app/templates/my_ideas.html:255 app/templates/shared_list_public.html:240
+#: app/templates/user_gift_ideas.html:297
 msgid "Open Link Icon"
 msgstr "Link-openen-icoon"
 
@@ -1993,11 +1996,11 @@ msgstr "Link-openen-icoon"
 msgid "No gift ideas?"
 msgstr "Geen cadeau-ideeën?"
 
-#: app/templates/noideas.html:163
+#: app/templates/noideas.html:173
 msgid "This person lacks imagination, help them!"
 msgstr "Deze persoon heeft geen inspiratie, help een handje!"
 
-#: app/templates/noideas.html:164
+#: app/templates/noideas.html:174
 msgid "No gift ideas image"
 msgstr "Afbeelding geen cadeau-ideeën"
 
@@ -2088,7 +2091,7 @@ msgid "Pool Name:"
 msgstr "Poolnaam:"
 
 #: app/templates/secret_santa.html:204
-#: app/templates/secret_santa_assignment.html:134
+#: app/templates/secret_santa_assignment.html:138
 msgid "Instructions:"
 msgstr "Instructies:"
 
@@ -2120,25 +2123,29 @@ msgstr "Terug naar admin-dashboard"
 msgid "Secret Santa Assignment"
 msgstr "Secret Santa-toewijzing"
 
-#: app/templates/secret_santa_assignment.html:121
+#: app/templates/secret_santa_assignment.html:125
 msgid "🎅 Secret Santa 🎁"
 msgstr "🎅 Secret Santa 🎁"
 
-#: app/templates/secret_santa_assignment.html:122
+#: app/templates/secret_santa_assignment.html:126
 msgid "Here are your Secret Santa assignments:"
 msgstr "Hier zijn uw Secret Santa-toewijzingen:"
 
-#: app/templates/secret_santa_assignment.html:127
+#: app/templates/secret_santa_assignment.html:131
 msgid "Your Secret Santa Assignments:"
 msgstr "Uw Secret Santa-toewijzingen:"
 
-#: app/templates/secret_santa_assignment.html:131
+#: app/templates/secret_santa_assignment.html:135
 msgid "Pool:"
 msgstr "Pool:"
 
-#: app/templates/secret_santa_assignment.html:132
+#: app/templates/secret_santa_assignment.html:136
 msgid "Assigned to:"
 msgstr "Toegewezen aan:"
+
+#: app/templates/secret_santa_assignment.html:148
+msgid "Back to Dashboard"
+msgstr "Terug naar dashboard"
 
 #: app/templates/setup_oidc.html:6 app/templates/setup_oidc.html:243
 msgid "Setup OIDC Configuration"
@@ -2304,80 +2311,80 @@ msgstr ""
 "cadeaulijst nodig hebt."
 
 #: app/templates/shared_list_public.html:7
-#: app/templates/shared_list_public.html:194
+#: app/templates/shared_list_public.html:206
 #, python-format
 msgid "%(name)s's Gift List"
 msgstr "Cadeaulijst van %(name)s"
 
-#: app/templates/shared_list_public.html:195
+#: app/templates/shared_list_public.html:207
 msgid "Shared via GiftManager"
 msgstr "Gedeeld via CadeauManager"
 
-#: app/templates/shared_list_public.html:200
+#: app/templates/shared_list_public.html:212
 #, python-format
 msgid "Gift Ideas for %(name)s"
 msgstr "Cadeau-ideeën voor %(name)s"
 
-#: app/templates/shared_list_public.html:238
-#: app/templates/shared_list_public.html:247
-#: app/templates/user_gift_ideas.html:282
-#: app/templates/user_gift_ideas.html:481
+#: app/templates/shared_list_public.html:248
+#: app/templates/shared_list_public.html:257
+#: app/templates/user_gift_ideas.html:304
+#: app/templates/user_gift_ideas.html:507
 msgid "Purchased by:"
 msgstr "Gekocht door:"
 
-#: app/templates/shared_list_public.html:243
+#: app/templates/shared_list_public.html:253
 msgid "Cancel Purchase"
 msgstr "Aankoop annuleren"
 
-#: app/templates/shared_list_public.html:250
-#: app/templates/user_gift_ideas.html:287
+#: app/templates/shared_list_public.html:260
+#: app/templates/user_gift_ideas.html:309
 msgid "Available idea"
 msgstr "Beschikbaar idee"
 
-#: app/templates/shared_list_public.html:252
+#: app/templates/shared_list_public.html:262
 msgid "I Purchased This"
 msgstr "Ik heb dit gekocht"
 
-#: app/templates/shared_list_public.html:261
+#: app/templates/shared_list_public.html:271
 #, python-format
 msgid "Shared on %(created)s • Expires on %(expires)s"
 msgstr "Gedeeld op %(created)s • Verloopt op %(expires)s"
 
-#: app/templates/shared_list_public.html:262
+#: app/templates/shared_list_public.html:272
 msgid "Powered by GiftManager"
 msgstr "Mogelijk gemaakt door CadeauManager"
 
-#: app/templates/shared_list_public.html:268
+#: app/templates/shared_list_public.html:278
 msgid "Enter Your Name"
 msgstr "Voer uw naam in"
 
-#: app/templates/shared_list_public.html:269
+#: app/templates/shared_list_public.html:279
 msgid "Please enter your name to mark this item as purchased:"
 msgstr "Voer uw naam in om dit item als gekocht te markeren:"
 
-#: app/templates/shared_list_public.html:270
+#: app/templates/shared_list_public.html:280
 msgid "Your name"
 msgstr "Uw naam"
 
-#: app/templates/shared_list_public.html:274
+#: app/templates/shared_list_public.html:284
 msgid "Confirm Purchase"
 msgstr "Aankoop bevestigen"
 
-#: app/templates/shared_list_public.html:340
+#: app/templates/shared_list_public.html:350
 msgid "Are you sure you want to cancel this purchase?"
 msgstr "Weet u zeker dat u deze aankoop wilt annuleren?"
 
-#: app/templates/shared_list_public.html:350
+#: app/templates/shared_list_public.html:360
 msgid "Please enter your name"
 msgstr "Voer uw naam in"
 
-#: app/templates/shared_list_public.html:388
-#: app/templates/shared_list_public.html:413
+#: app/templates/shared_list_public.html:398
+#: app/templates/shared_list_public.html:423
 msgid "Error:"
 msgstr "Fout:"
 
-#: app/templates/shared_list_public.html:393
-#: app/templates/shared_list_public.html:418
+#: app/templates/shared_list_public.html:403
+#: app/templates/shared_list_public.html:428
 msgid "An error occurred"
 msgstr "Er is een fout opgetreden"
 
@@ -2385,58 +2392,58 @@ msgstr "Er is een fout opgetreden"
 msgid "Gift Summary Table"
 msgstr "Overzichtstabel cadeaus"
 
-#: app/templates/table_view.html:99
+#: app/templates/table_view.html:132
 msgid "Gift Summary"
 msgstr "Cadeau-overzicht"
 
-#: app/templates/table_view.html:109 app/templates/user_gift_ideas.html:344
-msgid "Budget"
-msgstr "Budget"
-
-#: app/templates/table_view.html:110
+#: app/templates/table_view.html:143
 msgid "Spent"
 msgstr "Uitgegeven"
 
-#: app/templates/table_view.html:111
+#: app/templates/table_view.html:144
 msgid "My share"
 msgstr "Mijn deel"
+
+#: app/templates/table_view.html:157
+msgid "No ideas"
+msgstr "Geen ideeën"
 
 #: app/templates/user_gift_ideas.html:7
 msgid "Ideas List"
 msgstr "Ideeënlijst"
 
-#: app/templates/user_gift_ideas.html:236
+#: app/templates/user_gift_ideas.html:261
 #, python-format
 msgid "Ideas list for %(name)s"
 msgstr "Ideeënlijst voor %(name)s"
 
-#: app/templates/user_gift_ideas.html:284
+#: app/templates/user_gift_ideas.html:306
 msgid "Cancel the purchase"
 msgstr "Aankoop annuleren"
 
-#: app/templates/user_gift_ideas.html:288
-#: app/templates/user_gift_ideas.html:411
+#: app/templates/user_gift_ideas.html:310
+#: app/templates/user_gift_ideas.html:437
 msgid "Purchase completed"
 msgstr "Aankoop voltooid"
 
-#: app/templates/user_gift_ideas.html:312
+#: app/templates/user_gift_ideas.html:334
 msgid "Who owes whom"
 msgstr "Wie moet wie betalen"
 
-#: app/templates/user_gift_ideas.html:317
+#: app/templates/user_gift_ideas.html:339
 #, python-format
 msgid "My budget for %(name)s"
 msgstr "Mijn budget voor %(name)s"
 
-#: app/templates/user_gift_ideas.html:328
+#: app/templates/user_gift_ideas.html:350
 msgid "Spent:"
 msgstr "Uitgegeven:"
 
-#: app/templates/user_gift_ideas.html:329
+#: app/templates/user_gift_ideas.html:351
 msgid "Budgets:"
 msgstr "Budgetten:"
 
-#: app/templates/user_gift_ideas.html:333
+#: app/templates/user_gift_ideas.html:355
 #, python-format
 msgid ""
 "The spending exceeds the budgets by %(amount)s: each giver pays their "
@@ -2445,30 +2452,30 @@ msgstr ""
 "De uitgaven overschrijden de budgetten met %(amount)s: iedereen betaalt "
 "zijn volledige budget, de rest blijft voor wie het betaald heeft."
 
-#: app/templates/user_gift_ideas.html:335
+#: app/templates/user_gift_ideas.html:357
 #, python-format
 msgid "Nobody has set a budget yet: %(amount)s spent is not shared."
 msgstr ""
 "Niemand heeft nog een budget ingevoerd: de uitgegeven %(amount)s wordt "
 "niet gedeeld."
 
-#: app/templates/user_gift_ideas.html:344
+#: app/templates/user_gift_ideas.html:366
 msgid "Person"
 msgstr "Persoon"
 
-#: app/templates/user_gift_ideas.html:344
+#: app/templates/user_gift_ideas.html:366
 msgid "Paid"
 msgstr "Betaald"
 
-#: app/templates/user_gift_ideas.html:344
+#: app/templates/user_gift_ideas.html:366
 msgid "Share"
 msgstr "Deel"
 
-#: app/templates/user_gift_ideas.html:344
+#: app/templates/user_gift_ideas.html:366
 msgid "Balance"
 msgstr "Saldo"
 
-#: app/templates/user_gift_ideas.html:362
+#: app/templates/user_gift_ideas.html:384
 msgid ""
 "A positive balance is owed to the person, a negative one is to pay. "
 "Reimbursements are settled for the whole family on the \"Who owes whom\" "
@@ -2478,56 +2485,56 @@ msgstr ""
 " moet de persoon betalen. Terugbetalingen worden voor de hele familie "
 "geregeld op de pagina \"Wie moet wie betalen\"."
 
-#: app/templates/user_gift_ideas.html:365
+#: app/templates/user_gift_ideas.html:387
 msgid "Expenses"
 msgstr "Uitgaven"
 
-#: app/templates/user_gift_ideas.html:370
+#: app/templates/user_gift_ideas.html:393
 msgid "Other expense"
 msgstr "Andere uitgave"
 
-#: app/templates/user_gift_ideas.html:372
+#: app/templates/user_gift_ideas.html:394
 msgid "price not set"
 msgstr "prijs niet ingevuld"
 
-#: app/templates/user_gift_ideas.html:373
+#: app/templates/user_gift_ideas.html:398
 msgid "individual gift, not shared"
 msgstr "individueel cadeau, niet gedeeld"
 
-#: app/templates/user_gift_ideas.html:387
+#: app/templates/user_gift_ideas.html:413
 msgid "No expenses yet."
 msgstr "Nog geen uitgaven."
 
-#: app/templates/user_gift_ideas.html:392
+#: app/templates/user_gift_ideas.html:418
 msgid "Other expense paid by me (shipping, gift outside the list...)"
 msgstr "Andere uitgave door mij betaald (verzending, cadeau buiten de lijst...)"
 
-#: app/templates/user_gift_ideas.html:393
+#: app/templates/user_gift_ideas.html:419
 msgid "Description"
 msgstr "Beschrijving"
 
-#: app/templates/user_gift_ideas.html:396
+#: app/templates/user_gift_ideas.html:422
 msgid "Amount"
 msgstr "Bedrag"
 
-#: app/templates/user_gift_ideas.html:403
+#: app/templates/user_gift_ideas.html:429
 #, python-format
 msgid "Reset all budgets and expenses for %(name)s?"
 msgstr "Alle budgetten en uitgaven voor %(name)s wissen?"
 
-#: app/templates/user_gift_ideas.html:404
+#: app/templates/user_gift_ideas.html:430
 msgid "Reset"
 msgstr "Wissen"
 
-#: app/templates/user_gift_ideas.html:413
+#: app/templates/user_gift_ideas.html:439
 msgid "Price paid (optional)"
 msgstr "Betaalde prijs (optioneel)"
 
-#: app/templates/user_gift_ideas.html:420
+#: app/templates/user_gift_ideas.html:446
 msgid "I pay for it alone: its cost is not shared."
 msgstr "Ik betaal het alleen: de kosten worden niet gedeeld."
 
-#: app/templates/user_gift_ideas.html:423
+#: app/templates/user_gift_ideas.html:449
 msgid "Confirm"
 msgstr "Bevestigen"
 
@@ -2554,4 +2561,7 @@ msgstr "Bevestigen"
 #~ "Alle budgetten en uitgaven voor %(name)s"
 #~ " wissen? Reeds geregistreerde terugbetalingen "
 #~ "blijven bewaard."
+
+#~ msgid "Secret Santa Icon"
+#~ msgstr "Secret Santa-icoon"
 

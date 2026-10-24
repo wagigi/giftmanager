@@ -71,10 +71,6 @@
             background-color: var(--button-hover-bg-color);
         }
 
-        .help {
-            cursor: pointer;
-        }
-
         .user-card-button {
             background-color: var(--card-bg-color);
             border: 1px solid var(--card-border-color);
@@ -111,8 +107,10 @@
             overflow-y: auto;
             top: 0;
             left: 0;
-            width: 250px;
+            width: 280px;
+            max-width: 85vw;
             height: 100vh;
+            height: 100dvh;
             justify-content: space-between;
             background-color: var(--sidebar-bg-color);
             padding: 20px;
@@ -193,6 +191,72 @@
             width: 24px;
             height: 24px;
         }
+
+        /* Header: menu button and "Add ideas" on the first row, page links on a second row on phones */
+        .top-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4px 8px;
+        }
+        .header-links {
+            order: 3;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            gap: 4px;
+        }
+        .header-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 64px;
+            padding: 4px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.2;
+            text-align: center;
+            color: var(--header-text-color);
+        }
+        .header-link:hover {
+            background-color: var(--card-hover-bg-color);
+        }
+        .header-link svg.svg-inline--fa {
+            width: 24px;
+            height: 24px;
+        }
+        .add-ideas-button {
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--card-border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            white-space: nowrap;
+            color: var(--secondary-text-color);
+        }
+        .add-ideas-button:hover {
+            background-color: var(--card-hover-bg-color);
+        }
+        @media (min-width: 768px) {
+            .header-links {
+                order: 0;
+                width: auto;
+                flex: 1;
+                justify-content: center;
+                gap: 16px;
+            }
+            .header-link {
+                flex-direction: row;
+                gap: 6px;
+                font-size: 16px;
+                padding: 6px 8px;
+            }
+        }
+        @media (max-width: 640px) {
+            .main { padding: 16px; }
+            .section { padding: 16px; }
+        }
         .inputer{
             color: var(--input-text-color);
             background-color: var(--input-bg-color);
@@ -221,6 +285,10 @@
         .theme-toggle i {
         margin-right: 8px;
         font-size: 16px;
+        }
+        /* Language links readable in both themes */
+        .sidebar .language-switcher {
+            color: var(--text-color);
         }
         .version{
             color: var(--text-color);
@@ -280,14 +348,13 @@
             transform: rotate(180deg);
         }
         
+        /* The whole sidebar scrolls (not this part alone), so an opened form is never hidden behind the bottom links */
         .sidebar-content {
-            flex: 1;
-            overflow-y: auto;
+            flex: 1 0 auto;
         }
         
         .sidebar-bottom {
             margin-top: auto;
-            padding-top: px;
             border-top: 1px solid var(--hr-border-color);
         }
         
@@ -319,7 +386,7 @@
                         return value;
                     }
                 }
-                return 'light'; // Default to light mode if no cookie is found
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; // No cookie yet: follow the device setting
             }
 
             const theme = getThemeFromCookie();
@@ -352,7 +419,7 @@
                     <p class="text-secondary">{{ _('Birthday') }}: {{ profile_info['birthday'] }}</p>
                 </div>
 
-                {% if not profile_info.guest %}
+                {% if not is_guest %}
                 <!-- Password Change Dropdown -->
                 <div class="dropdown-container">
                     <div class="dropdown-header" onclick="toggleDropdown('passwordDropdown', 'passwordChevron')">
@@ -421,8 +488,10 @@
                     <img src="{{ url_for('static', filename='icons/log-out.svg') }}" class="helplogo" alt="{{ _('Logout') }}">
                     
                 </a>
+                {% if not is_guest %}
                 <a href="/manage_shared_lists" class="bottom-item" style="padding-top: 10px; padding-bottom: 10px;">{{ _('Shared Lists') }}</a>
-                {% if enable_link_sharing %}
+                {% endif %}
+                {% if enable_link_sharing and not is_guest %}
                 <a href="/manage_sharing" class="bottom-item" style="padding-top: 10px; padding-bottom: 10px;">{{ _('Public links') }}</a>
                 {% endif %}
                 <button class="theme-toggle w-full mt-2" onclick="toggleDarkMode()">
@@ -443,40 +512,46 @@
 
         <!-- Main Content -->
         <div class="flex-1">
-            <header class="header p-4">
-                <nav class="container mx-auto flex justify-between items-center">
-                    <button id="sidebarToggle" class="text-2xl px-4 py-2">
+            <header class="header px-4 py-2">
+                <nav class="top-bar container mx-auto">
+                    <button id="sidebarToggle" class="text-2xl px-2 py-2" aria-label="{{ _('Menu') }}">
                         <svg class="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                             <path d="M0 0h24v24H0z" fill="none"/>
                             <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
                         </svg>
                     </button>
-                    <div class="help" onclick="location.href='{{ url_for('bought_items') }}'">
-                        <img class="helplogo" src="{{ url_for('static', filename='icons/cart.svg') }}">
-                    </div>
 
-                    <div class="help flex justify-between items-center" onclick="location.href='{{ url_for('table_view') }}'">
-                        <img class="helplogo" src="{{ url_for('static', filename='icons/table.svg') }}">
-                        <span style="padding-left: 5px;">{{ _('Show as table') }}</span>
-                    </div>
-
-                    {% if budget_enabled %}
-                    <div class="help flex justify-between items-center" onclick="location.href='{{ url_for('budget_overview') }}'">
-                        <span>{{ _('Budget & reimbursements') }}</span>
-                    </div>
-                    {% endif %}
-
-                    {% if assigned_users %}
-                    <div class="help">
-                        <a href="{{ url_for('secret_santa_assignments') }}" title="{{ _('View your Secret Santa assignment') }}">
-                            <img src="{{ url_for('static', filename='icons/secret-santa.svg') }}" alt="{{ _('Secret Santa Icon') }}" class="helplogo">
+                    <div class="header-links">
+                        <a class="header-link" href="{{ url_for('bought_items') }}">
+                            <img class="helplogo" src="{{ url_for('static', filename='icons/cart.svg') }}" alt="">
+                            <span>{{ _('My purchases') }}</span>
                         </a>
-                    </div>
-                    {% endif %}
 
-                    <div class="user-card-button" onclick="location.href='{{ url_for('add2', selected_user_id=session['username']) }}'">
-                        <p class="text-center text-secondary">{{ _('Add ideas') }}</p>
+                        {% if not is_guest %}
+                        <a class="header-link" href="{{ url_for('table_view') }}" title="{{ _('Show as table') }}">
+                            <img class="helplogo" src="{{ url_for('static', filename='icons/table.svg') }}" alt="">
+                            <span>{{ _('Table') }}</span>
+                        </a>
+                        {% endif %}
+
+                        {% if budget_enabled %}
+                        <a class="header-link" href="{{ url_for('budget_overview') }}" title="{{ _('Budget & reimbursements') }}">
+                            <i class="fa-solid fa-wallet" aria-hidden="true"></i>
+                            <span>{{ _('Budget') }}</span>
+                        </a>
+                        {% endif %}
+
+                        {% if assigned_users %}
+                        <a class="header-link" href="{{ url_for('secret_santa_assignments') }}" title="{{ _('View your Secret Santa assignment') }}">
+                            <img class="helplogo" src="{{ url_for('static', filename='icons/secret-santa.svg') }}" alt="">
+                            <span>{{ _('Secret Santa') }}</span>
+                        </a>
+                        {% endif %}
                     </div>
+
+                    {% if not is_guest %}
+                    <a class="add-ideas-button" href="{{ url_for('add2', selected_user_id=session['username']) }}">{{ _('Add ideas') }}</a>
+                    {% endif %}
                 </nav>
             </header>
 
@@ -487,7 +562,7 @@
                         {% for user in users %}
                         <div class="user-card-button" onclick="location.href='{{ url_for('user_gift_ideas', selected_user_id=user.username) }}'">
                             <img class="user-avatar" src="{{ avatar_url(user.avatar) }}" alt="">
-                            <p class="text-center text-secondary">{{ user.full_name }}</p>
+                            <p class="text-left text-secondary min-w-0 break-words">{{ user.full_name }}</p>
                         </div>
                         {% endfor %}
                     </div>
@@ -554,7 +629,7 @@
                     return value;
                 }
             }
-            return 'light'; // Default to light mode if no cookie is found
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; // No cookie yet: follow the device setting
         }
 
         // Apply the theme preference from the cookie on page load
@@ -577,4 +652,4 @@
         }
     </script>
 </body>
-</html>
+</html>

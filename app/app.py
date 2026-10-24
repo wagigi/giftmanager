@@ -1,4 +1,4 @@
-from flask import Flask, abort, render_template, request, redirect, url_for, session, flash, make_response, get_flashed_messages, request, jsonify, send_from_directory
+from flask import Flask, abort, render_template, request, redirect, url_for, session, flash, make_response, get_flashed_messages, request, jsonify, send_from_directory, g
 from datetime import datetime, timedelta
 from authlib.integrations.flask_client import OAuth
 import json, secrets
@@ -48,6 +48,11 @@ migrate_ideas_file(app.config['IDEAS_FILE'])  # Fill in the dates older versions
 @app.context_processor
 def inject_languages():
     return {'supported_languages': SUPPORTED_LANGUAGES, 'current_locale': str(current_babel_locale())}
+
+@app.context_processor
+def inject_is_guest():
+    # Set by login_required: hides links to pages refused to guests
+    return {'is_guest': g.get('is_guest', False)}
 
 @app.route('/set_language/<lang_code>')
 def set_language(lang_code):
@@ -736,8 +741,8 @@ def dashboard():
         flash(_('User data not found'), 'danger')
         return redirect(url_for('login'))
 
-    # Check if current user is a guest
-    is_guest = current_user.get('guest', False)
+    # Set by login_required, as for the templates
+    is_guest = g.get('is_guest', False)
     
     visible_users = get_visible_users(current_user, users)
 
@@ -758,7 +763,6 @@ def dashboard():
         'full_name': current_user.get('full_name'),
         'birthday': current_user.get('birthday'),
         'admin': current_user.get('admin'),
-        'guest': is_guest,
         'avatar': current_user.get('avatar')
     }
 
@@ -2331,20 +2335,25 @@ def table_view():
             }
 
     # Prepare data for the template
-    table_data = [
-        {
+    table_data = []
+    for user in visible_users:
+        gifts = user_gifts[user['username']]
+        summary = budget_summaries.get(user['username'])
+        has_budget = bool(summary and (summary['total_budget'] or summary['total_spent']))
+        table_data.append({
             'full_name': user['full_name'],
             'username': user['username'],
-            'gifts': user_gifts[user['username']],
-            'budget': budget_summaries.get(user['username'])
-        }
-        for user in visible_users
-    ]
+            'gifts': gifts,
+            'budget': summary,
+            'has_budget': has_budget,
+            # Narrow column when there is nothing to show: no idea and no budget summary
+            'narrow': not gifts and not has_budget,
+        })
 
-    # Find the maximum number of gifts for any user
+    # Find the maximum number of gifts for any user (at least one row, for the "No ideas" cells)
     max_gifts = 0
     if table_data:
-        max_gifts = max(len(user['gifts']) for user in table_data) if table_data else 0
+        max_gifts = max(1, max(len(user['gifts']) for user in table_data))
 
     return render_template('table_view.html', users=table_data, max_gifts=max_gifts, current_user_username=current_user_username)
 

@@ -126,6 +126,14 @@
             background-color: var(--header-bg-color);
             color: var(--header-text-color);
         }
+        /* Gray helper texts stay readable on the dark cards */
+        [data-theme="dark"] .text-gray-500,
+        [data-theme="dark"] .text-gray-600 {
+            color: #aaaaaa;
+        }
+        @media (max-width: 640px) {
+            main.container { padding: 16px; }
+        }
     </style>
 </head>
 <body class="font-sans">
@@ -207,8 +215,8 @@
             <div class="space-y-4">
                 {% for list in shared_lists %}
                 <div class="border rounded p-4">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
+                    <div class="flex flex-col sm:flex-row justify-between items-start gap-3">
+                        <div class="flex-1 min-w-0">
                             <div class="flex items-center mb-2">
                                 <!-- Display actual avatar image instead of placeholder -->
                                 <img src="{{ avatar_url(list.avatar) }}" 
@@ -218,7 +226,7 @@
                                 <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold mr-3" style="display: none;">
                                     {{ list.full_name[0] }}
                                 </div>
-                                <h3 class="text-lg font-semibold">{{ list.full_name }}</h3>
+                                <h3 class="text-lg font-semibold min-w-0" style="overflow-wrap: anywhere;">{{ list.full_name }}</h3>
                             </div>
                             <p class="text-sm text-gray-600">
                                 {{ _('Members:') }} 
@@ -227,7 +235,7 @@
                                 {% endfor %}
                             </p>
                         </div>
-                        <div class="flex space-x-2 ml-4">
+                        <div class="flex flex-wrap gap-2 sm:ml-4">
                             <a href="{{ url_for('user_gift_ideas', selected_user_id=list.username) }}" 
                                class="bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">
                                 {{ _('View') }}
@@ -287,11 +295,6 @@
             {% endif %}
         </div>
 
-        <div class="mt-8 text-center">
-            <a href="{{ url_for('dashboard') }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-                {{ _('Back to Dashboard') }}
-            </a>
-        </div>
     </main>
 
     <script>
@@ -309,7 +312,7 @@
                         return value;
                     }
                 }
-                return 'light';
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; // No cookie yet: follow the device setting
             }
             const theme = getThemeFromCookie();
             document.documentElement.setAttribute('data-theme', theme);
@@ -343,4 +346,4 @@
         });
     </script>
 </body>
-</html>
+</html>

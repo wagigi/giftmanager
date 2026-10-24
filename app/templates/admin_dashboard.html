@@ -163,7 +163,7 @@
                         return value;
                     }
                 }
-                return 'light'; // Default to light mode if no cookie is found
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; // No cookie yet: follow the device setting
             }
 
             const theme = getThemeFromCookie();

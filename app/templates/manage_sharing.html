@@ -78,7 +78,6 @@
 
         .share-url-input {
             font-family: monospace;
-            font-size: 0.875rem;
         }
 
         .nav-tab {
@@ -100,6 +99,14 @@
             border: 1px solid var(--card-border-color);
             border-radius: 0.5rem;
             background-color: var(--card-bg-color);
+        }
+        /* Gray helper texts stay readable on the dark cards */
+        [data-theme="dark"] .text-gray-500,
+        [data-theme="dark"] .text-gray-600 {
+            color: #aaaaaa;
+        }
+        @media (max-width: 640px) {
+            main.container { padding: 16px; }
         }
     </style>
 </head>
@@ -253,7 +260,7 @@
                         <!-- Share URL -->
                         <div class="mb-3">
                             <label class="block text-sm font-medium mb-1">{{ _('Share URL:') }}</label>
-                            <input type="text" class="w-full px-3 py-2 border rounded inputer share-url-input text-xs sm:text-sm" 
+                            <input type="text" class="w-full px-3 py-2 border rounded inputer share-url-input text-base sm:text-sm" 
                                 value="{{ generate_share_url(link.token) }}" 
                                 readonly onclick="this.select()">
                         </div>
@@ -287,7 +294,7 @@
                                 <input type="hidden" name="token" value="{{ link.token }}">
                                 <div class="flex-1">
                                     <label class="block text-sm font-medium mb-1">{{ _('Add days:') }}</label>
-                                    <select name="additional_days" class="w-full px-3 py-2 border rounded inputer text-sm">
+                                    <select name="additional_days" class="w-full px-3 py-2 border rounded inputer text-base sm:text-sm">
                                         <option value="7">{{ _('7 days') }}</option>
                                         <option value="30" selected>{{ _('30 days') }}</option>
                                         <option value="90">{{ _('90 days') }}</option>
@@ -314,11 +321,6 @@
             {% endif %}
         </div>
 
-        <div class="mt-8 text-center">
-            <a href="{{ url_for('dashboard') }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-                {{ _('Back to Dashboard') }}
-            </a>
-        </div>
     </main>
 
     <script>
@@ -337,7 +339,7 @@
                         return value;
                     }
                 }
-                return 'light';
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; // No cookie yet: follow the device setting
             }
             const theme = getThemeFromCookie();
             document.documentElement.setAttribute('data-theme', theme);
