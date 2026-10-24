@@ -333,7 +333,7 @@
         <section class="section shadow-lg rounded-lg p-6 mt-6" id="budget">
             <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
                 <h2 class="text-xl font-semibold">{{ _('Budget & cost sharing') }}</h2>
-                <a href="{{ url_for('budget_overview') }}" class="bg-blue-500 text-white px-3 py-1 rounded">{{ _('Who owes whom') }}</a>
+                <a href="{{ url_for('budget_overview') }}" class="bg-blue-500 text-white px-3 py-2 rounded">{{ _('Who owes whom') }}</a>
             </div>
 
             <form method="post" action="{{ url_for('set_budget', recipient=budget.recipient) }}" class="flex flex-wrap items-end gap-2 mb-4">
@@ -447,8 +447,8 @@
                 </label>
                 <p class="sec-text text-sm mb-4">{{ _('I pay for it alone: its cost is not shared.') }}</p>
                 <div class="flex justify-end gap-2">
-                    <button type="button" id="purchaseCancel" class="px-3 py-1 rounded border">{{ _('Cancel') }}</button>
-                    <button type="submit" class="bg-green-500 text-white px-3 py-1 rounded">{{ _('Confirm') }}</button>
+                    <button type="button" id="purchaseCancel" class="px-3 py-2 rounded border">{{ _('Cancel') }}</button>
+                    <button type="submit" class="bg-green-500 text-white px-3 py-2 rounded">{{ _('Confirm') }}</button>
                 </div>
             </form>
         </div>

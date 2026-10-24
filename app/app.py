@@ -742,7 +742,7 @@ def dashboard():
         return redirect(url_for('login'))
 
     # Set by login_required, as for the templates
-    is_guest = g.is_guest
+    is_guest = g.get('is_guest', False)
     
     visible_users = get_visible_users(current_user, users)
 
@@ -789,7 +789,7 @@ def dashboard():
         app_version=app_version,
         assigned_users=assigned_users,
         enable_link_sharing=enable_link_sharing,
-        budget_enabled=budget_enabled()
+        budget_enabled=budget_enabled() and not is_guest
     )
 
 

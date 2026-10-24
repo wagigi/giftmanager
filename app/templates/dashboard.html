@@ -534,7 +534,7 @@
                         </a>
                         {% endif %}
 
-                        {% if budget_enabled and not is_guest %}
+                        {% if budget_enabled %}
                         <a class="header-link" href="{{ url_for('budget_overview') }}" title="{{ _('Budget & reimbursements') }}">
                             <i class="fa-solid fa-wallet" aria-hidden="true"></i>
                             <span>{{ _('Budget') }}</span>

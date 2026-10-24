@@ -47,8 +47,8 @@
         .table-scroll {
             overflow: auto;
             /* Room left under the header, title and margins (about 210px) */
-            max-height: max(320px, calc(100vh - 220px));
-            max-height: max(320px, calc(100dvh - 220px));
+            max-height: max(200px, calc(100vh - 220px));
+            max-height: max(200px, calc(100dvh - 220px));
         }
 
         table {
@@ -64,6 +64,7 @@
             text-align: left;
             vertical-align: top;
             min-width: 120px;
+            overflow-wrap: break-word;
         }
 
         tr > :first-child {
