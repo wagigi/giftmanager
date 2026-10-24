@@ -65,7 +65,7 @@
         }
 
         /* Long words (names without spaces) wrap instead of overflowing the card */
-        .break-words {
+        .wrap-anywhere {
             overflow-wrap: anywhere;
         }
 
@@ -203,7 +203,7 @@
 <body class="body font-sans">
     <header class="header p-4">
         <nav class="container mx-auto flex flex-wrap justify-between items-baseline gap-x-4 gap-y-1">
-            <div class="text-xl font-semibold min-w-0 break-words">{{ _("%(name)s's Gift List", name=share_owner.full_name) }}</div>
+            <div class="text-xl font-semibold min-w-0 wrap-anywhere">{{ _("%(name)s's Gift List", name=share_owner.full_name) }}</div>
             <div class="text-sm text-gray-500">{{ _('Shared via GiftManager') }}</div>
         </nav>
     </header>
@@ -215,7 +215,7 @@
                 <li class="actions-container p-4 shadow-md rounded-lg">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center idea-container" style="margin-bottom: 5px">
                         <div class="min-w-0">
-                            <h2 class="text-lg font-semibold break-words">{{ gift_idea.gift_name }}</h2>
+                            <h2 class="text-lg font-semibold wrap-anywhere">{{ gift_idea.gift_name }}</h2>
                             <p class="text-gray-600 description" style="white-space: pre-wrap;">{{ gift_idea.description }}</p>
                             {% if gift_idea.value %}
                             <p class="text-gray-600 sec-text">{{ _('Estimated Value:') }} {{ format_currency(gift_idea.value) }}</p>

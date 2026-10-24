@@ -46,8 +46,8 @@
         /* Scrolls in both directions itself, so the row of names can stay on top (sticky) */
         .table-scroll {
             overflow: auto;
-            max-height: calc(100vh - 180px);
-            max-height: calc(100dvh - 180px);
+            max-height: max(320px, calc(100vh - 140px));
+            max-height: max(320px, calc(100dvh - 140px));
         }
 
         table {

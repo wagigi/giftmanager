@@ -544,6 +544,25 @@ def test_table_view_respects_families(client):
 
 # 8. Guests -----------------------------------------------------------------------
 
+def test_guest_dashboard_hides_links_to_refused_pages(client):
+    """Guests are not shown links to pages that refuse them (adding ideas, table,
+    shared lists, public links), on the dashboard and on /noidea."""
+    login(client, "alice")
+    page = client.get("/dashboard").get_data(as_text=True)
+    for path in ("/add2/", "/table_view", "/manage_shared_lists", "/manage_sharing"):
+        assert path in page
+    assert "/add2/" in client.get("/noidea").get_data(as_text=True)
+
+    guest = client.application.test_client()
+    guest.post("/guest_login", data={"password": "guestpass"})
+    page = guest.get("/dashboard").get_data(as_text=True)
+    assert "/bought_items" in page
+    for path in ("/add2/", "/table_view", "/manage_shared_lists", "/manage_sharing"):
+        assert path not in page
+    assert "/add2/" not in guest.get("/noidea").get_data(as_text=True)
+
+
+
 def test_guest_login_and_allowed_route(client):
     response = client.post("/guest_login", data={"password": "guestpass"})
     assert is_redirect_to(response, "/dashboard")

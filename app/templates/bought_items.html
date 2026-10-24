@@ -97,7 +97,7 @@
         background-color: var(--card-bg-color);
     }
     /* Long words and links wrap instead of overflowing the card */
-    .break-words {
+    .wrap-anywhere {
         overflow-wrap: anywhere;
     }
     @media (max-width: 640px) {
@@ -141,14 +141,14 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8">
             {% for item in bought_items %}
                 <div class="bg-white p-6 rounded-lg shadow-md border border-gray-300 section item-card min-w-0">
-                    <h3 class="text-xl font-semibold mb-4 break-words">{{ item.gift_name }}</h3>
+                    <h3 class="text-xl font-semibold mb-4 wrap-anywhere">{{ item.gift_name }}</h3>
                     <p><strong>{{ _('For:') }}</strong> {{ item.recipient_name }}</p>
                     {{ idea_age_badge(item) }}
                     {% if item.description %}
-                    <p class="break-words"><strong>{{ _('Description:') }}</strong> {{ item.description }}</p>
+                    <p class="wrap-anywhere"><strong>{{ _('Description:') }}</strong> {{ item.description }}</p>
                     {% endif %}
                     {% if item.link %}
-                        <p class="break-words"><strong>{{ _('Link:') }}</strong> <a href="{{ item.link }}" target="_blank">{{ item.link }}</a></p>
+                        <p class="wrap-anywhere"><strong>{{ _('Link:') }}</strong> <a href="{{ item.link }}" target="_blank">{{ item.link }}</a></p>
                     {% endif %}
                     {% if item.purchase is defined %}
                     <form method="post" action="{{ url_for('update_purchase', idea_id=item.gift_idea_id) }}" class="mt-4 space-y-2">

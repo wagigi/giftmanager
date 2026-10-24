@@ -172,7 +172,9 @@
     <main>
         <h1>{{ _('This person lacks imagination, help them!') }}</h1>
         <img class="mec" src="{{ url_for('static', filename='icons/nope.jpg') }}" alt="{{ _('No gift ideas image') }}">
+        {% if not is_guest %}
         <a class="user-card-button" href="{{ url_for('add2') }}">{{ _('Add ideas') }}</a>
+        {% endif %}
     </main>
 
     <script>

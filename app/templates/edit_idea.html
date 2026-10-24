@@ -96,7 +96,7 @@
     #imageContainer{
         width: 200px;
     }
-    .break-words {
+    .wrap-anywhere {
         overflow-wrap: anywhere;
     }
     @media (max-width: 640px) {
@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', function () {
     </nav>
 </header>
 <div class="main container mx-auto p-8">
-    <h1 class="text-2xl sm:text-4xl font-bold mb-4 sm:mb-8 break-words">{{ idea.gift_name }}</h1> <!-- Display the gift_name as a heading -->
+    <h1 class="text-2xl sm:text-4xl font-bold mb-4 sm:mb-8 wrap-anywhere">{{ idea.gift_name }}</h1> <!-- Display the gift_name as a heading -->
 
     <form method="post" action="{{ url_for('edit_idea', idea_id=idea.gift_idea_id) }}" class="section p-6 rounded-lg shadow-md mb-8">
         <!-- Description Field -->

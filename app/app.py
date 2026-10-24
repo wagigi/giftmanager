@@ -1062,7 +1062,8 @@ def update_order():
 @login_required
 @guest_allowed
 def noidea():
-    return render_template('noideas.html')
+    current_user = next((user for user in load_users() if user['username'] == session['username']), None)
+    return render_template('noideas.html', is_guest=bool(current_user and current_user.get('guest')))
 
 @app.route('/add_user', methods=['GET', 'POST'])
 @admin_required

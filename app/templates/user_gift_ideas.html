@@ -66,7 +66,7 @@
 
         /* Responsive layout adjustments */
         /* Long words (names without spaces) wrap instead of overflowing the card */
-        .break-words {
+        .wrap-anywhere {
             overflow-wrap: anywhere;
         }
 
@@ -264,7 +264,7 @@
                 <li class="actions-container p-4 shadow-md rounded-lg">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center idea-container" style="margin-bottom: 5px">
                         <div class="min-w-0">
-                            <h2 class="text-lg font-semibold break-words">{{ gift_idea.gift_name }}</h2>
+                            <h2 class="text-lg font-semibold wrap-anywhere">{{ gift_idea.gift_name }}</h2>
                             <p class="text-gray-600 description" style="white-space: pre-wrap;">{{ gift_idea.description }}</p>
                             {% if gift_idea.value %}
                             <p class="text-gray-600 sec-text">{{ _('Estimated Value:') }} {{ format_currency(gift_idea.value) }}</p>
@@ -390,7 +390,7 @@
                 {% for expense in budget.expenses %}
                 <li>
                     <div class="flex justify-between items-baseline gap-2">
-                        <span class="min-w-0 break-words">{{ expense.label or _('Other expense') }}</span>
+                        <span class="min-w-0 wrap-anywhere">{{ expense.label or _('Other expense') }}</span>
                         <strong class="whitespace-nowrap">{% if expense.amount is not none %}{{ format_money(to_cents(expense.amount)) }}{% else %}{{ _('price not set') }}{% endif %}</strong>
                     </div>
                     <div class="flex flex-wrap items-center gap-x-2 text-sm">
