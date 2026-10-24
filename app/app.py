@@ -741,8 +741,8 @@ def dashboard():
         flash(_('User data not found'), 'danger')
         return redirect(url_for('login'))
 
-    # Check if current user is a guest
-    is_guest = current_user.get('guest', False)
+    # Set by login_required, as for the templates
+    is_guest = g.is_guest
     
     visible_users = get_visible_users(current_user, users)
 
@@ -2334,23 +2334,21 @@ def table_view():
                 'my_share': split['shares'].get(current_user_username, 0),
             }
 
-    def has_budget_summary(username):
-        summary = budget_summaries.get(username)
-        return bool(summary and (summary['total_budget'] or summary['total_spent']))
-
     # Prepare data for the template
-    table_data = [
-        {
+    table_data = []
+    for user in visible_users:
+        gifts = user_gifts[user['username']]
+        summary = budget_summaries.get(user['username'])
+        has_budget = bool(summary and (summary['total_budget'] or summary['total_spent']))
+        table_data.append({
             'full_name': user['full_name'],
             'username': user['username'],
-            'gifts': user_gifts[user['username']],
-            'budget': budget_summaries.get(user['username']),
-            'has_budget': has_budget_summary(user['username']),
+            'gifts': gifts,
+            'budget': summary,
+            'has_budget': has_budget,
             # Narrow column when there is nothing to show: no idea and no budget summary
-            'narrow': not user_gifts[user['username']] and not has_budget_summary(user['username']),
-        }
-        for user in visible_users
-    ]
+            'narrow': not gifts and not has_budget,
+        })
 
     # Find the maximum number of gifts for any user (at least one row, for the "No ideas" cells)
     max_gifts = 0

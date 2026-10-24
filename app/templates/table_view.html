@@ -46,8 +46,9 @@
         /* Scrolls in both directions itself, so the row of names can stay on top (sticky) */
         .table-scroll {
             overflow: auto;
-            max-height: max(320px, calc(100vh - 140px));
-            max-height: max(320px, calc(100dvh - 140px));
+            /* Room left under the header, title and margins (about 210px) */
+            max-height: max(320px, calc(100vh - 220px));
+            max-height: max(320px, calc(100dvh - 220px));
         }
 
         table {
