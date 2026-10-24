@@ -569,7 +569,6 @@ def test_guest_pages_hide_links_to_refused_pages(client):
     assert "/add_idea/" not in page(guest, "/user_gift_ideas/bob")
 
 
-
 def test_guest_login_and_allowed_route(client):
     response = client.post("/guest_login", data={"password": "guestpass"})
     assert is_redirect_to(response, "/dashboard")

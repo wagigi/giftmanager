@@ -136,7 +136,7 @@
                     {% for user in users %}
                         <th{% if user.narrow %} class="empty-list"{% endif %}>
                             {{ user.full_name }}
-                            {% if user.budget and (user.budget.total_budget or user.budget.total_spent) %}
+                            {% if user.has_budget %}
                             <div class="budget-summary text-secondary">
                                 <div>{{ _('Budget') }} {{ format_money(user.budget.total_budget) }}</div>
                                 <div>{{ _('Spent') }} {{ format_money(user.budget.total_spent) }}</div>

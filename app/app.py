@@ -789,7 +789,7 @@ def dashboard():
         app_version=app_version,
         assigned_users=assigned_users,
         enable_link_sharing=enable_link_sharing,
-        budget_enabled=budget_enabled() and not is_guest
+        budget_enabled=budget_enabled()
     )
 
 
@@ -2345,6 +2345,7 @@ def table_view():
             'username': user['username'],
             'gifts': user_gifts[user['username']],
             'budget': budget_summaries.get(user['username']),
+            'has_budget': has_budget_summary(user['username']),
             # Narrow column when there is nothing to show: no idea and no budget summary
             'narrow': not user_gifts[user['username']] and not has_budget_summary(user['username']),
         }
